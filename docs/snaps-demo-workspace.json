@@ -1,0 +1,157 @@
+{
+  "product": "snaps",
+  "kind": "workspace-demo",
+  "exportedAt": "2026-05-05T00:00:00.000Z",
+  "sources": [
+    {
+      "id": "demo-source-bio-newsletter",
+      "title": "Bio weekly source",
+      "sourceText": "이번 주 바이오 업계 주요 뉴스는 ADC 임상 결과, 국내 제약사 해외 기술이전, 병원 현장의 디지털 전환 속도입니다. 투자자와 실무자가 바로 이해할 수 있도록 핵심 변화와 다음 행동을 짧게 정리해야 합니다.",
+      "sourcePlatform": "newsletter",
+      "topic": "bio industry weekly brief",
+      "tone": "한국 나노 인플루언서 스타일",
+      "tags": ["bio", "newsletter", "weekly"]
+    }
+  ],
+  "styleExamples": [
+    {
+      "id": "demo-style-instagram-reel",
+      "platform": "instagram",
+      "content": "이번 주 바이오 업계에서 놓치면 안 될 변화 3가지. ADC, 기술이전, 병원 DX 흐름만 잡아도 다음 뉴스가 다르게 보입니다.",
+      "authorType": "nano-influencer",
+      "topic": "bio",
+      "tone": "short, useful, Korean creator",
+      "metrics": {
+        "likes": 342,
+        "comments": 18,
+        "shares": 41
+      },
+      "createdAt": "2026-05-05T00:00:00.000Z"
+    },
+    {
+      "id": "demo-style-threads-brief",
+      "platform": "threads",
+      "content": "바이오 뉴스가 어려운 이유는 기술보다 맥락이 빠져서다. 이번 주는 ADC 임상, 해외 기술이전, 병원 DX 세 축만 보면 된다.",
+      "authorType": "industry-commentary",
+      "topic": "bio",
+      "tone": "clear opinion",
+      "metrics": {
+        "likes": 198,
+        "replies": 27
+      },
+      "createdAt": "2026-05-05T00:00:00.000Z"
+    },
+    {
+      "id": "demo-style-naver-cafe",
+      "platform": "naver-cafe",
+      "content": "이번 주 바이오 주요 이슈를 정리했습니다. 1. ADC 임상 결과 2. 국내 제약사 기술이전 3. 병원 DX 확산. 각 항목별로 실무 관점에서 봐야 할 포인트를 댓글로 나눠보면 좋겠습니다.",
+      "authorType": "community-manager",
+      "topic": "bio",
+      "tone": "community post",
+      "createdAt": "2026-05-05T00:00:00.000Z"
+    }
+  ],
+  "reports": [
+    {
+      "id": "demo-report-weekly-bio",
+      "title": "Bio weekly snaps demo report",
+      "report": {
+        "title": "Bio weekly snaps demo report",
+        "periodStart": "2026-04-28T00:00:00.000Z",
+        "periodEnd": "2026-05-05T00:00:00.000Z",
+        "summary": "Instagram saves and Threads replies are the strongest signals. Naver Cafe needs a question-led ending to convert views into comments.",
+        "insights": [
+          "Short-form captions with three numbered points performed better than generic news summaries.",
+          "Community posts need explicit discussion prompts rather than only information delivery."
+        ],
+        "actionItems": [
+          "Lead Instagram and TikTok posts with one concrete change, then list two supporting points.",
+          "End Naver Cafe posts with one answerable question for practitioners."
+        ],
+        "trends": [
+          {
+            "metric": "engagementRate",
+            "direction": "up",
+            "delta": 0.12
+          }
+        ],
+        "charts": {
+          "series": [
+            {
+              "label": "Instagram saves",
+              "value": 41
+            },
+            {
+              "label": "Threads replies",
+              "value": 27
+            },
+            {
+              "label": "Naver Cafe comments",
+              "value": 9
+            }
+          ]
+        },
+        "generatedAt": "2026-05-05T00:00:00.000Z"
+      },
+      "createdAt": "2026-05-05T00:00:00.000Z"
+    }
+  ],
+  "inboxItems": [
+    {
+      "id": "demo-feedback-question-source",
+      "platform": "instagram",
+      "content": "자료 출처도 같이 볼 수 있나요?",
+      "author": "demo-viewer-1",
+      "postId": "demo-post-instagram",
+      "sentiment": "question",
+      "importedAt": "2026-05-05T00:00:00.000Z"
+    },
+    {
+      "id": "demo-feedback-collaboration",
+      "platform": "threads",
+      "content": "다음 주에는 의료 AI 쪽도 같이 정리해주실 수 있나요?",
+      "author": "demo-viewer-2",
+      "postId": "demo-post-threads",
+      "sentiment": "collaboration",
+      "importedAt": "2026-05-05T00:00:00.000Z"
+    },
+    {
+      "id": "demo-feedback-praise",
+      "platform": "instagram",
+      "content": "짧게 정리되어서 회의 전에 보기 좋았습니다.",
+      "author": "demo-viewer-3",
+      "postId": "demo-post-instagram",
+      "sentiment": "praise",
+      "importedAt": "2026-05-05T00:00:00.000Z"
+    },
+    {
+      "id": "demo-feedback-complaint",
+      "platform": "naver-cafe",
+      "content": "출처 링크가 없어서 확인하기 불편했습니다.",
+      "author": "demo-viewer-4",
+      "postId": "demo-post-naver-cafe",
+      "sentiment": "complaint",
+      "importedAt": "2026-05-05T00:00:00.000Z"
+    }
+  ],
+  "activity": [
+    {
+      "id": "demo-activity-source",
+      "type": "source",
+      "title": "Demo source prepared",
+      "detail": {
+        "sourceId": "demo-source-bio-newsletter"
+      },
+      "createdAt": "2026-05-05T00:00:00.000Z"
+    },
+    {
+      "id": "demo-activity-report",
+      "type": "report",
+      "title": "Demo report prepared",
+      "detail": {
+        "reportId": "demo-report-weekly-bio"
+      },
+      "createdAt": "2026-05-05T00:00:00.000Z"
+    }
+  ]
+}

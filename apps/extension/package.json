@@ -1,0 +1,10 @@
+{
+  "name": "snaps-extension",
+  "version": "2.0.0",
+  "description": "snaps browser extension for cookie-based platform authentication",
+  "scripts": {
+    "build": "node ../../scripts/clean-path.mjs dist extension.zip && vite build && node ../../scripts/package-extension.mjs .",
+    "dev": "node ../../scripts/clean-path.mjs dist && cross-env HOT_RELOAD_EXTENSION_VITE_PORT=4281 NODE_ENV=development dotenv -e ../../.env -- vite build --config vite.config.chrome.ts --mode development --watch"
+  },
+  "type": "module"
+}

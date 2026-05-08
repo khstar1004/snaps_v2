@@ -1,0 +1,925 @@
+[
+  {
+    "id": "kVwErxEf7Z7Q48",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "inbox",
+    "title": "Generated feedback summary",
+    "detail": {
+      "total": 2
+    },
+    "createdAt": "2026-05-08T00:45:20.783Z"
+  },
+  {
+    "id": "M2uDASPcEXZMhN",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "delete",
+    "title": "Deleted source content",
+    "detail": {
+      "sourceId": "LKnHIpSfdHoEE5",
+      "deleted": true
+    },
+    "createdAt": "2026-05-08T00:44:11.945Z"
+  },
+  {
+    "id": "SEvSHIpsMbzIUN",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "delete",
+    "title": "Deleted report",
+    "detail": {
+      "reportId": "kY7mUrCBSJykXc",
+      "deleted": true
+    },
+    "createdAt": "2026-05-08T00:44:11.932Z"
+  },
+  {
+    "id": "AC0UxMDZtnNIv8",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "delete",
+    "title": "Deleted report",
+    "detail": {
+      "reportId": "JNRo3nSJ2VTB8a",
+      "deleted": true
+    },
+    "createdAt": "2026-05-08T00:44:11.916Z"
+  },
+  {
+    "id": "iI7i0T7PLXmmr0",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "delete",
+    "title": "Deleted report",
+    "detail": {
+      "reportId": "qGGqABVNNaq748",
+      "deleted": true
+    },
+    "createdAt": "2026-05-08T00:44:11.901Z"
+  },
+  {
+    "id": "DNHMXNvKNop1IF",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "delete",
+    "title": "Deleted RAG style example",
+    "detail": {
+      "exampleId": "IESsaLSaE5CEhs",
+      "deleted": true
+    },
+    "createdAt": "2026-05-08T00:44:11.886Z"
+  },
+  {
+    "id": "sQ6nOwlYb3RuOu",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "delete",
+    "title": "Deleted RAG style example",
+    "detail": {
+      "exampleId": "ZDYKYfNAujpxMG",
+      "deleted": true
+    },
+    "createdAt": "2026-05-08T00:44:11.851Z"
+  },
+  {
+    "id": "jWOTtdPiQbRf5y",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "delete",
+    "title": "Deleted feedback inbox item",
+    "detail": {
+      "itemId": "Ud8w2zlzYeSSU5",
+      "deleted": true,
+      "total": 0
+    },
+    "createdAt": "2026-05-08T00:44:11.805Z"
+  },
+  {
+    "id": "aWghojrPqPoLT3",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "delete",
+    "title": "Deleted feedback inbox item",
+    "detail": {
+      "itemId": "AbXsRneZfRTl70",
+      "deleted": true,
+      "total": 1
+    },
+    "createdAt": "2026-05-08T00:44:11.790Z"
+  },
+  {
+    "id": "AbPBH2UtrgOzYy",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "inbox",
+    "title": "Generated feedback summary",
+    "detail": {
+      "total": 2
+    },
+    "createdAt": "2026-05-08T00:44:11.770Z"
+  },
+  {
+    "id": "YQDnUFiwjGKroL",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "inbox",
+    "title": "Imported feedback items",
+    "detail": {
+      "imported": 2,
+      "total": 2
+    },
+    "createdAt": "2026-05-08T00:44:09.766Z"
+  },
+  {
+    "id": "OmCyKphReTKzHI",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "report",
+    "title": "Generated report from platform analytics",
+    "detail": {
+      "reportId": "JNRo3nSJ2VTB8a",
+      "integrationIds": [
+        "missing-integration-snaps-smoke-20260508094321"
+      ],
+      "postIds": [
+        "missing-post-snaps-smoke-20260508094321"
+      ],
+      "warnings": 1
+    },
+    "createdAt": "2026-05-08T00:44:09.753Z"
+  },
+  {
+    "id": "vrwg4h2CuVFe2R",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "report",
+    "title": "Generated report from platform analytics",
+    "detail": {
+      "reportId": "qGGqABVNNaq748",
+      "integrationIds": [],
+      "postIds": [],
+      "warnings": 0
+    },
+    "createdAt": "2026-05-08T00:44:08.841Z"
+  },
+  {
+    "id": "oFAoorWS8PkmqZ",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "rag",
+    "title": "Promoted analytics report to RAG",
+    "detail": {
+      "reportId": "kY7mUrCBSJykXc",
+      "exampleId": "ZDYKYfNAujpxMG",
+      "platform": "threads"
+    },
+    "createdAt": "2026-05-08T00:44:07.616Z"
+  },
+  {
+    "id": "rKhNLeokf2gTyF",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "report",
+    "title": "Generated analytics report",
+    "detail": {
+      "reportId": "kY7mUrCBSJykXc",
+      "title": "runtime smoke report snaps-smoke-20260508094321"
+    },
+    "createdAt": "2026-05-08T00:44:07.531Z"
+  },
+  {
+    "id": "sP93PRbnwmtiFr",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "draft",
+    "title": "Created drafts from edited variants",
+    "detail": {
+      "scheduleType": "draft",
+      "platforms": [
+        "instagram"
+      ]
+    },
+    "createdAt": "2026-05-08T00:44:06.645Z"
+  },
+  {
+    "id": "jTs6Udks2qTp1S",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "rag",
+    "title": "Rebuilt RAG embeddings",
+    "detail": {
+      "total": 3,
+      "rebuilt": 3,
+      "fallback": 0
+    },
+    "createdAt": "2026-05-08T00:44:06.630Z"
+  },
+  {
+    "id": "Hfwlxl3LvLDfPd",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "rag",
+    "title": "Promoted source content to RAG",
+    "detail": {
+      "sourceId": "LKnHIpSfdHoEE5",
+      "exampleId": "IESsaLSaE5CEhs",
+      "platform": "instagram"
+    },
+    "createdAt": "2026-05-08T00:44:06.469Z"
+  },
+  {
+    "id": "bB0LmlLbsxo8Ej",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "source",
+    "title": "Saved source content",
+    "detail": {
+      "sourceId": "LKnHIpSfdHoEE5",
+      "title": "runtime smoke source snaps-smoke-20260508094321"
+    },
+    "createdAt": "2026-05-08T00:44:06.371Z"
+  },
+  {
+    "id": "QY0gfNKQVrNVFY",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "delete",
+    "title": "Deleted RAG style example",
+    "detail": {
+      "exampleId": "FrLyNT4vIYRFEG",
+      "deleted": true
+    },
+    "createdAt": "2026-05-08T00:44:06.355Z"
+  },
+  {
+    "id": "5eLfjjHANIKvYH",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "rag",
+    "title": "Saved RAG style example",
+    "detail": {
+      "platform": "instagram",
+      "id": "FrLyNT4vIYRFEG"
+    },
+    "createdAt": "2026-05-08T00:44:06.278Z"
+  },
+  {
+    "id": "XnjlSgdxv4UxmC",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "video",
+    "title": "Requested Pixelle short-form video",
+    "detail": {
+      "platform": "tiktok",
+      "durationSeconds": 30
+    },
+    "createdAt": "2026-05-08T00:44:06.159Z"
+  },
+  {
+    "id": "nntLZD2L0xnvT2",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "video",
+    "title": "Generated shorts script",
+    "detail": {
+      "platform": "instagram",
+      "durationSeconds": 30
+    },
+    "createdAt": "2026-05-08T00:43:55.180Z"
+  },
+  {
+    "id": "RTB7wvS4V3bsaG",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "video",
+    "title": "Generated shorts script",
+    "detail": {
+      "platform": "youtube",
+      "durationSeconds": 45
+    },
+    "createdAt": "2026-05-08T00:43:47.475Z"
+  },
+  {
+    "id": "3nX4rgLLweuSMd",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "draft",
+    "title": "Created scheduled variants from transform",
+    "detail": {
+      "scheduleType": "draft",
+      "platforms": [
+        "instagram"
+      ]
+    },
+    "createdAt": "2026-05-08T00:43:38.148Z"
+  },
+  {
+    "id": "KSsiD6N5nBtkvK",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "draft",
+    "title": "Prepared draft payload from transform",
+    "detail": {
+      "provider": "ollama",
+      "model": "qwen3.5:9b",
+      "platforms": [
+        "threads",
+        "instagram"
+      ]
+    },
+    "createdAt": "2026-05-08T00:43:37.194Z"
+  },
+  {
+    "id": "6FCTKXKwgtfxea",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "transform",
+    "title": "Generated platform variants",
+    "detail": {
+      "provider": "rule-fallback",
+      "model": "local-rule-fallback",
+      "platforms": [
+        "threads",
+        "instagram"
+      ]
+    },
+    "createdAt": "2026-05-08T00:43:35.594Z"
+  },
+  {
+    "id": "NHsOA6B7lhYJ3S",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "transform",
+    "title": "Generated platform variants",
+    "detail": {
+      "provider": "ollama",
+      "model": "qwen3.5:9b",
+      "platforms": [
+        "threads",
+        "instagram",
+        "naver-blog",
+        "kakao-talk"
+      ]
+    },
+    "createdAt": "2026-05-08T00:43:33.032Z"
+  },
+  {
+    "id": "bksidLD5GizNeJ",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "inbox",
+    "title": "Generated feedback summary",
+    "detail": {
+      "total": 0
+    },
+    "createdAt": "2026-05-08T00:41:00.281Z"
+  },
+  {
+    "id": "TVEF1I6GcJIJD3",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "delete",
+    "title": "Deleted source content",
+    "detail": {
+      "sourceId": "P0wVylMkdrgaey",
+      "deleted": true
+    },
+    "createdAt": "2026-05-08T00:40:34.708Z"
+  },
+  {
+    "id": "Coja8D8djBNEn3",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "delete",
+    "title": "Deleted report",
+    "detail": {
+      "reportId": "EPviLo4GVE6wtc",
+      "deleted": true
+    },
+    "createdAt": "2026-05-08T00:40:34.695Z"
+  },
+  {
+    "id": "Tw5Rzy7RIdOzcB",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "delete",
+    "title": "Deleted report",
+    "detail": {
+      "reportId": "jCdVluNskS4RBV",
+      "deleted": true
+    },
+    "createdAt": "2026-05-08T00:40:34.682Z"
+  },
+  {
+    "id": "bq6Xim673M3bZm",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "delete",
+    "title": "Deleted report",
+    "detail": {
+      "reportId": "hFB2mOw1hemSWJ",
+      "deleted": true
+    },
+    "createdAt": "2026-05-08T00:40:34.666Z"
+  },
+  {
+    "id": "bUQr52wccLdfcB",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "delete",
+    "title": "Deleted RAG style example",
+    "detail": {
+      "exampleId": "Xpdgb9pZw6CPIW",
+      "deleted": true
+    },
+    "createdAt": "2026-05-08T00:40:34.650Z"
+  },
+  {
+    "id": "L4cicguDZqONB6",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "delete",
+    "title": "Deleted RAG style example",
+    "detail": {
+      "exampleId": "amYODjStFqQ9q3",
+      "deleted": true
+    },
+    "createdAt": "2026-05-08T00:40:34.617Z"
+  },
+  {
+    "id": "5Lyh6uRmXBZb2r",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "delete",
+    "title": "Deleted feedback inbox item",
+    "detail": {
+      "itemId": "MysJF6DMu3lzPI",
+      "deleted": true,
+      "total": 0
+    },
+    "createdAt": "2026-05-08T00:40:34.577Z"
+  },
+  {
+    "id": "foC7QFivCoDuVi",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "delete",
+    "title": "Deleted feedback inbox item",
+    "detail": {
+      "itemId": "qmBzdiqParcwiz",
+      "deleted": true,
+      "total": 1
+    },
+    "createdAt": "2026-05-08T00:40:34.566Z"
+  },
+  {
+    "id": "1gw9StLmCnMmIw",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "inbox",
+    "title": "Generated feedback summary",
+    "detail": {
+      "total": 2
+    },
+    "createdAt": "2026-05-08T00:40:34.552Z"
+  },
+  {
+    "id": "JBz1Gqfn94HSt0",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "inbox",
+    "title": "Imported feedback items",
+    "detail": {
+      "imported": 2,
+      "total": 2
+    },
+    "createdAt": "2026-05-08T00:40:32.631Z"
+  },
+  {
+    "id": "oe1JBr5v7BxMGP",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "report",
+    "title": "Generated report from platform analytics",
+    "detail": {
+      "reportId": "jCdVluNskS4RBV",
+      "integrationIds": [
+        "missing-integration-snaps-smoke-20260508093943"
+      ],
+      "postIds": [
+        "missing-post-snaps-smoke-20260508093943"
+      ],
+      "warnings": 1
+    },
+    "createdAt": "2026-05-08T00:40:32.616Z"
+  },
+  {
+    "id": "CAa7e2wNbT8Fg8",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "report",
+    "title": "Generated report from platform analytics",
+    "detail": {
+      "reportId": "hFB2mOw1hemSWJ",
+      "integrationIds": [],
+      "postIds": [],
+      "warnings": 0
+    },
+    "createdAt": "2026-05-08T00:40:31.569Z"
+  },
+  {
+    "id": "3ITuHfGJVNr4Uw",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "rag",
+    "title": "Promoted analytics report to RAG",
+    "detail": {
+      "reportId": "EPviLo4GVE6wtc",
+      "exampleId": "amYODjStFqQ9q3",
+      "platform": "threads"
+    },
+    "createdAt": "2026-05-08T00:40:30.658Z"
+  },
+  {
+    "id": "Eo4nESv7BPPxSj",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "report",
+    "title": "Generated analytics report",
+    "detail": {
+      "reportId": "EPviLo4GVE6wtc",
+      "title": "runtime smoke report snaps-smoke-20260508093943"
+    },
+    "createdAt": "2026-05-08T00:40:30.577Z"
+  },
+  {
+    "id": "CJvfSsY14hrb4g",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "draft",
+    "title": "Created drafts from edited variants",
+    "detail": {
+      "scheduleType": "draft",
+      "platforms": [
+        "instagram"
+      ]
+    },
+    "createdAt": "2026-05-08T00:40:29.634Z"
+  },
+  {
+    "id": "Z1c1C9losp3Z0A",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "rag",
+    "title": "Rebuilt RAG embeddings",
+    "detail": {
+      "total": 3,
+      "rebuilt": 3,
+      "fallback": 0
+    },
+    "createdAt": "2026-05-08T00:40:29.620Z"
+  },
+  {
+    "id": "058h8Alr2s3qvV",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "rag",
+    "title": "Promoted source content to RAG",
+    "detail": {
+      "sourceId": "P0wVylMkdrgaey",
+      "exampleId": "Xpdgb9pZw6CPIW",
+      "platform": "instagram"
+    },
+    "createdAt": "2026-05-08T00:40:29.471Z"
+  },
+  {
+    "id": "o75X7GOyOklVTq",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "source",
+    "title": "Saved source content",
+    "detail": {
+      "sourceId": "P0wVylMkdrgaey",
+      "title": "runtime smoke source snaps-smoke-20260508093943"
+    },
+    "createdAt": "2026-05-08T00:40:29.387Z"
+  },
+  {
+    "id": "A056ulE7BET6Lw",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "delete",
+    "title": "Deleted RAG style example",
+    "detail": {
+      "exampleId": "GffpK5a46WvZby",
+      "deleted": true
+    },
+    "createdAt": "2026-05-08T00:40:29.374Z"
+  },
+  {
+    "id": "ps4s6ukAto5c44",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "rag",
+    "title": "Saved RAG style example",
+    "detail": {
+      "platform": "instagram",
+      "id": "GffpK5a46WvZby"
+    },
+    "createdAt": "2026-05-08T00:40:29.297Z"
+  },
+  {
+    "id": "OFBseZgOlY3dlx",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "video",
+    "title": "Requested Pixelle short-form video",
+    "detail": {
+      "platform": "tiktok",
+      "durationSeconds": 30
+    },
+    "createdAt": "2026-05-08T00:40:29.180Z"
+  },
+  {
+    "id": "HpyC7KJhE6Ps5q",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "video",
+    "title": "Generated shorts script",
+    "detail": {
+      "platform": "instagram",
+      "durationSeconds": 30
+    },
+    "createdAt": "2026-05-08T00:40:19.360Z"
+  },
+  {
+    "id": "xpbFgFNbCCqe4O",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "video",
+    "title": "Generated shorts script",
+    "detail": {
+      "platform": "youtube",
+      "durationSeconds": 45
+    },
+    "createdAt": "2026-05-08T00:40:09.338Z"
+  },
+  {
+    "id": "zcYRw5KVkgwT3R",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "draft",
+    "title": "Created scheduled variants from transform",
+    "detail": {
+      "scheduleType": "draft",
+      "platforms": [
+        "instagram"
+      ]
+    },
+    "createdAt": "2026-05-08T00:39:58.975Z"
+  },
+  {
+    "id": "grUjqwfHi6tjjR",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "draft",
+    "title": "Prepared draft payload from transform",
+    "detail": {
+      "provider": "ollama",
+      "model": "qwen3.5:9b",
+      "platforms": [
+        "threads",
+        "instagram"
+      ]
+    },
+    "createdAt": "2026-05-08T00:39:58.073Z"
+  },
+  {
+    "id": "cSi9Z770SJ0tnZ",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "transform",
+    "title": "Generated platform variants",
+    "detail": {
+      "provider": "ollama",
+      "model": "qwen3.5:9b",
+      "platforms": [
+        "threads",
+        "instagram"
+      ]
+    },
+    "createdAt": "2026-05-08T00:39:56.416Z"
+  },
+  {
+    "id": "TFiPE6UY8CKLdX",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "transform",
+    "title": "Generated platform variants",
+    "detail": {
+      "provider": "ollama",
+      "model": "qwen3.5:9b",
+      "platforms": [
+        "threads",
+        "instagram",
+        "naver-blog",
+        "kakao-talk"
+      ]
+    },
+    "createdAt": "2026-05-08T00:39:54.150Z"
+  },
+  {
+    "id": "T84897pP7BqxNX",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "delete",
+    "title": "Deleted feedback inbox item",
+    "detail": {
+      "itemId": "xTisaZaoY2eqls",
+      "deleted": true,
+      "total": 1
+    },
+    "createdAt": "2026-05-08T00:38:35.658Z"
+  },
+  {
+    "id": "nOkfLErTUE1yar",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "inbox",
+    "title": "Generated feedback summary",
+    "detail": {
+      "total": 2
+    },
+    "createdAt": "2026-05-08T00:38:35.644Z"
+  },
+  {
+    "id": "f1zShbChpjckBs",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "inbox",
+    "title": "Imported feedback items",
+    "detail": {
+      "imported": 2,
+      "total": 2
+    },
+    "createdAt": "2026-05-08T00:38:33.624Z"
+  },
+  {
+    "id": "NzT6UDLQbGWzxg",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "report",
+    "title": "Generated report from platform analytics",
+    "detail": {
+      "reportId": "wKTEOc1aq8J6d9",
+      "integrationIds": [
+        "missing-integration-snaps-smoke-20260508093602"
+      ],
+      "postIds": [
+        "missing-post-snaps-smoke-20260508093602"
+      ],
+      "warnings": 1
+    },
+    "createdAt": "2026-05-08T00:38:33.608Z"
+  },
+  {
+    "id": "WMUxforg8tKFfF",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "report",
+    "title": "Generated report from platform analytics",
+    "detail": {
+      "reportId": "0kOulFLwDXYyP1",
+      "integrationIds": [],
+      "postIds": [],
+      "warnings": 0
+    },
+    "createdAt": "2026-05-08T00:38:32.799Z"
+  },
+  {
+    "id": "pVQePCPhdzkEnH",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "rag",
+    "title": "Promoted analytics report to RAG",
+    "detail": {
+      "reportId": "wMH4JeMhKPyDjU",
+      "exampleId": "aCmDGm6R2YzlvI",
+      "platform": "threads"
+    },
+    "createdAt": "2026-05-08T00:38:31.957Z"
+  },
+  {
+    "id": "tnn4CsQ3szq6kb",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "report",
+    "title": "Generated analytics report",
+    "detail": {
+      "reportId": "wMH4JeMhKPyDjU",
+      "title": "runtime smoke report snaps-smoke-20260508093602"
+    },
+    "createdAt": "2026-05-08T00:38:31.894Z"
+  },
+  {
+    "id": "xEOcQkELHEuNYm",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "draft",
+    "title": "Created drafts from edited variants",
+    "detail": {
+      "scheduleType": "draft",
+      "platforms": [
+        "instagram"
+      ]
+    },
+    "createdAt": "2026-05-08T00:38:30.863Z"
+  },
+  {
+    "id": "GV6F3iF6VVy8hE",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "rag",
+    "title": "Rebuilt RAG embeddings",
+    "detail": {
+      "total": 1,
+      "rebuilt": 1,
+      "fallback": 0
+    },
+    "createdAt": "2026-05-08T00:38:30.850Z"
+  },
+  {
+    "id": "D50XUXjTyOF9kJ",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "rag",
+    "title": "Promoted source content to RAG",
+    "detail": {
+      "sourceId": "Nn8kEiAooBcO2O",
+      "exampleId": "Pf6JRrtU0SxnAu",
+      "platform": "instagram"
+    },
+    "createdAt": "2026-05-08T00:38:30.758Z"
+  },
+  {
+    "id": "8g3E3yDlgZ5rgk",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "source",
+    "title": "Saved source content",
+    "detail": {
+      "sourceId": "Nn8kEiAooBcO2O",
+      "title": "runtime smoke source snaps-smoke-20260508093602"
+    },
+    "createdAt": "2026-05-08T00:38:30.685Z"
+  },
+  {
+    "id": "h3r0K0NsYGcXka",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "delete",
+    "title": "Deleted RAG style example",
+    "detail": {
+      "exampleId": "e6vEdOmUeOtFh2",
+      "deleted": true
+    },
+    "createdAt": "2026-05-08T00:38:30.671Z"
+  },
+  {
+    "id": "OnsdXgwNysdIVx",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "rag",
+    "title": "Saved RAG style example",
+    "detail": {
+      "platform": "instagram",
+      "id": "e6vEdOmUeOtFh2"
+    },
+    "createdAt": "2026-05-08T00:38:30.592Z"
+  },
+  {
+    "id": "c7fJ5UOWIM2OL2",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "video",
+    "title": "Requested Pixelle short-form video",
+    "detail": {
+      "platform": "tiktok",
+      "durationSeconds": 30
+    },
+    "createdAt": "2026-05-08T00:38:28.109Z"
+  },
+  {
+    "id": "UedsbxffhlMnlu",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "video",
+    "title": "Generated shorts script",
+    "detail": {
+      "platform": "instagram",
+      "durationSeconds": 30
+    },
+    "createdAt": "2026-05-08T00:38:16.966Z"
+  },
+  {
+    "id": "uq2b54UBuhbk3U",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "video",
+    "title": "Generated shorts script",
+    "detail": {
+      "platform": "youtube",
+      "durationSeconds": 45
+    },
+    "createdAt": "2026-05-08T00:38:05.644Z"
+  },
+  {
+    "id": "hKjYqtWrTRTzzf",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "draft",
+    "title": "Created scheduled variants from transform",
+    "detail": {
+      "scheduleType": "draft",
+      "platforms": [
+        "instagram"
+      ]
+    },
+    "createdAt": "2026-05-08T00:37:55.995Z"
+  },
+  {
+    "id": "HGJMy8dsg8PGEI",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "draft",
+    "title": "Prepared draft payload from transform",
+    "detail": {
+      "provider": "rule-fallback",
+      "model": "local-rule-fallback",
+      "platforms": [
+        "threads",
+        "instagram"
+      ]
+    },
+    "createdAt": "2026-05-08T00:37:55.023Z"
+  },
+  {
+    "id": "Ftiy1SH6SDO09H",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "transform",
+    "title": "Generated platform variants",
+    "detail": {
+      "provider": "ollama",
+      "model": "qwen3.5:9b",
+      "platforms": [
+        "threads",
+        "instagram"
+      ]
+    },
+    "createdAt": "2026-05-08T00:37:14.259Z"
+  },
+  {
+    "id": "ZmBRDYN1aJXA24",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "type": "transform",
+    "title": "Generated platform variants",
+    "detail": {
+      "provider": "ollama",
+      "model": "qwen3.5:9b",
+      "platforms": [
+        "threads",
+        "instagram",
+        "naver-blog",
+        "kakao-talk"
+      ]
+    },
+    "createdAt": "2026-05-08T00:37:11.980Z"
+  }
+]

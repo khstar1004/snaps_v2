@@ -1,0 +1,24 @@
+{
+  "name": "@snaps/node",
+  "version": "1.0.8",
+  "description": "snaps public API client for AI social content operations",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "publish": "tsup && pnpm publish --access public"
+  },
+  "files": [
+    "dist"
+  ],
+  "keywords": [
+    "social media",
+    "ai content operations",
+    "social media scheduling",
+    "snaps"
+  ],
+  "author": "snaps Contributors",
+  "license": "AGPL-3.0",
+  "dependencies": {
+    "node-fetch": "^3.3.2"
+  }
+}

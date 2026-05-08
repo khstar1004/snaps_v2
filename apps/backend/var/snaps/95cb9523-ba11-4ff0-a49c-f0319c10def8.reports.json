@@ -1,0 +1,106 @@
+[
+  {
+    "id": "wKTEOc1aq8J6d9",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "title": "runtime analytics partial failure report snaps-smoke-20260508093602",
+    "report": {
+      "title": "runtime analytics partial failure report snaps-smoke-20260508093602",
+      "summary": "현재 분석할 지표가 없습니다. 플랫폼 analytics 또는 수동 metric JSON 을 먼저 수집해야 합니다.",
+      "metrics": {},
+      "charts": [],
+      "trends": [],
+      "insights": [
+        "분석할 지표가 아직 없습니다. 플랫폼 analytics 또는 수동 metric JSON을 먼저 수집하세요."
+      ],
+      "actionItems": [
+        "최근 성과가 좋은 콘텐츠의 주제, 첫 문장, 해시태그를 RAG 예시로 저장해 다음 변환에 반영하세요."
+      ],
+      "generatedAt": "2026-05-08T00:38:33.603Z",
+      "warnings": [
+        "Skipped integration analytics missing-integration-snaps-smoke-20260508093602: Invalid integration"
+      ]
+    },
+    "createdAt": "2026-05-08T00:38:33.605Z"
+  },
+  {
+    "id": "0kOulFLwDXYyP1",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "title": "runtime analytics empty-source report snaps-smoke-20260508093602",
+    "report": {
+      "title": "runtime analytics empty-source report snaps-smoke-20260508093602",
+      "summary": "현재 분석 가능한 지표가 없습니다. 플랫폼 analytics 또는 수동 metric JSON 을 먼저 수집해야 합니다. 최근 성과가 좋은 콘텐츠의 주제, 첫 문장, 해시태그를 RAG 예시로 저장하여 다음 변환에 반영하세요.",
+      "metrics": {},
+      "charts": [],
+      "trends": [],
+      "insights": [
+        "분석할 지표가 아직 없습니다. 플랫폼 analytics 또는 수동 metric JSON을 먼저 수집하세요."
+      ],
+      "actionItems": [
+        "최근 성과가 좋은 콘텐츠의 주제, 첫 문장, 해시태그를 RAG 예시로 저장해 다음 변환에 반영하세요."
+      ],
+      "generatedAt": "2026-05-08T00:38:32.793Z",
+      "warnings": []
+    },
+    "createdAt": "2026-05-08T00:38:32.794Z"
+  },
+  {
+    "id": "wMH4JeMhKPyDjU",
+    "organizationId": "95cb9523-ba11-4ff0-a49c-f0319c10def8",
+    "title": "runtime smoke report snaps-smoke-20260508093602",
+    "report": {
+      "title": "runtime smoke report snaps-smoke-20260508093602",
+      "summary": "instagram의 추정 참여율은 3.33%입니다. instagram의 impressions 지표가 기간 내 +40 증가했습니다.",
+      "metrics": {
+        "instagram": {
+          "impressions": 240,
+          "likes": 8
+        }
+      },
+      "charts": [
+        {
+          "platform": "instagram",
+          "metricKey": "impressions",
+          "points": [
+            {
+              "date": "2026-05-07T09:38:30.8677706+09:00",
+              "value": 100
+            },
+            {
+              "date": "2026-05-08T09:38:30.8697704+09:00",
+              "value": 140
+            }
+          ]
+        },
+        {
+          "platform": "instagram",
+          "metricKey": "likes",
+          "points": [
+            {
+              "date": "2026-05-08T09:38:30.8697704+09:00",
+              "value": 8
+            }
+          ]
+        }
+      ],
+      "trends": [
+        {
+          "platform": "instagram",
+          "metricKey": "impressions",
+          "firstValue": 100,
+          "lastValue": 140,
+          "delta": 40,
+          "deltaRate": 0.4
+        }
+      ],
+      "insights": [
+        "instagram의 추정 참여율은 3.33%입니다.",
+        "instagram의 impressions 지표가 기간 내 +40 증가했습니다."
+      ],
+      "actionItems": [
+        "instagram: 다음 게시물에는 질문형 CTA를 넣어 댓글 반응을 유도하세요."
+      ],
+      "generatedAt": "2026-05-08T00:38:31.889Z"
+    },
+    "createdAt": "2026-05-08T00:38:31.890Z"
+  }
+]
