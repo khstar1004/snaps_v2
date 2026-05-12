@@ -112,7 +112,7 @@ for (const platform of videoPlatforms) {
   }
 }
 
-sameSet(assistPlatforms, ['naver-blog', 'kakao-talk'], 'assist-only platform set');
+sameSet(assistPlatforms, ['naver-blog', 'kakao-talk', 'xiaohongshu'], 'assist-only platform set');
 
 for (const dto of [
   ['transform-request.dto.ts', transformDto],

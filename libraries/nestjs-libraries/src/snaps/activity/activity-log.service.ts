@@ -10,6 +10,7 @@ export type SnapsActivityType =
   | 'source'
   | 'report'
   | 'video'
+  | 'agent'
   | 'inbox'
   | 'delete';
 
@@ -29,6 +30,7 @@ const snapsActivityTypes: SnapsActivityType[] = [
   'source',
   'report',
   'video',
+  'agent',
   'inbox',
   'delete',
 ];

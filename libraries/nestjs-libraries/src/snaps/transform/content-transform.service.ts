@@ -164,7 +164,10 @@ export class SnapsContentTransformService {
         label: rule.label,
         title: this.cleanTitle(found?.title),
         content: content.slice(0, rule.maxLength),
-        hashtags: this.cleanHashtags(found?.hashtags || rule.defaultHashtags),
+        hashtags: this.cleanHashtags(
+          found?.hashtags || rule.defaultHashtags,
+          rule.hashtagLimit
+        ),
         settings: buildDefaultSettings(platform),
         publishMode: rule.publishMode,
         notes: this.cleanNotes(found?.notes),
@@ -183,7 +186,7 @@ export class SnapsContentTransformService {
   ): SnapsVariant {
     const rule = snapsPlatformRules[platform];
     const normalized = body.sourceText.trim().replace(/\s+/g, ' ');
-    const hashtags = this.cleanHashtags(rule.defaultHashtags);
+    const hashtags = this.cleanHashtags(rule.defaultHashtags, rule.hashtagLimit);
     const prefix = this.fallbackPrefix(platform);
     const suffix = hashtags.length ? `\n\n${hashtags.join(' ')}` : '';
     const content = `${prefix}${normalized}${suffix}`.slice(0, rule.maxLength);
@@ -191,7 +194,10 @@ export class SnapsContentTransformService {
     return {
       platform,
       label: rule.label,
-      title: platform.includes('naver') ? this.makeTitle(normalized) : undefined,
+      title:
+        platform.includes('naver') || platform === 'xiaohongshu'
+          ? this.makeTitle(normalized)
+          : undefined,
       content,
       hashtags,
       settings: buildDefaultSettings(platform),
@@ -202,10 +208,10 @@ export class SnapsContentTransformService {
 
   private fallbackPrefix(platform: SnapsTargetPlatform) {
     if (platform === 'threads') {
-      return '핵심만 짚어보면,\n\n';
+      return '이건 이렇게 보면 돼.\n\n';
     }
     if (platform === 'instagram') {
-      return '이번 콘텐츠에서 꼭 봐야 할 포인트.\n\n';
+      return '오늘 저장해둘 인사이트.\n\n';
     }
     if (platform === 'youtube') {
       return 'Title: 핵심 요약 Shorts\n\nDescription:\n';
@@ -213,8 +219,11 @@ export class SnapsContentTransformService {
     if (platform === 'tiktok') {
       return '요즘 이 이슈가 중요한 이유는?\n\n';
     }
+    if (platform === 'xiaohongshu') {
+      return '제목: 저장해둘 중국 SNS 노트\n\n핵심 포인트\n1. ';
+    }
     if (platform === 'naver-blog') {
-      return '제목: 핵심 이슈 정리\n\n목차\n1. 왜 중요한가\n2. 핵심 내용\n3. 실무 시사점\n\n본문\n';
+      return '제목: 핵심 이슈 정리\n\n이웃님들께 공유드려요. 오늘은 꼭 알아두면 좋은 내용을 정리했습니다.\n\n목차\n1. 왜 중요한가\n2. 핵심 내용\n3. 실무 시사점\n\n본문\n';
     }
     if (platform === 'naver-cafe') {
       return '안녕하세요. 같이 보면 좋을 내용을 정리해봤습니다.\n\n';
@@ -229,7 +238,7 @@ export class SnapsContentTransformService {
     return content.slice(0, 48).replace(/[.!?。！？]$/, '');
   }
 
-  private cleanHashtags(hashtags?: unknown) {
+  private cleanHashtags(hashtags?: unknown, limit = 20) {
     const rawValues = Array.isArray(hashtags)
       ? hashtags
       : typeof hashtags === 'string'
@@ -251,7 +260,7 @@ export class SnapsContentTransformService {
         .map((tag) => tag.replace(/[^\p{L}\p{N}_-]/gu, ''))
         .filter(Boolean)
         .map((tag) => `#${tag}`)
-    )].slice(0, 20);
+    )].slice(0, Math.max(0, limit));
   }
 
   private cleanTitle(title: unknown) {

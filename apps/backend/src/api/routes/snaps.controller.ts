@@ -53,6 +53,11 @@ import { buildSnapsVideoVariants } from '@gitroom/nestjs-libraries/snaps/video/v
 import { snapsAnalyticsToMetricInputs } from '@gitroom/nestjs-libraries/snaps/analytics/analytics-metric.mapper';
 import { CreatePostDto } from '@gitroom/nestjs-libraries/dtos/posts/create.post.dto';
 import { Organization } from '@prisma/client';
+import {
+  SnapsAgentCommandRequest,
+  SnapsCommandPlannerService,
+} from '@gitroom/nestjs-libraries/snaps/agent/command-planner.service';
+import { SnapsAgentTaskService } from '@gitroom/nestjs-libraries/snaps/agent/agent-task.service';
 
 type SnapsOrganization = {
   id: string;
@@ -72,6 +77,7 @@ type SnapsAttachVideoDraftRequest = {
   saveToMediaLibrary?: boolean;
   publishDate?: string;
   scheduleType?: 'draft' | 'schedule';
+  operatorConfirmed?: boolean;
 };
 
 type SnapsWorkspaceImportRequest = {
@@ -79,6 +85,7 @@ type SnapsWorkspaceImportRequest = {
   styleExamples?: unknown[];
   ragExamples?: unknown[];
   reports?: unknown[];
+  agentTasks?: unknown[];
   inboxItems?: unknown[];
   feedbackItems?: unknown[];
   activity?: unknown[];
@@ -110,6 +117,8 @@ export class SnapsController {
     private readonly inbox: SnapsFeedbackInboxService,
     private readonly library: SnapsSourceLibraryService,
     private readonly activity: SnapsActivityLogService,
+    private readonly commandPlanner: SnapsCommandPlannerService,
+    private readonly agentTasks: SnapsAgentTaskService,
     private readonly integrationService: IntegrationService,
     private readonly integrationManager: IntegrationManager,
     private readonly mediaService: MediaService,
@@ -118,7 +127,10 @@ export class SnapsController {
 
   @Get('/health')
   async health() {
-    const ollama = await this.ollama.health();
+    const [ollama, pixelle] = await Promise.all([
+      this.ollama.health(),
+      this.pixelleRuntimeHealth(),
+    ]);
     return {
       product: 'snaps',
       ok: ollama.ok,
@@ -127,9 +139,7 @@ export class SnapsController {
         enabled: process.env.SNAPS_RAG_ENABLED !== 'false',
         topK: Number(process.env.SNAPS_RAG_TOP_K || 5),
       },
-      pixelle: {
-        configured: !!process.env.PIXELLE_VIDEO_URL,
-      },
+      pixelle,
       koreanSns: {
         naverCafeConfigured:
           !!process.env.NAVER_CLIENT_ID && !!process.env.NAVER_CLIENT_SECRET,
@@ -149,6 +159,108 @@ export class SnapsController {
   @Post('/health')
   postHealth() {
     return this.health();
+  }
+
+  @Post('/agent/prepare')
+  async prepareAgentCommand(
+    @GetOrgFromRequest() org: SnapsOrganization,
+    @Body() body?: SnapsAgentCommandRequest
+  ) {
+    const prepared = await this.commandPlanner.prepare(org.id, body);
+    const task = await this.agentTasks.createFromPrepared(org.id, prepared);
+    await this.activity.record(org.id, {
+      type: 'agent',
+      title: 'Prepared operator-confirmed agent plan',
+      detail: {
+        command: prepared.plan.command,
+        platforms: prepared.plan.targetPlatforms,
+        scheduleType: prepared.plan.scheduleType,
+        includeShortVideo: prepared.plan.includeShortVideo,
+        framework: prepared.plan.marketingStrategy.framework,
+        revenueModels: prepared.plan.marketingStrategy.revenueModels,
+        taskId: task.id,
+      },
+    });
+    return {
+      ...prepared,
+      task,
+    };
+  }
+
+  @Get('/agent/tasks')
+  async listAgentTasks(
+    @GetOrgFromRequest() org: SnapsOrganization,
+    @Query() query: Record<string, unknown>
+  ) {
+    return this.agentTasks.list(org.id, query);
+  }
+
+  @Get('/agent/tasks/:taskId')
+  async getAgentTask(
+    @GetOrgFromRequest() org: SnapsOrganization,
+    @Param('taskId') taskId: string
+  ) {
+    const task = await this.agentTasks.get(org.id, taskId);
+    if (!task) {
+      throw new NotFoundException('snaps agent task was not found.');
+    }
+    return task;
+  }
+
+  @Post('/agent/tasks/:taskId/favorite')
+  async favoriteAgentTask(
+    @GetOrgFromRequest() org: SnapsOrganization,
+    @Param('taskId') taskId: string
+  ) {
+    const task = await this.agentTasks.setFavorite(org.id, taskId, true);
+    if (!task) {
+      throw new NotFoundException('snaps agent task was not found.');
+    }
+    return task;
+  }
+
+  @Delete('/agent/tasks/:taskId/favorite')
+  async unfavoriteAgentTask(
+    @GetOrgFromRequest() org: SnapsOrganization,
+    @Param('taskId') taskId: string
+  ) {
+    const task = await this.agentTasks.setFavorite(org.id, taskId, false);
+    if (!task) {
+      throw new NotFoundException('snaps agent task was not found.');
+    }
+    return task;
+  }
+
+  @Post('/agent/tasks/:taskId/rating')
+  async rateAgentTask(
+    @GetOrgFromRequest() org: SnapsOrganization,
+    @Param('taskId') taskId: string,
+    @Body() body?: { rating?: unknown; comment?: unknown }
+  ) {
+    const task = await this.agentTasks.setRating(
+      org.id,
+      taskId,
+      body?.rating,
+      body?.comment
+    );
+    if (!task) {
+      throw new NotFoundException('snaps agent task was not found.');
+    }
+    return task;
+  }
+
+  @Delete('/agent/tasks/:taskId')
+  async deleteAgentTask(
+    @GetOrgFromRequest() org: SnapsOrganization,
+    @Param('taskId') taskId: string
+  ) {
+    const deleted = await this.agentTasks.delete(org.id, taskId);
+    await this.activity.record(org.id, {
+      type: 'delete',
+      title: 'Deleted snaps agent task',
+      detail: { taskId, deleted: deleted.deleted },
+    });
+    return deleted;
   }
 
   @Post('/transform')
@@ -197,6 +309,10 @@ export class SnapsController {
     const request = this.normalizeTransformRequest(body);
     const scheduleRequest =
       (body || {}) as Partial<SnapsTransformAndScheduleRequestDto>;
+    this.assertOperatorConfirmed(
+      this.cleanScheduleType(scheduleRequest.scheduleType),
+      scheduleRequest.operatorConfirmed
+    );
     const result = await this.transformer.transform(org.id, request);
     const scheduled = await this.scheduleVariantsForOrg(org.id, {
       variants: result.variants,
@@ -221,6 +337,10 @@ export class SnapsController {
     @Body() body?: SnapsScheduleVariantsRequestDto
   ) {
     const variants = this.asArray(body?.variants);
+    this.assertOperatorConfirmed(
+      this.cleanScheduleType(body?.scheduleType),
+      body?.operatorConfirmed
+    );
     const scheduled = await this.scheduleVariantsForOrg(org.id, {
       variants,
       integrations: this.asArray(body?.integrations),
@@ -870,6 +990,10 @@ export class SnapsController {
     if (!videoUrl) {
       throw new BadRequestException('videoUrl is required.');
     }
+    this.assertOperatorConfirmed(
+      this.cleanScheduleType(request.scheduleType),
+      request.operatorConfirmed
+    );
 
     const mediaLibraryItem =
       request.saveToMediaLibrary === false
@@ -923,11 +1047,12 @@ export class SnapsController {
 
   @Get('/export')
   async exportWorkspace(@GetOrgFromRequest() org: SnapsOrganization) {
-    const [sources, styleExamples, reports, inboxItems, activity] =
+    const [sources, styleExamples, reports, agentTasks, inboxItems, activity] =
       await Promise.all([
         this.library.listSources(org.id),
         this.rag.listExamples(org.id),
         this.library.listReports(org.id),
+        this.agentTasks.exportTasks(org.id),
         this.inbox.listItems(org.id),
         this.activity.list(org.id),
       ]);
@@ -939,6 +1064,7 @@ export class SnapsController {
       sources,
       styleExamples,
       reports,
+      agentTasks,
       inboxItems,
       activity,
     };
@@ -949,7 +1075,7 @@ export class SnapsController {
     @GetOrgFromRequest() org: SnapsOrganization,
     @Body() body?: SnapsWorkspaceImportRequest
   ) {
-    const [sources, styleExamples, reports, inboxItems, activity] = await Promise.all([
+    const [sources, styleExamples, reports, agentTasks, inboxItems, activity] = await Promise.all([
       this.library.importSources(org.id, this.asArray(body?.sources)),
       this.rag.importExamples(
         org.id,
@@ -958,6 +1084,7 @@ export class SnapsController {
           : this.asArray(body?.ragExamples)
       ),
       this.library.importReports(org.id, this.asArray(body?.reports)),
+      this.agentTasks.importTasks(org.id, this.asArray(body?.agentTasks)),
       this.inbox.importStoredItems(
         org.id,
         this.asArray(body?.inboxItems).length
@@ -971,6 +1098,7 @@ export class SnapsController {
       sources,
       styleExamples,
       reports,
+      agentTasks,
       inboxItems,
       activity,
     };
@@ -985,6 +1113,70 @@ export class SnapsController {
       importedAt: new Date().toISOString(),
       ...summary,
     };
+  }
+
+  private async pixelleRuntimeHealth() {
+    const pixelleUrl = this.cleanOptionalString(process.env.PIXELLE_VIDEO_URL, 2000);
+    if (!pixelleUrl) {
+      return {
+        configured: false,
+        ok: false,
+        runtimeOk: false,
+        message: 'PIXELLE_VIDEO_URL is not configured.',
+      };
+    }
+
+    const baseUrl = pixelleUrl.replace(/\/$/, '');
+    const service = await this.fetchJsonWithTimeout(`${baseUrl}/health`, 2500);
+    const runtime = await this.fetchJsonWithTimeout(`${baseUrl}/snaps/runtime`, 3500);
+    const runtimeRecord = this.asRecord(runtime.payload);
+    const serviceRecord = this.asRecord(service.payload);
+
+    return {
+      configured: true,
+      ok: service.ok && runtime.ok && runtimeRecord.ok === true,
+      serviceOk: service.ok,
+      runtimeOk: runtime.ok && runtimeRecord.ok === true,
+      url: baseUrl,
+      status: this.cleanOptionalString(serviceRecord.status, 80) || undefined,
+      version: this.cleanOptionalString(serviceRecord.version, 80) || undefined,
+      comfyui: this.asRecord(runtimeRecord.comfyui),
+      workflows: this.asRecord(runtimeRecord.workflows),
+      llm: this.asRecord(runtimeRecord.llm),
+      message:
+        service.error ||
+        runtime.error ||
+        this.cleanOptionalString(runtimeRecord.message, 300) ||
+        undefined,
+    };
+  }
+
+  private async fetchJsonWithTimeout(url: string, timeoutMs: number) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: { Accept: 'application/json' },
+        signal: controller.signal,
+      });
+      const text = await response.text();
+      const payload = text ? JSON.parse(text) : {};
+      return {
+        ok: response.ok,
+        status: response.status,
+        payload,
+        ...(response.ok ? {} : { error: `${response.status} ${response.statusText}` }),
+      };
+    } catch (error) {
+      return {
+        ok: false,
+        error: this.compactError(error),
+        payload: {},
+      };
+    } finally {
+      clearTimeout(timeout);
+    }
   }
 
   private fileNameFromUrl(url: string) {
@@ -1046,6 +1238,17 @@ export class SnapsController {
 
   private cleanScheduleType(value: unknown): 'draft' | 'schedule' | undefined {
     return value === 'draft' || value === 'schedule' ? value : undefined;
+  }
+
+  private assertOperatorConfirmed(
+    scheduleType: 'draft' | 'schedule' | undefined,
+    operatorConfirmed?: boolean
+  ) {
+    if (scheduleType === 'schedule' && operatorConfirmed !== true) {
+      throw new BadRequestException(
+        'operatorConfirmed is required before creating scheduled snaps posts.'
+      );
+    }
   }
 
   private normalizeStyleExampleRequest(

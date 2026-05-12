@@ -456,7 +456,7 @@ Write-Host "transform missing sourceText validation ok"
 
 $transform = Invoke-SnapsRequest -Method "POST" -Path "/snaps/transform" -Body @{
   sourceText = "이번 주 신제품 업데이트와 고객 반응을 플랫폼별 게시물로 정리합니다."
-  targetPlatforms = @("threads", "instagram", "naver-blog", "kakao-talk")
+  targetPlatforms = @("threads", "instagram", "xiaohongshu", "naver-blog", "kakao-talk")
   tone = "한국 나노 인플루언서 스타일"
   useRag = $false
 }

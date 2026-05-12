@@ -84,17 +84,99 @@ export function buildSnapsPublishingPayload(input: SnapsPublishingPayloadBuildIn
           id: integrationId,
         },
         settings,
-        value: [
-          {
-            id: makeId(10),
-            content: variant.content,
-            image: variant.media || [],
-            delay: 0,
-          },
-        ],
+        value: buildPostValues(variant),
       })),
     },
   };
+}
+
+function buildPostValues(variant: SnapsVariant) {
+  const contentParts =
+    variant.platform === 'threads'
+      ? splitThreadContent(variant.content)
+      : [variant.content];
+
+  return contentParts.map((content, index) => ({
+    id: makeId(10),
+    content,
+    image: index === 0 ? variant.media || [] : [],
+    delay: index === 0 ? 0 : 1,
+  }));
+}
+
+function splitThreadContent(content: string, maxLength = 500) {
+  const normalized = String(content || '').trim();
+  if (!normalized || normalized.length <= maxLength) {
+    return normalized ? [normalized] : [];
+  }
+
+  const parts: string[] = [];
+  let current = '';
+  for (const block of normalized.split(/\n{2,}/).map((item) => item.trim()).filter(Boolean)) {
+    if (block.length > maxLength) {
+      if (current) {
+        parts.push(current);
+        current = '';
+      }
+      parts.push(...splitLongText(block, maxLength));
+      continue;
+    }
+
+    const next = current ? `${current}\n\n${block}` : block;
+    if (next.length <= maxLength) {
+      current = next;
+      continue;
+    }
+
+    if (current) {
+      parts.push(current);
+    }
+    current = block;
+  }
+
+  if (current) {
+    parts.push(current);
+  }
+
+  return parts.length ? parts.slice(0, 6) : [normalized.slice(0, maxLength)];
+}
+
+function splitLongText(content: string, maxLength: number) {
+  const chunks: string[] = [];
+  let current = '';
+  for (const token of content.split(/(\s+)/)) {
+    if (!token) {
+      continue;
+    }
+
+    if (token.trim().length > maxLength) {
+      if (current.trim()) {
+        chunks.push(current.trim());
+        current = '';
+      }
+      const compactToken = token.trim();
+      for (let index = 0; index < compactToken.length; index += maxLength) {
+        chunks.push(compactToken.slice(index, index + maxLength));
+      }
+      continue;
+    }
+
+    if ((current + token).length <= maxLength) {
+      current += token;
+      continue;
+    }
+
+    if (current.trim()) {
+      chunks.push(current.trim());
+    }
+    current = token;
+  }
+
+  if (current.trim()) {
+    chunks.push(current.trim());
+  }
+
+  return chunks;
 }
 
 function cleanPublishDate(value?: string) {

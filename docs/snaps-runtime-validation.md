@@ -165,8 +165,8 @@ With `-IncludeMutating`, the runtime verifier also saves and lists sources, prom
 - Confirm the runtime smoke checks `/api/snaps/transform`, `/api/snaps/transform-and-draft`, `/api/snaps/transform-and-schedule`, `/api/snaps/video/script`, `/api/snaps/video/generate-short`, `/api/snaps/video/status/:jobId`, and `/api/snaps/video/attach-to-draft` aliases before the mutating workspace checks.
 - Click `Export` and confirm snaps workspace JSON copies sources, style examples, reports, inbox items, and activity.
 - Paste the exported JSON into `Workspace Import` and confirm it merges without deleting existing workspace data.
-- Enter source text and a topic/campaign, select Threads, Instagram, Naver Blog, KakaoTalk, then run `AI 변환`.
-- On Naver Blog and KakaoTalk variants, confirm Assist Checklist is visible and copy Markdown/HTML for manual publishing.
+- Enter source text and a topic/campaign, select Threads, Instagram, Xiaohongshu, Naver Blog, KakaoTalk, then run `AI 변환`.
+- On Xiaohongshu, Naver Blog, and KakaoTalk variants, confirm Assist Checklist is visible and copy Markdown/HTML for manual publishing.
 - Edit one generated variant, create drafts for connected channels, then switch mode to `예약` and confirm the selected publish date creates scheduled posts.
 - Save and reload a source from Source Library, then use `RAG 승격` to promote it into style examples for the selected platform.
 - Save, search, and delete a RAG style example.

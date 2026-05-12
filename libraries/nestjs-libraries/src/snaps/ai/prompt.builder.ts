@@ -12,7 +12,10 @@ export function buildSnapsTransformSystemPrompt() {
     'Return strict JSON only.',
     'Do not include markdown fences.',
     'Never invent performance facts, dates, prices, or platform API capabilities.',
-    'When a target is Naver Blog, Naver Cafe, or KakaoTalk, write naturally for Korean users.',
+    'Use the provided platformRules as the source of truth for channel constraints, culture, structure, and hashtag density.',
+    'Keep platform culture general and durable; avoid forced slang, stereotypes, or overly niche memes.',
+    'For platforms with postMaxLength, write the content as multiple publishable segments separated by blank lines when needed.',
+    'When a target is Naver Blog, Naver Cafe, KakaoTalk, or Xiaohongshu, write naturally for the channel and avoid unsupported publishing claims.',
   ].join('\n');
 }
 

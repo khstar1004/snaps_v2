@@ -9,6 +9,8 @@ import { SnapsReportGeneratorService } from '@gitroom/nestjs-libraries/snaps/ana
 import { SnapsShortVideoService } from '@gitroom/nestjs-libraries/snaps/video/short-video.service';
 import { SnapsSourceLibraryService } from '@gitroom/nestjs-libraries/snaps/library/source-library.service';
 import { SnapsActivityLogService } from '@gitroom/nestjs-libraries/snaps/activity/activity-log.service';
+import { SnapsCommandPlannerService } from '@gitroom/nestjs-libraries/snaps/agent/command-planner.service';
+import { SnapsAgentTaskService } from '@gitroom/nestjs-libraries/snaps/agent/agent-task.service';
 import { NaverCafeProvider } from '@gitroom/nestjs-libraries/integrations/social/naver-cafe.provider';
 import { OllamaClient } from '@gitroom/nestjs-libraries/snaps/ai/ollama.client';
 
@@ -189,9 +191,15 @@ const emptyRag = {
 describe('snaps core behavior', () => {
   const originalDataDir = process.env.SNAPS_DATA_DIR;
   const originalFallback = process.env.SNAPS_ALLOW_RULE_FALLBACK;
+  const originalPixelleUrl = process.env.PIXELLE_VIDEO_URL;
 
   afterEach(async () => {
     process.env.SNAPS_ALLOW_RULE_FALLBACK = originalFallback;
+    if (originalPixelleUrl === undefined) {
+      delete process.env.PIXELLE_VIDEO_URL;
+    } else {
+      process.env.PIXELLE_VIDEO_URL = originalPixelleUrl;
+    }
     if (originalDataDir === undefined) {
       delete process.env.SNAPS_DATA_DIR;
     } else {
@@ -200,7 +208,7 @@ describe('snaps core behavior', () => {
     jest.clearAllMocks();
   });
 
-  it('keeps Naver Blog and KakaoTalk as assist-only rule fallback variants', async () => {
+  it('keeps Naver Blog, KakaoTalk, and Xiaohongshu as assist-only rule fallback variants', async () => {
     process.env.SNAPS_ALLOW_RULE_FALLBACK = 'true';
     const transformer = new SnapsContentTransformService(
       new OfflineOllama() as any,
@@ -209,7 +217,7 @@ describe('snaps core behavior', () => {
 
     const result = await transformer.transform('jest-org', {
       sourceText: '이번 주 신제품 업데이트와 고객 반응을 플랫폼별 게시물로 정리합니다.',
-      targetPlatforms: ['naver-blog', 'kakao-talk'],
+      targetPlatforms: ['naver-blog', 'kakao-talk', 'xiaohongshu'],
       useRag: false,
     });
 
@@ -219,12 +227,17 @@ describe('snaps core behavior', () => {
     const kakaoTalk = result.variants.find(
       (variant) => variant.platform === 'kakao-talk'
     );
+    const xiaohongshu = result.variants.find(
+      (variant) => variant.platform === 'xiaohongshu'
+    );
 
     expect(result.provider).toBe('rule-fallback');
     expect(naverBlog?.publishMode).toBe('assist');
     expect(naverBlog?.content).toContain('목차');
     expect(naverBlog?.content).toContain('본문');
     expect(kakaoTalk?.publishMode).toBe('assist');
+    expect(xiaohongshu?.publishMode).toBe('assist');
+    expect(xiaohongshu?.content).toContain('중국 SNS 노트');
   });
 
   it('normalizes partial Ollama variants and fills omitted requested platforms', async () => {
@@ -273,7 +286,7 @@ describe('snaps core behavior', () => {
     expect(malformedResult.provider).toBe('ollama');
     expect(malformedInstagram?.content).toContain('비정상 variant');
     expect(malformedThreads?.content).toBe('정상 Threads 결과');
-    expect(malformedThreads?.hashtags).toEqual(['#threads', '#update']);
+    expect(malformedThreads?.hashtags).toEqual(['#threads']);
   });
 
   it('preserves valid schedule payloads while warning about invalid Naver Cafe settings', () => {
@@ -328,6 +341,171 @@ describe('snaps core behavior', () => {
     expect(invalidScheduleType.payload?.type).toBe('draft');
   });
 
+  it('splits long Threads variants into reply-chain draft values', () => {
+    const longThreadsContent = [
+      '1/3 이건 짧게 보면 돼. 첫 문장은 바로 대화가 열리게 만들고, 핵심 주장 하나만 던진다.',
+      '2/3 그다음 댓글에서는 왜 그런지 설명한다. 정보는 한 번에 몰아넣기보다 댓글마다 한 포인트씩 나누는 편이 읽기 쉽다.'.repeat(12),
+      '3/3 마지막 댓글은 질문으로 닫는다. 너라면 이 상황에서 어떤 기준으로 판단할 것 같아?',
+    ].join('\n\n');
+
+    const result = buildSnapsPublishingPayload({
+      variants: [
+        {
+          platform: 'threads',
+          label: 'Threads',
+          content: longThreadsContent,
+          hashtags: [],
+          settings: { __type: 'threads' },
+          publishMode: 'schedule',
+        },
+      ],
+      integrations: [{ platform: 'threads', integrationId: 'threads-id' }],
+      scheduleType: 'draft',
+    });
+
+    const values = result.payload?.posts[0].value || [];
+    expect(values.length).toBeGreaterThan(1);
+    expect(values.every((value) => value.content.length <= 500)).toBe(true);
+    expect(values[0].delay).toBe(0);
+    expect(values.slice(1).every((value) => value.delay === 1)).toBe(true);
+  });
+
+  it('prepares natural language agent orders as drafts with confirmation required', async () => {
+    delete process.env.PIXELLE_VIDEO_URL;
+    process.env.SNAPS_ALLOW_RULE_FALLBACK = 'true';
+    const transformer = new SnapsContentTransformService(
+      new OfflineOllama() as any,
+      emptyRag as any
+    );
+    const shorts = new SnapsShortVideoService(new OfflineOllama() as any);
+    const planner = new SnapsCommandPlannerService(
+      new OfflineOllama() as any,
+      transformer,
+      shorts
+    );
+
+    const prepared = await planner.prepare('jest-org', {
+      command:
+        '내일 10시에 인공지능 관련 게시글 작성해서 인스타, 스레드, 링크드인에 올려줘. 관련 내용으로 쇼츠도 웃기게 만들어서 알아서 올려줘.',
+      useRag: false,
+      now: '2026-05-12T00:00:00',
+      timezoneOffsetMinutes: -540,
+    });
+
+    expect(prepared.plan.scheduleType).toBe('schedule');
+    expect(prepared.plan.needsConfirmation).toBe(true);
+    expect(prepared.plan.publishDateLocal).toContain('2026-05-13T10:00');
+    expect(prepared.plan.targetPlatforms).toEqual(
+      expect.arrayContaining(['instagram', 'threads', 'linkedin', 'youtube'])
+    );
+    expect(prepared.plan.shortVideoTargetPlatforms).toEqual(
+      expect.arrayContaining(['instagram', 'youtube'])
+    );
+    expect(prepared.transform.variants.map((variant) => variant.platform)).toEqual(
+      expect.arrayContaining(['instagram', 'threads', 'linkedin', 'youtube'])
+    );
+    expect(prepared.plan.marketingStrategy).toMatchObject({
+      framework: 'Monetize-Publish-Engage-Create',
+      inspiredBy: 'AiToEarn',
+      revenueModels: expect.arrayContaining(['CPE', 'CPM']),
+    });
+    expect(prepared.plan.marketingStrategy.lanes.map((lane) => lane.lane)).toEqual([
+      'monetize',
+      'publish',
+      'engage',
+      'create',
+    ]);
+    expect(prepared.plan.marketingStrategy.engagementSignals).toContainEqual(
+      expect.objectContaining({
+        id: 'link-request',
+        priority: 'high',
+      })
+    );
+    expect(prepared.plan.operatorSummary.join(' ')).toContain('예약 실행 전 확인');
+    expect(prepared.plan.missingInputs).toEqual(
+      expect.arrayContaining(['연동 계정 선택', '쇼츠 영상 생성 승인 또는 영상 URL'])
+    );
+    expect(prepared.plan.confirmationChecklist).toContainEqual(
+      expect.objectContaining({
+        id: 'final-confirmation',
+        status: 'attention',
+      })
+    );
+    expect(prepared.plan.marketingStrategy.batchIdeas.join(' ')).toContain('쇼츠');
+    expect(prepared.operation).toMatchObject({
+      status: 'requires_confirmation',
+      requiresConfirmation: true,
+    });
+    expect(prepared.operation.progress).toBeGreaterThanOrEqual(80);
+    expect(prepared.operation.progressSteps.map((step) => step.id)).toContain(
+      'confirmation'
+    );
+    expect(prepared.operation.platformReadiness).toContainEqual(
+      expect.objectContaining({
+        platform: 'instagram',
+        status: 'ready',
+      })
+    );
+    expect((prepared.video as any).status).toBe('script-ready');
+    expect(prepared.warnings.join(' ')).toContain('confirmation');
+  });
+
+  it('stores searchable and rateable agent task history', async () => {
+    const dataDir = path.join(
+      process.cwd(),
+      'tmp',
+      `snaps-agent-task-jest-${process.pid}-${Date.now()}`
+    );
+    process.env.SNAPS_DATA_DIR = dataDir;
+    process.env.SNAPS_ALLOW_RULE_FALLBACK = 'true';
+    const transformer = new SnapsContentTransformService(
+      new OfflineOllama() as any,
+      emptyRag as any
+    );
+    const shorts = new SnapsShortVideoService(new OfflineOllama() as any);
+    const planner = new SnapsCommandPlannerService(
+      new OfflineOllama() as any,
+      transformer,
+      shorts
+    );
+    const tasks = new SnapsAgentTaskService();
+
+    try {
+      const prepared = await planner.prepare('jest-org', {
+        command: '내일 10시에 AI 마케팅 게시글을 링크드인에 올려줘.',
+        useRag: false,
+        now: '2026-05-12T00:00:00',
+        timezoneOffsetMinutes: -540,
+      });
+      const stored = await tasks.createFromPrepared('jest-org', prepared);
+      const listed = await tasks.list('jest-org', {
+        keyword: 'AI 마케팅',
+        pageSize: 4,
+      });
+      const favorited = await tasks.setFavorite('jest-org', stored.id, true);
+      const rated = await tasks.setRating('jest-org', stored.id, 5, '좋은 운영맵');
+      const exported = await tasks.exportTasks('jest-org');
+
+      expect(stored.status).toBe('requires_confirmation');
+      expect(stored.messages.map((message) => message.type)).toEqual([
+        'user',
+        'assistant',
+        'result',
+      ]);
+      expect(stored.messages[2].content).toContain('확인 필요');
+      expect(listed.total).toBe(1);
+      expect(listed.list[0]).toMatchObject({
+        id: stored.id,
+        progress: prepared.operation.progress,
+      });
+      expect(favorited?.favorite).toBe(true);
+      expect(rated?.rating).toBe(5);
+      expect(exported).toHaveLength(1);
+    } finally {
+      await fs.rm(dataDir, { recursive: true, force: true });
+    }
+  });
+
   it('ignores malformed feedback import and summary items without crashing', async () => {
     const dataDir = path.join(
       process.cwd(),
@@ -378,6 +556,12 @@ describe('snaps core behavior', () => {
       ]);
       expect(summary.total).toBe(1);
       expect(summary.bySentiment.question).toBe(1);
+      expect(summary.conversionSignals).toContainEqual(
+        expect.objectContaining({
+          id: 'how-to-use',
+          count: 1,
+        })
+      );
 
       const legacyInbox = new SnapsFeedbackInboxService(
         new LegacyFeedbackSummaryOllama() as any
@@ -410,6 +594,12 @@ describe('snaps core behavior', () => {
       expect(undercountSummary.byPlatform.instagram).toBe(1);
       expect(undercountSummary.bySentiment.question).toBe(1);
       expect(undercountSummary.bySentiment.collaboration).toBe(1);
+      expect(undercountSummary.conversionSignals).toContainEqual(
+        expect.objectContaining({
+          id: 'collaboration',
+          count: 1,
+        })
+      );
     } finally {
       await fs.rm(dataDir, { recursive: true, force: true });
     }
@@ -727,6 +917,21 @@ describe('snaps core behavior', () => {
     expect(result.script.storyboard).toHaveLength(4);
     expect(result.script.storyboard[0].pixellePrompt).toContain('Vertical');
     expect(status.status).toBe('not-configured');
+  });
+
+  it('keeps custom shorts duration instead of forcing 30/45/60 buckets', async () => {
+    delete process.env.PIXELLE_VIDEO_URL;
+    const shorts = new SnapsShortVideoService(new OfflineOllama() as any);
+
+    const result = await shorts.generate({
+      sourceText: '긴 제품 설명을 75초 쇼츠로 구성합니다.',
+      durationSeconds: 75,
+      platform: 'instagram',
+    });
+
+    expect(result.script.durationSeconds).toBe(75);
+    expect(result.script.storyboard).toHaveLength(6);
+    expect(result.script.storyboard[result.script.storyboard.length - 1].endSecond).toBe(75);
   });
 
   it('normalizes malformed shorts LLM script fields without leaking object strings', async () => {

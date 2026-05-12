@@ -1,4 +1,4 @@
-[简体中文](https://pnpm.io/zh/) |
+[Simplified Chinese](https://pnpm.io/zh/) |
 [日本語](https://pnpm.io/ja/) |
 [한국어](https://pnpm.io/ko/) |
 [Italiano](https://pnpm.io/it/) |
@@ -285,4 +285,3 @@ Benchmarks on an app with lots of dependencies:
 ## License
 
 [MIT](https://github.com/pnpm/pnpm/blob/main/LICENSE)
-

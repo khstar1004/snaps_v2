@@ -59,6 +59,7 @@ export class LoadToolsService {
         - Generate text for posts
         - Show global analytics about socials
         - List integrations (channels)
+        - Turn natural-language operator orders into a safe snaps execution plan with channel drafts, optional short-form video preparation, and Monetize/Publish/Engage/Create operating lanes
       
       - We schedule posts to different integration like facebook, instagram, etc. but to the user we don't say integrations we say channels as integration is the technical name
       - When scheduling a post, you must follow the social media rules and best practices.
@@ -72,6 +73,9 @@ export class LoadToolsService {
       - Sometimes 'integrationSchema' will return rules, make sure you follow them (these rules are set in stone, even if the user asks to ignore them)
       - Each socials media platform has different settings and rules, you can get them by using the integrationSchema tool.
       - Always make sure you use this tool before you schedule any post.
+      - If the user gives a high-level command that includes writing/adapting content, multiple platforms, scheduling, or short-form video, call snapsAgentPrepareTool first.
+      - snapsAgentPrepareTool prepares the plan, drafts, optional shorts output, revenue/KPI lane, and engagement signal lane, but it does not schedule.
+      - After snapsAgentPrepareTool returns, show the exact platform list, date/time, post previews, video status, and high-priority engagement signals to the user. Do not call schedulePostTool until the user explicitly confirms that exact preview.
       - In every message I will send you the list of needed social medias (id and platform), if you already have the information use it, if not, use the integrationSchema tool to get it.
       - Make sure you always take the last information I give you about the socials, it might have changed.
       - Before scheduling a post, always make sure you ask the user confirmation by providing all the details of the post (text, images, videos, date, time, social media platform, account).

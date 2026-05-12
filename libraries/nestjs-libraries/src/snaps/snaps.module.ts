@@ -8,6 +8,8 @@ import { SnapsShortVideoService } from '@gitroom/nestjs-libraries/snaps/video/sh
 import { SnapsFeedbackInboxService } from '@gitroom/nestjs-libraries/snaps/inbox/feedback-inbox.service';
 import { SnapsSourceLibraryService } from '@gitroom/nestjs-libraries/snaps/library/source-library.service';
 import { SnapsActivityLogService } from '@gitroom/nestjs-libraries/snaps/activity/activity-log.service';
+import { SnapsCommandPlannerService } from '@gitroom/nestjs-libraries/snaps/agent/command-planner.service';
+import { SnapsAgentTaskService } from '@gitroom/nestjs-libraries/snaps/agent/agent-task.service';
 
 @Module({
   providers: [
@@ -20,6 +22,8 @@ import { SnapsActivityLogService } from '@gitroom/nestjs-libraries/snaps/activit
     SnapsFeedbackInboxService,
     SnapsSourceLibraryService,
     SnapsActivityLogService,
+    SnapsCommandPlannerService,
+    SnapsAgentTaskService,
   ],
   exports: [
     OllamaClient,
@@ -31,6 +35,8 @@ import { SnapsActivityLogService } from '@gitroom/nestjs-libraries/snaps/activit
     SnapsFeedbackInboxService,
     SnapsSourceLibraryService,
     SnapsActivityLogService,
+    SnapsCommandPlannerService,
+    SnapsAgentTaskService,
   ],
 })
 export class SnapsModule {}

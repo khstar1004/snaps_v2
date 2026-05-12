@@ -19,13 +19,33 @@ export type SnapsFeedbackItem = SnapsFeedbackInputDto & {
   id: string;
   organizationId: string;
   sentiment: SnapsFeedbackSentiment;
+  conversionSignals: SnapsFeedbackConversionSignalId[];
   importedAt: string;
+};
+
+type SnapsFeedbackConversionSignalId =
+  | 'link-request'
+  | 'purchase-intent'
+  | 'pricing'
+  | 'how-to-use'
+  | 'brand-mention'
+  | 'collaboration'
+  | 'complaint-risk';
+
+type SnapsFeedbackConversionSignal = {
+  id: SnapsFeedbackConversionSignalId;
+  label: string;
+  priority: 'high' | 'medium' | 'low';
+  count: number;
+  examples: string[];
+  action: string;
 };
 
 type SnapsInboxSummary = {
   total: number;
   byPlatform: Record<string, number>;
   bySentiment: Record<SnapsFeedbackSentiment, number>;
+  conversionSignals: SnapsFeedbackConversionSignal[];
   highlights: string[];
   replySuggestions: Array<{
     target: SnapsFeedbackSentiment;
@@ -34,6 +54,53 @@ type SnapsInboxSummary = {
 };
 
 const MAX_FEEDBACK_ITEMS = 1000;
+
+const conversionSignalDefinitions: Array<
+  Omit<SnapsFeedbackConversionSignal, 'count' | 'examples'>
+> = [
+  {
+    id: 'link-request',
+    label: '링크 요청',
+    priority: 'high',
+    action: '관련 링크, 자료, 신청 경로를 답글 초안에 바로 포함합니다.',
+  },
+  {
+    id: 'purchase-intent',
+    label: '구매/신청 의도',
+    priority: 'high',
+    action: '구매/신청 CTA와 DM 유도 문구를 우선 준비합니다.',
+  },
+  {
+    id: 'pricing',
+    label: '가격 문의',
+    priority: 'high',
+    action: '가격 안내 가능 범위와 상담 유도 답글을 분리합니다.',
+  },
+  {
+    id: 'how-to-use',
+    label: '사용법 질문',
+    priority: 'medium',
+    action: '짧은 사용법 답변과 후속 튜토리얼 소재를 만듭니다.',
+  },
+  {
+    id: 'brand-mention',
+    label: '브랜드 언급',
+    priority: 'medium',
+    action: '브랜드 모니터링 대상으로 표시하고 톤을 맞춘 대응을 준비합니다.',
+  },
+  {
+    id: 'collaboration',
+    label: '협업 문의',
+    priority: 'medium',
+    action: '협업 범위와 연락 채널을 묻는 응대 초안을 만듭니다.',
+  },
+  {
+    id: 'complaint-risk',
+    label: '불만 리스크',
+    priority: 'high',
+    action: '원인 확인과 공개 답변/비공개 후속 조치를 나눠 준비합니다.',
+  },
+];
 
 @Injectable()
 export class SnapsFeedbackInboxService {
@@ -129,7 +196,7 @@ export class SnapsFeedbackInboxService {
         {
           role: 'system',
           content:
-            'You are snaps feedback analyst. Return compact JSON only with total, byPlatform, bySentiment, highlights, and replySuggestions. Write Korean output.',
+            'You are snaps feedback analyst. Return compact JSON only with total, byPlatform, bySentiment, conversionSignals, highlights, and replySuggestions. Write Korean output.',
         },
         {
           role: 'user',
@@ -140,6 +207,7 @@ export class SnapsFeedbackInboxService {
               sentiment: item.sentiment,
               author: item.author,
               content: item.content,
+              conversionSignals: item.conversionSignals,
             })),
           }),
         },
@@ -178,6 +246,7 @@ export class SnapsFeedbackInboxService {
       sourceUrl: this.cleanOptionalText(item.sourceUrl, 2000),
       createdAt: this.cleanOptionalText(item.createdAt, 80),
       sentiment: this.classify(content),
+      conversionSignals: this.detectConversionSignals(content),
       importedAt: new Date().toISOString(),
     };
   }
@@ -211,6 +280,10 @@ export class SnapsFeedbackInboxService {
       sourceUrl: this.cleanOptionalText(item.sourceUrl, 2000),
       createdAt: this.cleanOptionalText(item.createdAt, 80),
       sentiment: sentiment || this.classify(content),
+      conversionSignals: this.normalizeConversionSignalIds(
+        item.conversionSignals,
+        content
+      ),
       importedAt: this.cleanOptionalText(item.importedAt, 80) || new Date().toISOString(),
     };
   }
@@ -238,14 +311,22 @@ export class SnapsFeedbackInboxService {
       bySentiment.collaboration
         ? `협업 문의 ${bySentiment.collaboration}개는 별도 영업 응대가 필요합니다.`
         : '',
+      this.highPrioritySignalCount(items)
+        ? `링크/구매/가격 같은 고전환 신호 ${this.highPrioritySignalCount(items)}개를 우선 처리하세요.`
+        : '',
     ].filter(Boolean);
 
     return {
       total: items.length,
       byPlatform,
       bySentiment,
+      conversionSignals: this.buildConversionSignals(items),
       highlights,
       replySuggestions: [
+        {
+          target: 'question',
+          reply: '자료 링크나 사용 경로가 필요한 부분이면 바로 확인하실 수 있는 링크를 함께 안내드리겠습니다.',
+        },
         {
           target: 'question',
           reply: '문의 주셔서 감사합니다. 핵심만 먼저 답변드리면, 이 부분은 다음 게시물에서 더 자세히 정리하겠습니다.',
@@ -281,12 +362,59 @@ export class SnapsFeedbackInboxService {
         summary.bySentiment,
         fallback.bySentiment
       ),
+      conversionSignals: this.normalizeConversionSignals(
+        summary.conversionSignals,
+        fallback.conversionSignals
+      ),
       highlights: this.normalizeStringArray(summary.highlights, fallback.highlights),
       replySuggestions: this.normalizeReplySuggestions(
         summary.replySuggestions,
         fallback.replySuggestions
       ),
     };
+  }
+
+  private normalizeConversionSignals(
+    value: unknown,
+    fallback: SnapsFeedbackConversionSignal[]
+  ) {
+    if (!Array.isArray(value)) {
+      return fallback;
+    }
+
+    const byId = new Map(fallback.map((signal) => [signal.id, signal]));
+    for (const item of value) {
+      if (!item || typeof item !== 'object') {
+        continue;
+      }
+      const signal = item as Partial<SnapsFeedbackConversionSignal>;
+      const id = this.normalizeConversionSignalId(signal.id);
+      if (!id) {
+        continue;
+      }
+      const definition = this.conversionSignalDefinition(id);
+      const existing = byId.get(id);
+      const count = Math.max(
+        this.normalizeNumber(signal.count, existing?.count || 0),
+        existing?.count || 0
+      );
+      const examples = this.normalizeStringArray(
+        signal.examples,
+        existing?.examples || []
+      ).slice(0, 3);
+      byId.set(id, {
+        id,
+        label: this.cleanOptionalText(signal.label, 80) || definition.label,
+        priority: this.normalizeSignalPriority(signal.priority) || definition.priority,
+        count,
+        examples,
+        action: this.cleanOptionalText(signal.action, 240) || definition.action,
+      });
+    }
+
+    return Array.from(byId.values())
+      .filter((signal) => signal.count > 0)
+      .sort((a, b) => this.priorityWeight(a.priority) - this.priorityWeight(b.priority));
   }
 
   private normalizeNumber(value: unknown, fallback = 0) {
@@ -335,7 +463,13 @@ export class SnapsFeedbackInboxService {
   private normalizeStringArray(value: unknown, fallback: string[]) {
     return Array.isArray(value)
       ? value
-          .map((item) => String(item || '').trim())
+          .map((item) =>
+            typeof item === 'string' ||
+            typeof item === 'number' ||
+            typeof item === 'boolean'
+              ? String(item).trim()
+              : ''
+          )
           .filter(Boolean)
           .slice(0, 8)
       : fallback;
@@ -389,6 +523,114 @@ export class SnapsFeedbackInboxService {
       return 'praise';
     }
     return 'other';
+  }
+
+  private detectConversionSignals(content: string): SnapsFeedbackConversionSignalId[] {
+    const text = content.toLowerCase();
+    const signals: SnapsFeedbackConversionSignalId[] = [];
+    if (/(링크|url|link|자료|출처|사이트|페이지|어디서\s*봐)/i.test(text)) {
+      signals.push('link-request');
+    }
+    if (/(구매|신청|결제|주문|살\s*수|어떻게\s*사|buy|purchase|order)/i.test(text)) {
+      signals.push('purchase-intent');
+    }
+    if (/(가격|비용|요금|얼마|견적|price|cost|pricing)/i.test(text)) {
+      signals.push('pricing');
+    }
+    if (/(사용법|방법|어떻게|가이드|튜토리얼|how\s*to|guide)/i.test(text)) {
+      signals.push('how-to-use');
+    }
+    if (/(@[\w._-]+|브랜드|회사|서비스|제품|비교)/i.test(text)) {
+      signals.push('brand-mention');
+    }
+    if (/(협업|제휴|광고 문의|콜라보|partnership|collab|sponsor)/i.test(text)) {
+      signals.push('collaboration');
+    }
+    if (/(별로|싫|문제|불편|실망|최악|틀렸|bad|wrong|disappoint)/i.test(text)) {
+      signals.push('complaint-risk');
+    }
+    return [...new Set(signals)];
+  }
+
+  private normalizeConversionSignalIds(value: unknown, content: string) {
+    const incoming = Array.isArray(value)
+      ? value
+          .map((item) => this.normalizeConversionSignalId(item))
+          .filter((item): item is SnapsFeedbackConversionSignalId => !!item)
+      : [];
+    const detected = this.detectConversionSignals(content);
+    return [...new Set([...incoming, ...detected])];
+  }
+
+  private normalizeConversionSignalId(
+    value: unknown
+  ): SnapsFeedbackConversionSignalId | undefined {
+    const id = String(value || '');
+    return conversionSignalDefinitions.some((signal) => signal.id === id)
+      ? (id as SnapsFeedbackConversionSignalId)
+      : undefined;
+  }
+
+  private normalizeSignalPriority(value: unknown) {
+    return value === 'high' || value === 'medium' || value === 'low'
+      ? value
+      : undefined;
+  }
+
+  private buildConversionSignals(items: SnapsFeedbackItem[]) {
+    const byId = new Map<
+      SnapsFeedbackConversionSignalId,
+      SnapsFeedbackConversionSignal
+    >();
+    for (const item of items) {
+      for (const id of item.conversionSignals) {
+        const definition = this.conversionSignalDefinition(id);
+        const current =
+          byId.get(id) ||
+          ({
+            ...definition,
+            count: 0,
+            examples: [],
+          } as SnapsFeedbackConversionSignal);
+        current.count += 1;
+        if (current.examples.length < 3) {
+          current.examples.push(item.content.slice(0, 120));
+        }
+        byId.set(id, current);
+      }
+    }
+
+    return Array.from(byId.values()).sort((a, b) => {
+      const priorityDelta =
+        this.priorityWeight(a.priority) - this.priorityWeight(b.priority);
+      return priorityDelta || b.count - a.count;
+    });
+  }
+
+  private highPrioritySignalCount(items: SnapsFeedbackItem[]) {
+    const highPrioritySignals = new Set(
+      conversionSignalDefinitions
+        .filter((signal) => signal.priority === 'high')
+        .map((signal) => signal.id)
+    );
+    return items.reduce(
+      (total, item) =>
+        total +
+        item.conversionSignals.filter((signal) => highPrioritySignals.has(signal))
+          .length,
+      0
+    );
+  }
+
+  private conversionSignalDefinition(id: SnapsFeedbackConversionSignalId) {
+    return (
+      conversionSignalDefinitions.find((signal) => signal.id === id) ||
+      conversionSignalDefinitions[0]
+    );
+  }
+
+  private priorityWeight(priority: 'high' | 'medium' | 'low') {
+    return priority === 'high' ? 0 : priority === 'medium' ? 1 : 2;
   }
 
   private normalizeSentiment(value: unknown): SnapsFeedbackSentiment | undefined {

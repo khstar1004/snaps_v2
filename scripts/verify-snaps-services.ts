@@ -396,18 +396,29 @@ async function main() {
 
     const transform = await transformer.transform(orgId, {
       sourceText: source.sourceText,
-      targetPlatforms: ['threads', 'instagram', 'naver-blog', 'kakao-talk'],
+      targetPlatforms: ['threads', 'instagram', 'xiaohongshu', 'naver-blog', 'kakao-talk'],
       tone: source.tone,
       topic: source.topic,
       useRag: true,
     });
     assert(transform.provider === 'rule-fallback', 'offline transform should use fallback');
-    assert(transform.variants.length === 4, 'transform did not return all requested variants');
+    assert(transform.variants.length === 5, 'transform did not return all requested variants');
+    const xiaohongshuVariant = transform.variants.find(
+      (variant) => variant.platform === 'xiaohongshu'
+    );
     const naverBlogVariant = transform.variants.find(
       (variant) => variant.platform === 'naver-blog'
     );
     const kakaoTalkVariant = transform.variants.find(
       (variant) => variant.platform === 'kakao-talk'
+    );
+    assert(
+      xiaohongshuVariant?.publishMode === 'assist',
+      'Xiaohongshu assist variant missing'
+    );
+    assert(
+      xiaohongshuVariant?.content.includes('중국 SNS 노트'),
+      'Xiaohongshu assist fallback should include note structure'
     );
     assert(
       naverBlogVariant?.publishMode === 'assist',

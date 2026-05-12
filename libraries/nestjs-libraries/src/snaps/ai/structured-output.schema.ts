@@ -13,8 +13,9 @@ export const snapsTransformOutputShape = {
     {
       platform: 'one of requested platforms',
       title: 'optional title when useful',
-      content: 'final publish-ready content',
-      hashtags: ['hashtags without spaces'],
+      content:
+        'final publish-ready content; for reply-chain platforms, separate each publishable segment with a blank line',
+      hashtags: ['small platform-appropriate hashtag set without spaces'],
       notes: ['optional operator notes'],
     },
   ],

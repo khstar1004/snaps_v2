@@ -1,7 +1,11 @@
 import { readFileSync } from 'node:fs';
 
 const workspacePath = 'apps/frontend/src/components/snaps/snaps-workspace.tsx';
-const content = readFileSync(workspacePath, 'utf8');
+const shortsWorkspacePath = 'apps/frontend/src/components/snaps/snaps-shorts-workspace.tsx';
+const content = [
+  readFileSync(workspacePath, 'utf8'),
+  readFileSync(shortsWorkspacePath, 'utf8'),
+].join('\n');
 
 function expectContains(needle, label = needle) {
   if (!content.includes(needle)) {
@@ -96,6 +100,7 @@ const platforms = [
   'instagram',
   'youtube',
   'tiktok',
+  'xiaohongshu',
   'naver-blog',
   'naver-cafe',
   'kakao-talk',
@@ -115,11 +120,12 @@ const labels = [
   '받은 반응함',
   '작업 기록',
   '네이버 카페',
+  '샤오홍슈',
   'HTML',
   'Markdown',
   'PDF HTML',
   '쇼츠',
-  'Pixelle 요청',
+  'AI 영상 생성',
 ];
 
 for (const [needle, label] of routeCalls) {

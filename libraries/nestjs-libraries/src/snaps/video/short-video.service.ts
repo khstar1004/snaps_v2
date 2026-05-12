@@ -3,7 +3,7 @@ import { OllamaClient } from '@gitroom/nestjs-libraries/snaps/ai/ollama.client';
 
 export type SnapsShortVideoRequest = {
   sourceText: string;
-  durationSeconds?: 30 | 45 | 60;
+  durationSeconds?: number;
   platform?: 'instagram' | 'youtube' | 'tiktok';
 };
 
@@ -11,7 +11,7 @@ export type SnapsShortVideoScript = {
   title: string;
   coreSummary: string;
   hook: string;
-  durationSeconds: 30 | 45 | 60;
+  durationSeconds: number;
   narration: string;
   storyboard: Array<{
     scene: number;
@@ -62,7 +62,7 @@ export class SnapsShortVideoService {
               title: 'string',
               coreSummary: 'string',
               hook: 'string',
-              durationSeconds: '30 | 45 | 60',
+              durationSeconds: 'number between 15 and 90',
               narration: 'string',
               storyboard: [
                 {
@@ -86,7 +86,7 @@ export class SnapsShortVideoService {
             rules: [
               'Write in Korean unless platform conventions require an English tag.',
               'Split the storyboard into 4 to 6 scenes with readable timings.',
-              'Keep narration suitable for the selected duration.',
+              'Keep narration suitable for the selected duration between 15 and 90 seconds.',
               'Pixelle prompts should describe visible shots, motion, composition, and text overlays.',
               'Do not invent facts not present in sourceText.',
             ],
@@ -251,7 +251,8 @@ export class SnapsShortVideoService {
     const durationSeconds = this.duration(body.durationSeconds);
     const source = this.cleanSourceText(body.sourceText);
     const coreSummary = source.slice(0, 220) || '원문 핵심 메시지를 짧은 쇼츠로 정리합니다.';
-    const sceneLength = Math.floor(durationSeconds / 4);
+    const sceneCount = durationSeconds <= 30 ? 4 : durationSeconds >= 70 ? 6 : 5;
+    const sceneLength = Math.floor(durationSeconds / sceneCount);
     const hashtags = this.cleanHashtags(['#shorts', '#snaps']);
 
     return {
@@ -260,10 +261,10 @@ export class SnapsShortVideoService {
       hook: '이 내용을 짧게 보면 핵심은 하나입니다.',
       durationSeconds,
       narration: source.slice(0, 900),
-      storyboard: [0, 1, 2, 3].map((index) => ({
+      storyboard: Array.from({ length: sceneCount }, (_, index) => ({
         scene: index + 1,
         startSecond: index * sceneLength,
-        endSecond: index === 3 ? durationSeconds : (index + 1) * sceneLength,
+        endSecond: index === sceneCount - 1 ? durationSeconds : (index + 1) * sceneLength,
         visual:
           index === 0
             ? 'Clean vertical opening shot with bold Korean hook text'
@@ -286,9 +287,12 @@ export class SnapsShortVideoService {
     };
   }
 
-  private duration(value?: unknown): 30 | 45 | 60 {
+  private duration(value?: unknown): number {
     const normalized = Number(value);
-    return normalized === 30 || normalized === 60 ? normalized : 45;
+    if (!Number.isFinite(normalized)) {
+      return 45;
+    }
+    return Math.min(90, Math.max(15, Math.round(normalized / 5) * 5));
   }
 
   private platform(value?: unknown): 'instagram' | 'youtube' | 'tiktok' {

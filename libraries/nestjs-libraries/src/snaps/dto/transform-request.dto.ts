@@ -87,6 +87,10 @@ export class SnapsTransformAndScheduleRequestDto extends SnapsTransformRequestDt
   @IsIn(['draft', 'schedule'])
   scheduleType?: 'draft' | 'schedule';
 
+  @IsOptional()
+  @IsBoolean()
+  operatorConfirmed?: boolean;
+
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => SnapsScheduleIntegrationDto)
@@ -104,6 +108,10 @@ export class SnapsScheduleVariantsRequestDto {
   @IsOptional()
   @IsIn(['draft', 'schedule'])
   scheduleType?: 'draft' | 'schedule';
+
+  @IsOptional()
+  @IsBoolean()
+  operatorConfirmed?: boolean;
 
   @IsArray()
   @ValidateNested({ each: true })

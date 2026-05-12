@@ -107,7 +107,7 @@ services:
       SNAPS_RAG_TOP_K: 5
       SNAPS_ALLOW_RULE_FALLBACK: 'true'
       SNAPS_DATA_DIR: '/config/snaps'
-      PIXELLE_VIDEO_URL: ''
+      PIXELLE_VIDEO_URL: 'http://snaps-pixelle-video:8000'
       NAVER_CLIENT_ID: ''
       NAVER_CLIENT_SECRET: ''
 
@@ -138,6 +138,34 @@ services:
       - snaps-uploads:/uploads/
     ports:
       - "4007:5000"
+    networks:
+      - snaps-network
+      - temporal-network
+    depends_on:
+      snaps-postgres:
+        condition: service_healthy
+      snaps-redis:
+        condition: service_healthy
+      snaps-pixelle-video:
+        condition: service_started
+
+  snaps-pixelle-video:
+    build:
+      context: ./external/Pixelle-Video
+      dockerfile: Dockerfile
+      args:
+        USE_CN_MIRROR: 'false'
+    container_name: snaps-pixelle-video
+    command: .venv/bin/python api/app.py --host 0.0.0.0 --port 8000
+    restart: unless-stopped
+    environment:
+      TZ: Asia/Seoul
+    volumes:
+      - ./external/Pixelle-Video/config.yaml:/app/config.yaml
+      - ./external/Pixelle-Video/output:/app/output
+      - ./external/Pixelle-Video/data:/app/data
+    ports:
+      - "8000:8000"
     networks:
       - snaps-network
       - temporal-network

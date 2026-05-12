@@ -1,0 +1,9 @@
+﻿site_name: snaps 영상 생성 엔진
+site_description: snaps용 로컬 AI 영상 생성 엔진 문서
+site_url: http://localhost:8000
+repo_url: https://github.com/AIDC-AI/Pixelle-Video
+theme:
+  name: material
+  language: ko
+nav:
+  - 홈: index.md

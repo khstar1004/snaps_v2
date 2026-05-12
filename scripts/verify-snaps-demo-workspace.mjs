@@ -7,6 +7,7 @@ const validPlatforms = new Set([
   'instagram',
   'youtube',
   'tiktok',
+  'xiaohongshu',
   'naver-blog',
   'naver-cafe',
   'kakao-talk',

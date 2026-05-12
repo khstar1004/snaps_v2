@@ -42,6 +42,19 @@
       "createdAt": "2026-05-05T00:00:00.000Z"
     },
     {
+      "id": "demo-style-xiaohongshu-note",
+      "platform": "xiaohongshu",
+      "content": "저장해둘 바이오 업계 변화 3가지. ADC 임상, 해외 기술이전, 병원 DX를 한 장씩 캡처해두면 다음 회의에서 바로 써먹기 좋습니다. #샤오홍슈 #小红书 #RED",
+      "authorType": "china-channel-editor",
+      "topic": "bio",
+      "tone": "visual note",
+      "metrics": {
+        "saves": 52,
+        "comments": 11
+      },
+      "createdAt": "2026-05-05T00:00:00.000Z"
+    },
+    {
       "id": "demo-style-naver-cafe",
       "platform": "naver-cafe",
       "content": "이번 주 바이오 주요 이슈를 정리했습니다. 1. ADC 임상 결과 2. 국내 제약사 기술이전 3. 병원 DX 확산. 각 항목별로 실무 관점에서 봐야 할 포인트를 댓글로 나눠보면 좋겠습니다.",

@@ -14,6 +14,7 @@ const targetPlatforms = [
   { id: 'instagram', label: 'Instagram' },
   { id: 'youtube', label: 'YouTube 쇼츠' },
   { id: 'tiktok', label: 'TikTok' },
+  { id: 'xiaohongshu', label: '샤오홍슈' },
   { id: 'naver-blog', label: '네이버 블로그' },
   { id: 'naver-cafe', label: '네이버 카페' },
   { id: 'kakao-talk', label: '카카오톡' },
@@ -22,6 +23,95 @@ const targetPlatforms = [
 ] as const;
 
 type TargetPlatform = (typeof targetPlatforms)[number]['id'];
+
+const targetPlatformLabel = (platform: TargetPlatform) =>
+  targetPlatforms.find((item) => item.id === platform)?.label || platform;
+
+const platformGuides: Record<
+  TargetPlatform,
+  { concept: string; cue: string; limit: string }
+> = {
+  threads: {
+    concept: '대화형 반말',
+    cue: '짧은 훅, 한 포인트씩 댓글 체인',
+    limit: '게시물당 500자',
+  },
+  instagram: {
+    concept: '감성 캡션',
+    cue: '첫 줄 분위기, 저장/댓글 유도',
+    limit: '캡션 2,200자',
+  },
+  youtube: {
+    concept: '쇼츠 검색',
+    cue: '제목, 설명, 핵심 태그',
+    limit: '쇼츠 3분 기준',
+  },
+  tiktok: {
+    concept: '짧은 훅',
+    cue: '초반 반응, 댓글 질문',
+    limit: '짧은 캡션 우선',
+  },
+  xiaohongshu: {
+    concept: '저장용 노트',
+    cue: '제목, 번호 팁, 발견형 태그',
+    limit: '수동 보조',
+  },
+  'naver-blog': {
+    concept: '정보 공유',
+    cue: '이웃 친화 인트로, 목차, 섹션',
+    limit: '긴 글 수동 보조',
+  },
+  'naver-cafe': {
+    concept: '커뮤니티 글',
+    cue: '회원 의견 유도, 홍보감 절제',
+    limit: '카페/메뉴 필요',
+  },
+  'kakao-talk': {
+    concept: '메신저 공유',
+    cue: '짧은 요약, 링크 카드 문구',
+    limit: '수동 공유',
+  },
+  linkedin: {
+    concept: '전문 인사이트',
+    cue: '업무 맥락, 근거, 실행 포인트',
+    limit: '게시물 3,000자',
+  },
+  x: {
+    concept: '압축 주장',
+    cue: '한 문장 관점, 빠른 공유',
+    limit: '280자',
+  },
+};
+
+const agentCommandTemplates = [
+  {
+    label: '내일 오전 캠페인',
+    command:
+      '내일 오전 10시에 AI 생산성 관련 게시글을 인스타, 스레드, 링크드인에 올릴 수 있게 준비해줘. 같은 내용으로 쇼츠 대본도 웃기게 만들어줘.',
+  },
+  {
+    label: '성과 기반 후속',
+    command:
+      '지난 성과 보고서 인사이트를 반영해서 이번 주에 올릴 후속 콘텐츠 3개를 인스타, 스레드, 링크드인용으로 준비해줘. 구매 문의가 오면 답글 방향도 같이 정리해줘.',
+  },
+  {
+    label: '제품 업데이트',
+    command:
+      '신규 기능 업데이트를 고객이 바로 이해하도록 네이버 블로그, 링크드인, 카카오톡 공유용으로 바꿔줘. 블로그는 전문적으로, 카카오톡은 짧게 정리해줘.',
+  },
+  {
+    label: '쇼츠 우선',
+    command:
+      '이 원문을 유튜브 쇼츠, 인스타 릴스, 틱톡에 맞는 30초 숏폼 캠페인으로 만들어줘. 훅은 웃기게, CTA는 댓글 유도형으로 해줘.',
+  },
+  {
+    label: '중국 채널',
+    command:
+      '이 원문을 샤오홍슈에 맞게 저장하고 싶은 노트형 콘텐츠로 바꿔줘. 제목, 첫 문장, 번호형 팁, 해시태그까지 중국 SNS 감성으로 정리해줘.',
+  },
+] as const;
+
+const snapsShortsHandoffKey = 'snaps.shorts.handoff.v1';
 
 const feedbackSentimentLabels: Record<string, string> = {
   question: '질문',
@@ -204,8 +294,140 @@ type SnapsFeedbackView = {
   deleted?: number;
   total?: number;
   bySentiment?: Record<string, number>;
+  conversionSignals?: Array<{
+    id: string;
+    label: string;
+    priority: 'high' | 'medium' | 'low';
+    count: number;
+    examples?: string[];
+    action: string;
+  }>;
   highlights?: string[];
   replySuggestions?: SnapsReplySuggestion[];
+};
+
+type SnapsAgentExecutionStep = {
+  label: string;
+  detail: string;
+  status: 'ready' | 'needs-confirmation' | 'manual';
+};
+
+type SnapsAgentConfirmationChecklistItem = {
+  id: string;
+  label: string;
+  detail: string;
+  status: 'ready' | 'attention' | 'manual';
+};
+
+type SnapsAgentEngagementSignal = {
+  id: string;
+  label: string;
+  priority: 'high' | 'medium' | 'low';
+  triggerExamples: string[];
+  action: string;
+};
+
+type SnapsAgentMarketingLanePlan = {
+  lane: 'monetize' | 'publish' | 'engage' | 'create';
+  label: string;
+  goal: string;
+  actions: string[];
+  kpis: string[];
+  status: 'ready' | 'needs-confirmation' | 'manual';
+};
+
+type SnapsAgentMarketingStrategy = {
+  framework: 'Monetize-Publish-Engage-Create';
+  inspiredBy: 'AiToEarn';
+  revenueModels: Array<'CPS' | 'CPE' | 'CPM'>;
+  lanes: SnapsAgentMarketingLanePlan[];
+  engagementSignals: SnapsAgentEngagementSignal[];
+  batchIdeas: string[];
+  mcpReadyActions: string[];
+  operatorGuardrails: string[];
+};
+
+type SnapsAgentOperationPreview = {
+  status: 'thinking' | 'generating_content' | 'generating_video' | 'requires_confirmation' | 'completed' | 'error';
+  progress: number;
+  headline: string;
+  progressSteps: Array<{
+    id: string;
+    label: string;
+    detail: string;
+    status: 'done' | 'active' | 'waiting' | 'blocked';
+    progress: number;
+  }>;
+  platformReadiness: Array<{
+    platform: TargetPlatform;
+    label: string;
+    publishMode: 'schedule' | 'assist';
+    status: 'ready' | 'attention' | 'manual';
+    checks: string[];
+    blockers: string[];
+  }>;
+  nextActions: string[];
+  requiresConfirmation: true;
+};
+
+type SnapsAgentPlan = {
+  command: string;
+  sourceText: string;
+  topic?: string;
+  tone: string;
+  targetPlatforms: TargetPlatform[];
+  scheduleType: 'draft' | 'schedule';
+  publishDate?: string;
+  publishDateLocal?: string;
+  includeShortVideo: boolean;
+  shortVideoPlatform: 'instagram' | 'youtube' | 'tiktok';
+  shortVideoTargetPlatforms: TargetPlatform[];
+  needsConfirmation: true;
+  confirmationPolicy: string;
+  assumptions?: string[];
+  operatorSummary?: string[];
+  missingInputs?: string[];
+  confirmationChecklist?: SnapsAgentConfirmationChecklistItem[];
+  marketingStrategy?: SnapsAgentMarketingStrategy;
+  executionPlan?: SnapsAgentExecutionStep[];
+};
+
+type SnapsAgentPreparedPayload = {
+  plan: SnapsAgentPlan;
+  transform: SnapsTransformResult;
+  operation: SnapsAgentOperationPreview;
+  video?: SnapsVideoResult;
+  warnings?: string[];
+};
+
+type SnapsAgentPrepareResult = SnapsAgentPreparedPayload & {
+  task?: SnapsAgentTaskDetail;
+};
+
+type SnapsAgentTaskListItem = {
+  id: string;
+  title: string;
+  command: string;
+  status: 'requires_confirmation' | 'completed' | 'error' | 'aborted';
+  progress: number;
+  platformCount: number;
+  shortVideo: boolean;
+  favorite: boolean;
+  rating?: number;
+  topic?: string;
+  platforms?: TargetPlatform[];
+  publishDateLocal?: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+type SnapsAgentTaskDetail = SnapsAgentTaskListItem & {
+  result: SnapsAgentPreparedPayload;
+  messages?: Array<{
+    type: 'user' | 'assistant' | 'system' | 'result';
+    content: string;
+    createdAt: string;
+  }>;
 };
 
 const defaultPublishDate = () => {
@@ -319,8 +541,6 @@ export function SnapsWorkspace() {
   const [selectedPlatforms, setSelectedPlatforms] = useState<TargetPlatform[]>([
     'threads',
     'instagram',
-    'youtube',
-    'tiktok',
     'naver-blog',
   ]);
   const [naverCafeClubId, setNaverCafeClubId] = useState('');
@@ -344,12 +564,6 @@ export function SnapsWorkspace() {
   const [activeReportId, setActiveReportId] = useState('');
   const [reportHistory, setReportHistory] = useState<SnapsStoredReport[]>([]);
   const [reporting, setReporting] = useState(false);
-  const [videoResult, setVideoResult] = useState<SnapsVideoResult | null>(null);
-  const [videoLoading, setVideoLoading] = useState(false);
-  const [videoDrafting, setVideoDrafting] = useState(false);
-  const [videoUrl, setVideoUrl] = useState('');
-  const [videoThumbnail, setVideoThumbnail] = useState('');
-  const [saveVideoToMediaLibrary, setSaveVideoToMediaLibrary] = useState(true);
   const [feedbackText, setFeedbackText] = useState(
     '[{"platform":"instagram","author":"user1","content":"이 내용 더 자세히 볼 수 있나요?"},{"platform":"threads","author":"user2","content":"정리 좋아요. 다음 편도 기대됩니다."}]'
   );
@@ -366,6 +580,16 @@ export function SnapsWorkspace() {
   const [feedbackLoading, setFeedbackLoading] = useState(false);
   const [result, setResult] = useState<SnapsTransformResult | null>(null);
   const [activePlatform, setActivePlatform] = useState<TargetPlatform>('threads');
+  const [agentCommand, setAgentCommand] = useState(
+    '내일 10시에 인공지능 관련 게시글 작성해서 인스타, 스레드, 링크드인에 올려줘. 관련 내용으로 쇼츠도 웃기게 만들어서 알아서 올려줘.'
+  );
+  const [agentLoading, setAgentLoading] = useState(false);
+  const [agentResult, setAgentResult] =
+    useState<SnapsAgentPrepareResult | null>(null);
+  const [agentTasks, setAgentTasks] = useState<SnapsAgentTaskListItem[]>([]);
+  const [agentTaskSearch, setAgentTaskSearch] = useState('');
+  const [agentFavoriteOnly, setAgentFavoriteOnly] = useState(false);
+  const [agentTasksLoading, setAgentTasksLoading] = useState(false);
 
   const connectedByPlatform = useMemo(() => {
     return (integrations as ConnectedIntegration[]).reduce((all, integration) => {
@@ -376,6 +600,56 @@ export function SnapsWorkspace() {
       return all;
     }, {} as Record<string, ConnectedIntegration>);
   }, [integrations]);
+
+  const agentReadinessSummary = useMemo(() => {
+    if (!agentResult) {
+      return null;
+    }
+
+    const variants = agentResult.transform.variants || [];
+    const schedulable = variants.filter(
+      (variant) => variant.publishMode === 'schedule'
+    );
+    const connected = schedulable.filter(
+      (variant) => connectedByPlatform[variant.platform]?.id
+    );
+    const disconnected = schedulable.filter(
+      (variant) => !connectedByPlatform[variant.platform]?.id
+    );
+    const manualPlatforms = [
+      ...new Set(
+        [
+          ...variants
+            .filter((variant) => variant.publishMode === 'assist')
+            .map((variant) => variant.platform),
+          ...agentResult.operation.platformReadiness
+            .filter((item) => item.status === 'manual')
+            .map((item) => item.platform),
+        ].map((platform) => targetPlatformLabel(platform))
+      ),
+    ];
+    const attentionItems = agentResult.operation.platformReadiness.filter(
+      (item) => item.status !== 'ready'
+    );
+    const missingInputs = [
+      ...(agentResult.plan.missingInputs || []),
+      ...disconnected.map(
+        (variant) => `${targetPlatformLabel(variant.platform)} 연동 계정`
+      ),
+    ];
+
+    return {
+      connectedCount: connected.length,
+      schedulableCount: schedulable.length,
+      disconnectedPlatforms: disconnected.map((variant) =>
+        targetPlatformLabel(variant.platform)
+      ),
+      manualPlatforms,
+      attentionCount: attentionItems.length,
+      missingInputs: [...new Set(missingInputs)],
+      confirmationItems: agentResult.plan.confirmationChecklist || [],
+    };
+  }, [agentResult, connectedByPlatform]);
 
   const activeVariant = useMemo(() => {
     return (
@@ -406,50 +680,6 @@ export function SnapsWorkspace() {
       };
     });
   }, [reportResult]);
-
-  const shortsScript = useMemo(() => {
-    return videoResult?.script || videoResult;
-  }, [videoResult]);
-
-  const extractVideoUrl = (value: unknown): string => {
-    if (!value || typeof value !== 'object') {
-      return typeof value === 'string' && /\.(mp4|mov|webm)(\?|$)/i.test(value)
-        ? value
-        : '';
-    }
-
-    const record = value as Record<string, unknown>;
-    const direct =
-      record.videoUrl ||
-      record.video_url ||
-      record.url ||
-      record.downloadUrl ||
-      record.download_url ||
-      record.output ||
-      record.result;
-
-    if (typeof direct === 'string' && /\.(mp4|mov|webm)(\?|$)/i.test(direct)) {
-      return direct;
-    }
-
-    if (Array.isArray(direct)) {
-      const found = direct.find(
-        (item) => typeof item === 'string' && /\.(mp4|mov|webm)(\?|$)/i.test(item)
-      );
-      if (found) {
-        return found;
-      }
-    }
-
-    for (const nested of Object.values(record)) {
-      const found = extractVideoUrl(nested);
-      if (found) {
-        return found;
-      }
-    }
-
-    return '';
-  };
 
   const feedbackView = useMemo(() => {
     return feedbackSummary || feedbackResult;
@@ -498,6 +728,14 @@ export function SnapsWorkspace() {
         '공유 대상이 바로 이해할 수 있게 첫 문장 확인',
         '링크 카드 제목과 설명에 과장 표현이 없는지 확인',
         '복사 후 카카오톡 채널 또는 대화방에서 수동 공유',
+      ];
+    }
+
+    if (variant.platform === 'xiaohongshu') {
+      return [
+        '제목과 첫 문장이 저장 욕구를 만드는지 확인',
+        '이미지 또는 커버 문구와 본문 톤이 맞는지 확인',
+        '복사 후 샤오홍슈 편집기에서 수동 발행',
       ];
     }
 
@@ -603,6 +841,7 @@ export function SnapsWorkspace() {
         loadSourceLibrary(),
         loadStyleExamples(),
         loadReportHistory(),
+        loadAgentTasks(),
         loadActivity(),
       ]);
       toast.show(
@@ -642,12 +881,42 @@ export function SnapsWorkspace() {
     }
   };
 
+  const loadAgentTasks = async (
+    keyword = agentTaskSearch,
+    favoriteOnly = agentFavoriteOnly
+  ) => {
+    setAgentTasksLoading(true);
+    try {
+      const params = new URLSearchParams({
+        page: '1',
+        pageSize: '8',
+      });
+      if (keyword.trim()) {
+        params.set('keyword', keyword.trim());
+      }
+      if (favoriteOnly) {
+        params.set('favoriteOnly', 'true');
+      }
+      const response = await snapsFetch(`/snaps/agent/tasks?${params.toString()}`);
+      if (!response.ok) {
+        return;
+      }
+      const payload = await response.json();
+      setAgentTasks(Array.isArray(payload.list) ? payload.list : []);
+    } catch {
+      setAgentTasks([]);
+    } finally {
+      setAgentTasksLoading(false);
+    }
+  };
+
   useEffect(() => {
     loadHealth();
     loadActivity();
     loadStyleExamples();
     loadSourceLibrary();
     loadReportHistory();
+    loadAgentTasks('', false);
     loadReplyCapabilities();
   }, []);
 
@@ -667,6 +936,227 @@ export function SnapsWorkspace() {
         ),
       };
     });
+  };
+
+  const applyPreparedAgentResult = (
+    prepared: SnapsAgentPrepareResult,
+    fallbackTitle = 'snaps agent plan'
+  ) => {
+    setSourceText(prepared.plan.sourceText || prepared.plan.command);
+    setSourceTitle(prepared.plan.topic || fallbackTitle);
+    setSourceTopic(prepared.plan.topic || '');
+    setTone(prepared.plan.tone || tone);
+    setSelectedPlatforms(
+      prepared.plan.targetPlatforms.length
+        ? prepared.plan.targetPlatforms
+        : selectedPlatforms
+    );
+    setScheduleType(prepared.plan.scheduleType || 'draft');
+    if (prepared.plan.publishDateLocal) {
+      setPublishDate(prepared.plan.publishDateLocal);
+    }
+    setResult(prepared.transform);
+    setActivePlatform(
+      prepared.transform.variants[0]?.platform ||
+        prepared.plan.targetPlatforms[0] ||
+        activePlatform
+    );
+  };
+
+  const prepareAgentCommand = async (commandOverride?: string) => {
+    const commandToPrepare = (commandOverride || agentCommand).trim();
+    if (commandToPrepare.length < 5) {
+      toast.show('에이전트 오더를 입력하세요.', 'warning');
+      return;
+    }
+    if (commandOverride) {
+      setAgentCommand(commandToPrepare);
+    }
+
+    setAgentLoading(true);
+    try {
+      const response = await snapsFetch('/snaps/agent/prepare', {
+        method: 'POST',
+        body: JSON.stringify({
+          command: commandToPrepare,
+          useRag,
+          now: new Date().toISOString(),
+          timezoneOffsetMinutes: new Date().getTimezoneOffset(),
+        }),
+      });
+      if (!response.ok) {
+        throw new Error(await readSnapsError(response));
+      }
+
+      const prepared = (await response.json()) as SnapsAgentPrepareResult;
+      setAgentResult(prepared);
+      applyPreparedAgentResult(prepared);
+      await loadAgentTasks();
+      await loadActivity();
+      toast.show('에이전트 작업 준비가 완료되었습니다.');
+    } catch (error) {
+      toast.show(
+        error instanceof Error ? error.message : '에이전트 작업 준비에 실패했습니다.',
+        'warning'
+      );
+    } finally {
+      setAgentLoading(false);
+    }
+  };
+
+  const openAgentTask = async (taskId: string) => {
+    try {
+      const response = await snapsFetch(`/snaps/agent/tasks/${taskId}`);
+      if (!response.ok) {
+        throw new Error(await readSnapsError(response));
+      }
+      const task = (await response.json()) as SnapsAgentTaskDetail;
+      setAgentResult({
+        ...task.result,
+        task,
+      });
+      applyPreparedAgentResult({ ...task.result, task }, task.title);
+      toast.show('에이전트 작업을 불러왔습니다.');
+    } catch (error) {
+      toast.show(
+        error instanceof Error ? error.message : '에이전트 작업을 불러오지 못했습니다.',
+        'warning'
+      );
+    }
+  };
+
+  const toggleAgentFavorite = async (task: SnapsAgentTaskListItem) => {
+    try {
+      const response = await snapsFetch(`/snaps/agent/tasks/${task.id}/favorite`, {
+        method: task.favorite ? 'DELETE' : 'POST',
+      });
+      if (!response.ok) {
+        throw new Error(await readSnapsError(response));
+      }
+      await loadAgentTasks();
+    } catch (error) {
+      toast.show(
+        error instanceof Error ? error.message : '즐겨찾기 변경에 실패했습니다.',
+        'warning'
+      );
+    }
+  };
+
+  const rateAgentTask = async (taskId: string, rating: number) => {
+    try {
+      const response = await snapsFetch(`/snaps/agent/tasks/${taskId}/rating`, {
+        method: 'POST',
+        body: JSON.stringify({ rating }),
+      });
+      if (!response.ok) {
+        throw new Error(await readSnapsError(response));
+      }
+      await loadAgentTasks();
+      toast.show('에이전트 작업 평가를 저장했습니다.');
+    } catch (error) {
+      toast.show(
+        error instanceof Error ? error.message : '에이전트 작업 평가에 실패했습니다.',
+        'warning'
+      );
+    }
+  };
+
+  const deleteAgentTask = async (task: SnapsAgentTaskListItem) => {
+    if (!confirmDestructive(`에이전트 작업 "${task.title}"을 삭제할까요?`)) {
+      return;
+    }
+    try {
+      const response = await snapsFetch(`/snaps/agent/tasks/${task.id}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) {
+        throw new Error(await readSnapsError(response));
+      }
+      await Promise.all([loadAgentTasks(), loadActivity()]);
+      if (agentResult?.task?.id === task.id) {
+        setAgentResult(null);
+      }
+      toast.show('에이전트 작업을 삭제했습니다.');
+    } catch (error) {
+      toast.show(
+        error instanceof Error ? error.message : '에이전트 작업 삭제에 실패했습니다.',
+        'warning'
+      );
+    }
+  };
+
+  const copyAgentBrief = async () => {
+    if (!agentResult) {
+      return;
+    }
+
+    const lines = [
+      `오더: ${agentResult.plan.command}`,
+      `대상: ${agentResult.plan.targetPlatforms.map(targetPlatformLabel).join(', ')}`,
+      agentResult.plan.scheduleType === 'schedule'
+        ? `예약: ${agentResult.plan.publishDateLocal || agentResult.plan.publishDate || '시간 미정'}`
+        : '모드: 초안',
+      agentResult.plan.includeShortVideo
+        ? `쇼츠: ${agentResult.plan.shortVideoTargetPlatforms
+            .map(targetPlatformLabel)
+            .join(', ')}`
+        : '',
+      '',
+      '작업자 브리핑',
+      ...(agentResult.plan.operatorSummary || []),
+      '',
+      '다음 액션',
+      ...agentResult.operation.nextActions.map((action) => `- ${action}`),
+      '',
+      '채널별 초안',
+      ...agentResult.transform.variants.map(
+        (variant) => [
+          `## ${variant.label}`,
+          variant.title || '',
+          variant.content,
+          variant.hashtags?.length ? variant.hashtags.join(' ') : '',
+        ]
+          .filter(Boolean)
+          .join('\n')
+      ),
+    ].filter(Boolean);
+
+    await navigator.clipboard.writeText(lines.join('\n'));
+    toast.show('에이전트 브리프를 복사했습니다.');
+  };
+
+  const sendAgentShortsToMedia = () => {
+    if (!agentResult?.plan.includeShortVideo) {
+      toast.show('쇼츠가 포함된 에이전트 작업이 아닙니다.', 'warning');
+      return;
+    }
+
+    const videoTargets = agentResult.plan.shortVideoTargetPlatforms.filter(
+      (platform): platform is 'instagram' | 'youtube' | 'tiktok' =>
+        platform === 'instagram' || platform === 'youtube' || platform === 'tiktok'
+    );
+    const videoResult = agentResult.video
+      ? {
+          ...agentResult.video,
+          status: agentResult.video.status || 'script-ready',
+        }
+      : undefined;
+
+    window.localStorage.setItem(
+      snapsShortsHandoffKey,
+      JSON.stringify({
+        sourceText: agentResult.plan.sourceText,
+        durationSeconds: 45,
+        scriptPlatform: agentResult.plan.shortVideoPlatform,
+        targetPlatforms: videoTargets.length ? videoTargets : ['youtube'],
+        scheduleType: agentResult.plan.scheduleType,
+        publishDate: agentResult.plan.publishDateLocal || publishDate,
+        videoResult,
+        createdAt: new Date().toISOString(),
+      })
+    );
+    toast.show('쇼츠 작업대로 보냈습니다.');
+    router.push('/media');
   };
 
   const formatVariantPlainText = (variant: SnapsVariant) => {
@@ -816,6 +1306,7 @@ export function SnapsWorkspace() {
         body: JSON.stringify({
           variants: variantsForDraft,
           scheduleType,
+          operatorConfirmed: scheduleType === 'schedule',
           ...(publishDateIso ? { publishDate: publishDateIso } : {}),
           integrations: integrationsToUse,
         }),
@@ -1505,135 +1996,6 @@ export function SnapsWorkspace() {
     }
   };
 
-  const generateShorts = async (generateVideo: boolean) => {
-    if (sourceText.trim().length < 5) {
-      toast.show('쇼츠 대본으로 만들 원문을 입력하세요.', 'warning');
-      return;
-    }
-
-    if (
-      generateVideo &&
-      !confirmOperatorAction('Pixelle에 쇼츠 생성 작업을 요청할까요?')
-    ) {
-      return;
-    }
-
-    setVideoLoading(true);
-    try {
-      const response = await snapsFetch(
-        generateVideo ? '/snaps/video/generate-short' : '/snaps/video/script',
-        {
-          method: 'POST',
-          body: JSON.stringify({
-            sourceText,
-            durationSeconds: 45,
-            platform: 'youtube',
-          }),
-        }
-      );
-      if (!response.ok) {
-        throw new Error(await readSnapsError(response));
-      }
-      const data = await response.json();
-      setVideoResult(data);
-      const foundVideoUrl = extractVideoUrl(data);
-      if (foundVideoUrl) {
-        setVideoUrl(foundVideoUrl);
-      }
-      await loadActivity();
-      toast.show(generateVideo ? 'Pixelle 쇼츠 요청을 처리했습니다.' : '쇼츠 대본을 생성했습니다.');
-    } catch (error) {
-      toast.show(
-        error instanceof Error ? error.message : '쇼츠 생성에 실패했습니다.',
-        'warning'
-      );
-    } finally {
-      setVideoLoading(false);
-    }
-  };
-
-  const attachShortsToDraft = async () => {
-    if (!videoUrl.trim()) {
-      toast.show('첨부할 영상 URL을 입력하세요.', 'warning');
-      return;
-    }
-
-    const targetPlatformsForVideo = (['instagram', 'youtube', 'tiktok'] as TargetPlatform[])
-      .filter((platform) => selectedPlatforms.includes(platform))
-      .filter((platform) => connectedByPlatform[platform]?.id);
-
-    if (!targetPlatformsForVideo.length) {
-      toast.show('Instagram, YouTube, TikTok 중 연결된 채널이 필요합니다.', 'warning');
-      return;
-    }
-
-    setVideoDrafting(true);
-    try {
-      let publishDateIso: string | undefined;
-      if (scheduleType === 'schedule') {
-        const parsedPublishDate = new Date(publishDate);
-        if (Number.isNaN(parsedPublishDate.getTime())) {
-          toast.show('쇼츠 예약 시간을 입력하세요.', 'warning');
-          setVideoDrafting(false);
-          return;
-        }
-        publishDateIso = parsedPublishDate.toISOString();
-      }
-
-      if (
-        scheduleType === 'schedule' &&
-        !confirmOperatorAction(
-          `연결된 쇼츠 채널 ${targetPlatformsForVideo.length}개에 예약 게시물을 만들까요?`
-        )
-      ) {
-        setVideoDrafting(false);
-        return;
-      }
-
-      const response = await snapsFetch('/snaps/video/attach-to-draft', {
-        method: 'POST',
-        body: JSON.stringify({
-          videoUrl,
-          thumbnail: videoThumbnail || undefined,
-          title: shortsScript?.uploadMetadata?.title || shortsScript?.title || 'snaps 쇼츠',
-          caption:
-            shortsScript?.caption ||
-            shortsScript?.uploadMetadata?.description ||
-            shortsScript?.narration ||
-            sourceText,
-          saveToMediaLibrary: saveVideoToMediaLibrary,
-          scheduleType,
-          ...(publishDateIso ? { publishDate: publishDateIso } : {}),
-          targetPlatforms: targetPlatformsForVideo,
-          integrations: targetPlatformsForVideo.map((platform) => ({
-            platform,
-            integrationId: connectedByPlatform[platform].id,
-          })),
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(await readSnapsError(response));
-      }
-
-      await response.json();
-      await loadActivity();
-      toast.show(
-        scheduleType === 'schedule'
-          ? '쇼츠 영상을 연결된 채널 예약 게시물에 첨부했습니다.'
-          : '쇼츠 영상을 연결된 채널 초안에 첨부했습니다.'
-      );
-      router.push('/launches?display=list');
-    } catch (error) {
-      toast.show(
-        error instanceof Error ? error.message : '쇼츠 초안 생성에 실패했습니다.',
-        'warning'
-      );
-    } finally {
-      setVideoDrafting(false);
-    }
-  };
-
   return (
     <div className="flex-1 flex flex-col gap-[16px] text-newTextColor">
       <div className="flex flex-col gap-[6px]">
@@ -1643,8 +2005,274 @@ export function SnapsWorkspace() {
         </div>
       </div>
 
+      <section className="grid grid-cols-[minmax(0,1fr)_minmax(300px,0.72fr)] maxMedia:grid-cols-1 gap-[14px]">
+        <div className="bg-newBgColorInner border border-newBorder rounded-[8px] p-[18px] flex flex-col gap-[14px]">
+          <div className="flex items-center justify-between gap-[10px]">
+            <div>
+              <div className="text-[16px] font-[700]">빠른 변환</div>
+              <div className="text-[12px] text-textItemBlur mt-[3px]">
+                입력, 채널 선택, 변환만 먼저 처리합니다.
+              </div>
+            </div>
+            <div
+              className={clsx(
+                'text-[11px] px-[8px] py-[4px] rounded-[999px]',
+                result?.provider === 'ollama'
+                  ? 'bg-emerald-500/15 text-emerald-300'
+                  : 'bg-newBgLineColor text-textItemBlur'
+              )}
+            >
+              {result ? `${result.provider} · ${result.model}` : '대기'}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-[1fr_160px] maxMedia:grid-cols-1 gap-[8px]">
+            <input
+              value={sourceTopic}
+              onChange={(event) => setSourceTopic(event.target.value)}
+              className="h-[40px] bg-newBgLineColor border border-newBorder rounded-[8px] px-[12px] text-[12px]"
+              placeholder="주제 / 캠페인"
+            />
+            <Button
+              secondary
+              loading={savingSource}
+              onClick={saveSource}
+              className="rounded-[8px] !h-[40px]"
+            >
+              원문 저장
+            </Button>
+          </div>
+
+          <textarea
+            value={sourceText}
+            onChange={(event) => setSourceText(event.target.value)}
+            className="min-h-[210px] resize-none bg-newBgLineColor border border-newBorder rounded-[8px] p-[14px] text-[14px] leading-[1.7]"
+            placeholder="전환할 원문 콘텐츠를 붙여넣으세요."
+          />
+
+          <div className="flex flex-col gap-[8px]">
+            <div className="flex items-center justify-between gap-[10px]">
+              <div className="text-[13px] font-[700]">전환 채널</div>
+              <div className="flex flex-wrap justify-end gap-[6px]">
+                <button
+                  type="button"
+                  onClick={() => setSelectedPlatforms(['threads', 'instagram', 'naver-blog'])}
+                  className="h-[28px] rounded-[8px] bg-btnSimple px-[9px] text-[11px] text-textItemBlur hover:text-newTextColor"
+                >
+                  기본
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedPlatforms(['instagram', 'youtube', 'tiktok'])}
+                  className="h-[28px] rounded-[8px] bg-btnSimple px-[9px] text-[11px] text-textItemBlur hover:text-newTextColor"
+                >
+                  숏폼
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedPlatforms(['linkedin', 'naver-blog', 'kakao-talk'])}
+                  className="h-[28px] rounded-[8px] bg-btnSimple px-[9px] text-[11px] text-textItemBlur hover:text-newTextColor"
+                >
+                  업무형
+                </button>
+              </div>
+            </div>
+            <div className="grid grid-cols-5 maxMedia:grid-cols-2 gap-[8px]">
+              {targetPlatforms.map((platform) => {
+                const selected = selectedPlatforms.includes(platform.id);
+                const guide = platformGuides[platform.id];
+                return (
+                  <button
+                    type="button"
+                    key={platform.id}
+                    onClick={() => togglePlatform(platform.id)}
+                    className={clsx(
+                      'min-h-[74px] rounded-[8px] border p-[9px] text-left transition-colors',
+                      selected
+                        ? 'bg-btnPrimary text-white border-btnPrimary'
+                        : 'bg-newBgLineColor border-newBorder text-textItemBlur hover:text-newTextColor'
+                    )}
+                  >
+                    <div className="text-[12px] font-[700]">{platform.label}</div>
+                    <div className={clsx('mt-[5px] text-[11px] leading-[1.35]', selected ? 'text-white/80' : 'text-textItemBlur')}>
+                      {guide.concept}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <details className="rounded-[8px] border border-newBorder bg-newBgLineColor p-[12px]">
+            <summary className="cursor-pointer text-[12px] font-[700]">
+              세부 옵션
+            </summary>
+            <div className="mt-[10px] grid grid-cols-[1fr_auto] maxMedia:grid-cols-1 gap-[10px]">
+              <input
+                value={tone}
+                onChange={(event) => setTone(event.target.value)}
+                className="h-[40px] bg-newBgColorInner border border-newBorder rounded-[8px] px-[12px] text-[12px]"
+                placeholder="톤"
+              />
+              <label className="h-[40px] flex items-center gap-[8px] text-[12px] text-textItemBlur">
+                <input
+                  type="checkbox"
+                  checked={useRag}
+                  onChange={(event) => setUseRag(event.target.checked)}
+                />
+                RAG 스타일 예시
+              </label>
+            </div>
+          </details>
+
+          <div className="grid grid-cols-[1fr_150px] maxMedia:grid-cols-1 gap-[10px]">
+            <Button
+              loading={loading}
+              onClick={transform}
+              className="rounded-[8px] !h-[46px]"
+            >
+              AI 변환
+            </Button>
+            <Button
+              secondary
+              loading={drafting}
+              onClick={createDrafts}
+              className="rounded-[8px] !h-[46px]"
+            >
+              초안 생성
+            </Button>
+          </div>
+        </div>
+
+        <div className="bg-newBgColorInner border border-newBorder rounded-[8px] p-[18px] flex flex-col gap-[14px] min-h-[520px]">
+          <div className="flex items-center justify-between gap-[10px]">
+            <div>
+              <div className="text-[16px] font-[700]">결과 미리보기</div>
+              <div className="text-[12px] text-textItemBlur mt-[3px]">
+                채널 감각을 확인하고 바로 복사합니다.
+              </div>
+            </div>
+            <div className="flex gap-[8px]">
+              <button
+                type="button"
+                onClick={copyActive}
+                disabled={!activeVariant}
+                className="h-[34px] px-[12px] rounded-[8px] bg-btnSimple text-[12px] disabled:opacity-40"
+              >
+                복사
+              </button>
+              <button
+                type="button"
+                onClick={copyActiveMarkdown}
+                disabled={!activeVariant}
+                className="h-[34px] px-[12px] rounded-[8px] bg-btnSimple text-[12px] disabled:opacity-40"
+              >
+                MD
+              </button>
+            </div>
+          </div>
+
+          <div className="flex gap-[8px] overflow-x-auto pb-[4px]">
+            {(result?.variants || []).map((variant) => (
+              <button
+                type="button"
+                key={variant.platform}
+                onClick={() => setActivePlatform(variant.platform)}
+                className={clsx(
+                  'h-[34px] px-[12px] rounded-[8px] text-[12px] whitespace-nowrap border',
+                  activeVariant?.platform === variant.platform
+                    ? 'bg-btnPrimary border-btnPrimary text-white'
+                    : 'bg-newBgLineColor border-newBorder text-textItemBlur'
+                )}
+              >
+                {variant.label}
+              </button>
+            ))}
+          </div>
+
+          {!activeVariant ? (
+            <div className="flex-1 rounded-[8px] border border-dashed border-newBorder bg-newBgLineColor flex items-center justify-center text-textItemBlur text-[14px] text-center px-[18px]">
+              변환 결과가 여기에 표시됩니다.
+            </div>
+          ) : (
+            <div className="flex-1 min-h-0 flex flex-col gap-[12px]">
+              <div className="grid grid-cols-3 gap-[8px] text-[11px]">
+                <div className="rounded-[8px] border border-newBorder bg-newBgLineColor p-[9px]">
+                  <div className="text-textItemBlur">컨셉</div>
+                  <div className="mt-[4px] font-[700]">
+                    {platformGuides[activeVariant.platform].concept}
+                  </div>
+                </div>
+                <div className="rounded-[8px] border border-newBorder bg-newBgLineColor p-[9px]">
+                  <div className="text-textItemBlur">작성 포인트</div>
+                  <div className="mt-[4px] line-clamp-2">
+                    {platformGuides[activeVariant.platform].cue}
+                  </div>
+                </div>
+                <div className="rounded-[8px] border border-newBorder bg-newBgLineColor p-[9px]">
+                  <div className="text-textItemBlur">제약</div>
+                  <div className="mt-[4px]">
+                    {platformGuides[activeVariant.platform].limit}
+                  </div>
+                </div>
+              </div>
+
+              <input
+                value={activeVariant.title || ''}
+                onChange={(event) =>
+                  updateVariant(activeVariant.platform, {
+                    title: event.target.value,
+                  })
+                }
+                className="h-[40px] bg-newBgLineColor border border-newBorder rounded-[8px] px-[12px] text-[13px]"
+                placeholder="제목"
+              />
+              <textarea
+                value={activeVariant.content}
+                onChange={(event) =>
+                  updateVariant(activeVariant.platform, {
+                    content: event.target.value,
+                  })
+                }
+                className="flex-1 min-h-[230px] resize-none bg-newBgLineColor border border-newBorder rounded-[8px] p-[14px] text-[14px] leading-[1.7]"
+              />
+              <input
+                value={activeVariant.hashtags?.join(' ') || ''}
+                onChange={(event) =>
+                  updateVariant(activeVariant.platform, {
+                    hashtags: event.target.value
+                      .split(/\s+/)
+                      .map((tag) => tag.trim())
+                      .filter(Boolean),
+                  })
+                }
+                className="h-[40px] bg-newBgLineColor border border-newBorder rounded-[8px] px-[12px] text-[12px]"
+                placeholder="#태그"
+              />
+              {!!activeVariant.notes?.length && (
+                <div className="rounded-[8px] border border-newBorder bg-newBgLineColor p-[10px] text-[12px] leading-[1.5] text-textItemBlur">
+                  {activeVariant.notes[0]}
+                </div>
+              )}
+            </div>
+          )}
+
+          {!!result?.warnings?.length && (
+            <div className="rounded-[8px] border border-amber-500/30 bg-amber-500/10 p-[10px] text-[12px] text-amber-200">
+              {result.warnings[0]}
+            </div>
+          )}
+        </div>
+      </section>
+
+      <details className="bg-newBgColorInner border border-newBorder rounded-[8px] p-[14px]">
+        <summary className="cursor-pointer text-[13px] font-[700]">
+          고급 편집 및 운영 도구
+        </summary>
+        <div className="mt-[14px] flex flex-col gap-[16px]">
+
       <div className="grid grid-cols-[1fr_auto] maxMedia:grid-cols-1 gap-[12px] bg-newBgColorInner border border-newBorder rounded-[8px] p-[14px]">
-        <div className="grid grid-cols-7 maxMedia:grid-cols-2 gap-[10px] text-[12px]">
+        <div className="grid grid-cols-6 maxMedia:grid-cols-2 gap-[10px] text-[12px]">
           <div>
             <div className="text-textItemBlur">Ollama</div>
             <div className={health?.ollama?.ok ? 'text-emerald-300' : 'text-amber-300'}>
@@ -1668,10 +2296,6 @@ export function SnapsWorkspace() {
           <div>
             <div className="text-textItemBlur">RAG</div>
             <div>{health?.rag?.enabled ? `${health.rag.topK}개 참조` : '꺼짐'}</div>
-          </div>
-          <div>
-            <div className="text-textItemBlur">Pixelle</div>
-            <div>{health?.pixelle?.configured ? '연결됨' : '대본만'}</div>
           </div>
           <div>
             <div className="text-textItemBlur">네이버 카페</div>
@@ -1700,6 +2324,493 @@ export function SnapsWorkspace() {
           </Button>
         </div>
       </div>
+
+      <section className="bg-newBgColorInner border border-newBorder rounded-[8px] p-[14px] flex flex-col gap-[12px]">
+        <div className="flex items-center justify-between gap-[10px]">
+          <div className="text-[16px] font-[700]">에이전트 오더</div>
+          <div className="text-[11px] px-[8px] py-[4px] rounded-[999px] bg-amber-500/15 text-amber-200">
+            컨펌 전 게시 차단
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-[6px]">
+          {agentCommandTemplates.map((template) => (
+            <button
+              type="button"
+              key={template.label}
+              onClick={() => setAgentCommand(template.command)}
+              className="h-[30px] rounded-[8px] bg-btnSimple px-[10px] text-[11px] text-textItemBlur hover:text-newTextColor"
+            >
+              {template.label}
+            </button>
+          ))}
+        </div>
+        <div className="grid grid-cols-[1fr_132px] maxMedia:grid-cols-1 gap-[8px]">
+          <textarea
+            value={agentCommand}
+            onChange={(event) => setAgentCommand(event.target.value)}
+            className="min-h-[84px] resize-none bg-newBgLineColor border border-newBorder rounded-[8px] p-[12px] text-[13px] leading-[1.6]"
+            placeholder="내일 10시에 인공지능 관련 게시글 작성해서 인스타, 스레드, 링크드인에 올려줘."
+          />
+          <Button
+            loading={agentLoading}
+            onClick={() => prepareAgentCommand()}
+            className="rounded-[8px] !h-[42px] self-start"
+          >
+            작업 준비
+          </Button>
+        </div>
+        {agentResult && (
+          <div className="grid grid-cols-[minmax(0,1fr)_minmax(240px,0.65fr)] maxMedia:grid-cols-1 gap-[10px]">
+            <div className="rounded-[8px] border border-newBorder bg-newBgLineColor p-[12px]">
+              <div className="text-[12px] text-textItemBlur">실행 대상</div>
+              <div className="mt-[6px] flex flex-wrap gap-[6px] text-[12px]">
+                {agentResult.plan.targetPlatforms.map((platform) => (
+                  <span key={platform} className="rounded-[999px] bg-btnSimple px-[8px] py-[5px]">
+                    {targetPlatformLabel(platform)}
+                  </span>
+                ))}
+              </div>
+              <div className="mt-[10px] text-[12px] leading-[1.5] text-textItemBlur">
+                {agentResult.plan.scheduleType === 'schedule'
+                  ? `예약 예정: ${agentResult.plan.publishDateLocal || agentResult.plan.publishDate || '시간 미정'}`
+                  : '초안으로 준비됨'}
+                {agentResult.plan.includeShortVideo
+                  ? ` · 쇼츠: ${agentResult.plan.shortVideoTargetPlatforms.join(', ')} / ${
+                      agentResult.video?.status || 'script-ready'
+                    }`
+                  : ''}
+              </div>
+            </div>
+            <div className="rounded-[8px] border border-newBorder bg-newBgLineColor p-[12px]">
+              <div className="text-[12px] text-textItemBlur">체크포인트</div>
+              <div className="mt-[8px] flex flex-col gap-[6px]">
+                {(agentResult.plan.executionPlan || []).slice(0, 4).map((step) => (
+                  <div key={`${step.label}-${step.detail}`} className="text-[12px] leading-[1.45]">
+                    <span className={step.status === 'needs-confirmation' ? 'text-amber-200' : 'text-emerald-300'}>
+                      {step.status === 'needs-confirmation' ? '확인' : '준비'}
+                    </span>
+                    <span className="mx-[6px] text-textItemBlur">/</span>
+                    <span>{step.label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="col-span-2 maxMedia:col-span-1 rounded-[8px] border border-newBorder bg-newBgLineColor p-[12px] flex flex-col gap-[12px]">
+              <div className="grid grid-cols-[minmax(0,1fr)_auto] maxMedia:grid-cols-1 gap-[10px]">
+                <div>
+                  <div className="text-[12px] font-[700]">작업자 브리핑</div>
+                  <div className="mt-[7px] flex flex-col gap-[5px] text-[12px] leading-[1.5] text-textItemBlur">
+                    {(agentResult.plan.operatorSummary || [
+                      agentResult.operation.headline,
+                    ])
+                      .slice(0, 4)
+                      .map((item) => (
+                        <div key={item}>{item}</div>
+                      ))}
+                  </div>
+                </div>
+                <div className="flex flex-wrap justify-end content-start gap-[6px]">
+                  <Button
+                    secondary
+                    loading={savingSource}
+                    onClick={saveSource}
+                    className="rounded-[8px] !h-[34px]"
+                  >
+                    원문 저장
+                  </Button>
+                  <Button
+                    secondary
+                    onClick={copyAgentBrief}
+                    className="rounded-[8px] !h-[34px]"
+                  >
+                    브리프 복사
+                  </Button>
+                  {agentResult.plan.includeShortVideo && (
+                    <Button
+                      secondary
+                      onClick={sendAgentShortsToMedia}
+                      className="rounded-[8px] !h-[34px]"
+                    >
+                      쇼츠 작업
+                    </Button>
+                  )}
+                  <Button
+                    loading={drafting}
+                    onClick={createDrafts}
+                    className="rounded-[8px] !h-[34px]"
+                  >
+                    {scheduleType === 'schedule' ? '예약 생성' : '초안 생성'}
+                  </Button>
+                </div>
+              </div>
+              {agentReadinessSummary && (
+                <div className="grid grid-cols-4 maxMedia:grid-cols-2 gap-[8px]">
+                  <div className="rounded-[8px] border border-newBorder bg-newBgColorInner p-[9px] text-[11px]">
+                    <div className="text-textItemBlur">연결 채널</div>
+                    <div className="mt-[4px] text-[15px] font-[700]">
+                      {agentReadinessSummary.connectedCount}/
+                      {agentReadinessSummary.schedulableCount}
+                    </div>
+                  </div>
+                  <div className="rounded-[8px] border border-newBorder bg-newBgColorInner p-[9px] text-[11px]">
+                    <div className="text-textItemBlur">수동 보조</div>
+                    <div className="mt-[4px] line-clamp-2">
+                      {agentReadinessSummary.manualPlatforms.length
+                        ? agentReadinessSummary.manualPlatforms.join(', ')
+                        : '없음'}
+                    </div>
+                  </div>
+                  <div className="rounded-[8px] border border-newBorder bg-newBgColorInner p-[9px] text-[11px]">
+                    <div className="text-textItemBlur">확인 필요</div>
+                    <div
+                      className={clsx(
+                        'mt-[4px] line-clamp-2',
+                        agentReadinessSummary.missingInputs.length
+                          ? 'text-amber-200'
+                          : 'text-emerald-300'
+                      )}
+                    >
+                      {agentReadinessSummary.missingInputs.length
+                        ? agentReadinessSummary.missingInputs.slice(0, 3).join(', ')
+                        : '없음'}
+                    </div>
+                  </div>
+                  <div className="rounded-[8px] border border-newBorder bg-newBgColorInner p-[9px] text-[11px]">
+                    <div className="text-textItemBlur">주의 카드</div>
+                    <div className="mt-[4px] text-[15px] font-[700]">
+                      {agentReadinessSummary.attentionCount}
+                    </div>
+                  </div>
+                </div>
+              )}
+              {!!agentReadinessSummary?.confirmationItems.length && (
+                <div className="grid grid-cols-5 maxMedia:grid-cols-1 gap-[8px]">
+                  {agentReadinessSummary.confirmationItems.map((item) => (
+                    <div
+                      key={item.id}
+                      className="rounded-[8px] border border-newBorder bg-newBgColorInner p-[9px] text-[11px] leading-[1.45]"
+                    >
+                      <div className="flex items-center justify-between gap-[6px]">
+                        <span className="font-[700]">{item.label}</span>
+                        <span
+                          className={clsx(
+                            item.status === 'ready'
+                              ? 'text-emerald-300'
+                              : item.status === 'manual'
+                              ? 'text-sky-200'
+                              : 'text-amber-200'
+                          )}
+                        >
+                          {item.status === 'ready'
+                            ? '준비'
+                            : item.status === 'manual'
+                            ? '수동'
+                            : '확인'}
+                        </span>
+                      </div>
+                      <div className="mt-[5px] text-textItemBlur">{item.detail}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="col-span-2 maxMedia:col-span-1 rounded-[8px] border border-newBorder bg-newBgLineColor p-[12px] flex flex-col gap-[10px]">
+              <div className="flex items-center justify-between gap-[10px]">
+                <div>
+                  <div className="text-[12px] font-[700]">작업 상태</div>
+                  <div className="mt-[3px] text-[11px] text-textItemBlur">
+                    {agentResult.operation.headline}
+                  </div>
+                </div>
+                <div className="text-[18px] font-[700]">
+                  {agentResult.operation.progress}%
+                </div>
+              </div>
+              <div className="h-[7px] rounded-[999px] bg-black/20 overflow-hidden">
+                <div
+                  className="h-full rounded-[999px] bg-btnPrimary"
+                  style={{ width: `${agentResult.operation.progress}%` }}
+                />
+              </div>
+              <div className="grid grid-cols-5 maxMedia:grid-cols-1 gap-[8px]">
+                {agentResult.operation.progressSteps.map((step) => (
+                  <div
+                    key={step.id}
+                    className="rounded-[8px] border border-newBorder bg-newBgColorInner p-[9px] text-[11px] leading-[1.4]"
+                  >
+                    <div className="flex items-center justify-between gap-[6px]">
+                      <span className="font-[700]">{step.label}</span>
+                      <span
+                        className={clsx(
+                          step.status === 'done'
+                            ? 'text-emerald-300'
+                            : step.status === 'active'
+                            ? 'text-amber-200'
+                            : step.status === 'blocked'
+                            ? 'text-red-300'
+                            : 'text-textItemBlur'
+                        )}
+                      >
+                        {step.status === 'done'
+                          ? '완료'
+                          : step.status === 'active'
+                          ? '진행'
+                          : step.status === 'blocked'
+                          ? '막힘'
+                          : '대기'}
+                      </span>
+                    </div>
+                    <div className="mt-[5px] text-textItemBlur">{step.detail}</div>
+                  </div>
+                ))}
+              </div>
+              {!!agentResult.operation.platformReadiness.length && (
+                <div className="grid grid-cols-3 maxMedia:grid-cols-1 gap-[8px]">
+                  {agentResult.operation.platformReadiness.map((item) => (
+                    <div
+                      key={item.platform}
+                      className="rounded-[8px] border border-newBorder bg-newBgColorInner p-[9px] text-[11px] leading-[1.45]"
+                    >
+                      <div className="flex items-center justify-between gap-[6px]">
+                        <span className="font-[700]">{item.label}</span>
+                        <span
+                          className={clsx(
+                            item.status === 'ready'
+                              ? 'text-emerald-300'
+                              : item.status === 'manual'
+                              ? 'text-sky-200'
+                              : 'text-amber-200'
+                          )}
+                        >
+                          {item.status === 'ready'
+                            ? '준비'
+                            : item.status === 'manual'
+                            ? '수동'
+                            : '확인'}
+                        </span>
+                      </div>
+                      <div className="mt-[5px] text-textItemBlur">
+                        {item.checks.slice(0, 2).join(' / ')}
+                      </div>
+                      {!!item.blockers.length && (
+                        <div className="mt-[6px] text-amber-200">
+                          {item.blockers[0]}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            {agentResult.plan.marketingStrategy && (
+              <div className="col-span-2 maxMedia:col-span-1 rounded-[8px] border border-newBorder bg-newBgLineColor p-[12px] flex flex-col gap-[12px]">
+                <div className="flex items-center justify-between gap-[10px]">
+                  <div className="text-[12px] font-[700]">AiToEarn식 운영맵</div>
+                  <div className="flex flex-wrap justify-end gap-[5px] text-[10px] text-textItemBlur">
+                    {agentResult.plan.marketingStrategy.revenueModels.map((model) => (
+                      <span key={model} className="rounded-[999px] bg-btnSimple px-[7px] py-[4px]">
+                        {model}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <div className="grid grid-cols-4 maxMedia:grid-cols-2 gap-[8px]">
+                  {agentResult.plan.marketingStrategy.lanes.map((lane) => (
+                    <div
+                      key={lane.lane}
+                      className="rounded-[8px] border border-newBorder bg-newBgColorInner p-[10px] text-[11px] leading-[1.45] break-words"
+                    >
+                      <div className="flex items-center justify-between gap-[6px]">
+                        <span className="text-[12px] font-[700]">{lane.label}</span>
+                        <span
+                          className={clsx(
+                            'text-[10px]',
+                            lane.status === 'needs-confirmation'
+                              ? 'text-amber-200'
+                              : lane.status === 'manual'
+                              ? 'text-sky-200'
+                              : 'text-emerald-300'
+                          )}
+                        >
+                          {lane.status === 'needs-confirmation'
+                            ? '컨펌'
+                            : lane.status === 'manual'
+                            ? '수동'
+                            : '준비'}
+                        </span>
+                      </div>
+                      <div className="mt-[6px] text-textItemBlur">{lane.goal}</div>
+                      {!!lane.kpis.length && (
+                        <div className="mt-[8px] flex flex-wrap gap-[5px]">
+                          {lane.kpis.slice(0, 3).map((kpi) => (
+                            <span key={kpi} className="rounded-[999px] bg-btnSimple px-[6px] py-[3px]">
+                              {kpi}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <div className="grid grid-cols-2 maxMedia:grid-cols-1 gap-[8px]">
+                  <div className="rounded-[8px] border border-newBorder bg-newBgColorInner p-[10px]">
+                    <div className="text-[11px] font-[700] mb-[7px]">고전환 신호</div>
+                    <div className="flex flex-col gap-[6px]">
+                      {agentResult.plan.marketingStrategy.engagementSignals
+                        .slice(0, 4)
+                        .map((signal) => (
+                          <div key={signal.id} className="text-[11px] leading-[1.45]">
+                            <span
+                              className={clsx(
+                                signal.priority === 'high'
+                                  ? 'text-amber-200'
+                                  : 'text-textItemBlur'
+                              )}
+                            >
+                              {signal.label}
+                            </span>
+                            <span className="mx-[5px] text-textItemBlur">/</span>
+                            <span>{signal.action}</span>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                  <div className="rounded-[8px] border border-newBorder bg-newBgColorInner p-[10px]">
+                    <div className="text-[11px] font-[700] mb-[7px]">배치 아이디어</div>
+                    <div className="flex flex-col gap-[6px] text-[11px] leading-[1.45]">
+                      {agentResult.plan.marketingStrategy.batchIdeas
+                        .slice(0, 4)
+                        .map((idea) => (
+                          <div key={idea}>{idea}</div>
+                        ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+        <div className="rounded-[8px] border border-newBorder bg-newBgLineColor p-[12px] flex flex-col gap-[10px]">
+          <div className="flex items-center justify-between gap-[10px]">
+            <div className="text-[12px] font-[700]">에이전트 작업 히스토리</div>
+            <div className="flex gap-[6px]">
+              <button
+                type="button"
+                onClick={() => {
+                  const next = !agentFavoriteOnly;
+                  setAgentFavoriteOnly(next);
+                  loadAgentTasks(agentTaskSearch, next);
+                }}
+                className={clsx(
+                  'h-[30px] rounded-[8px] px-[9px] text-[11px]',
+                  agentFavoriteOnly ? 'bg-btnPrimary text-white' : 'bg-btnSimple'
+                )}
+              >
+                즐겨찾기
+              </button>
+              <button
+                type="button"
+                onClick={() => loadAgentTasks()}
+                className="h-[30px] rounded-[8px] bg-btnSimple px-[9px] text-[11px]"
+              >
+                새로고침
+              </button>
+            </div>
+          </div>
+          <div className="grid grid-cols-[1fr_86px] maxMedia:grid-cols-1 gap-[8px]">
+            <input
+              value={agentTaskSearch}
+              onChange={(event) => setAgentTaskSearch(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                  loadAgentTasks(agentTaskSearch, agentFavoriteOnly);
+                }
+              }}
+              className="h-[36px] bg-newBgColorInner border border-newBorder rounded-[8px] px-[10px] text-[12px]"
+              placeholder="작업 제목, 오더, 주제 검색"
+            />
+            <Button
+              secondary
+              loading={agentTasksLoading}
+              onClick={() => loadAgentTasks(agentTaskSearch, agentFavoriteOnly)}
+              className="rounded-[8px] !h-[36px]"
+            >
+              검색
+            </Button>
+          </div>
+          <div className="grid grid-cols-4 maxMedia:grid-cols-1 gap-[8px]">
+            {agentTasks.map((task) => (
+              <div
+                key={task.id}
+                className="rounded-[8px] border border-newBorder bg-newBgColorInner p-[10px] text-[11px] leading-[1.45] flex flex-col gap-[8px]"
+              >
+                <div className="flex items-start justify-between gap-[8px]">
+                  <button
+                    type="button"
+                    onClick={() => openAgentTask(task.id)}
+                    className="text-left font-[700] hover:text-textColor line-clamp-2"
+                  >
+                    {task.title}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => toggleAgentFavorite(task)}
+                    className={task.favorite ? 'text-amber-200' : 'text-textItemBlur'}
+                  >
+                    {task.favorite ? '★' : '☆'}
+                  </button>
+                </div>
+                <div className="h-[5px] rounded-[999px] bg-black/20 overflow-hidden">
+                  <div
+                    className="h-full rounded-[999px] bg-btnPrimary"
+                    style={{ width: `${Math.max(0, Math.min(100, task.progress || 0))}%` }}
+                  />
+                </div>
+                <div className="flex flex-wrap gap-[5px] text-textItemBlur">
+                  <span>{task.platformCount}채널</span>
+                  {task.shortVideo && <span>쇼츠</span>}
+                  {task.publishDateLocal && <span>{task.publishDateLocal.replace('T', ' ')}</span>}
+                </div>
+                <div className="flex items-center justify-between gap-[6px]">
+                  <div className="flex gap-[3px]">
+                    {[1, 2, 3, 4, 5].map((rating) => (
+                      <button
+                        type="button"
+                        key={rating}
+                        onClick={() => rateAgentTask(task.id, rating)}
+                        className={Number(task.rating || 0) >= rating ? 'text-amber-200' : 'text-textItemBlur'}
+                      >
+                        ★
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex gap-[7px]">
+                    <button
+                      type="button"
+                      onClick={() => prepareAgentCommand(task.command)}
+                      className="text-textItemBlur hover:text-newTextColor"
+                    >
+                      재실행
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => deleteAgentTask(task)}
+                      className="text-textItemBlur hover:text-red-300"
+                    >
+                      삭제
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+            {!agentTasks.length && (
+              <div className="rounded-[8px] border border-dashed border-newBorder bg-newBgColorInner p-[12px] text-[12px] text-textItemBlur">
+                저장된 에이전트 작업이 없습니다.
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
 
       <details className="bg-newBgColorInner border border-newBorder rounded-[8px] p-[14px]">
         <summary className="cursor-pointer text-[13px] font-[700]">
@@ -1990,27 +3101,6 @@ export function SnapsWorkspace() {
             </div>
           </div>
 
-          <div className="border-t border-newBorder pt-[14px] flex flex-col gap-[10px]">
-            <div className="text-[14px] font-[700]">쇼츠</div>
-            <div className="grid grid-cols-[1fr_1fr] gap-[8px]">
-              <Button
-                secondary
-                loading={videoLoading}
-                onClick={() => generateShorts(false)}
-                className="rounded-[8px] !h-[38px]"
-              >
-                대본 생성
-              </Button>
-              <Button
-                secondary
-                loading={videoLoading}
-                onClick={() => generateShorts(true)}
-                className="rounded-[8px] !h-[38px]"
-              >
-                Pixelle 요청
-              </Button>
-            </div>
-          </div>
         </section>
 
         <section className="bg-newBgColorInner border border-newBorder rounded-[8px] p-[18px] flex flex-col gap-[14px] min-h-[620px]">
@@ -2369,105 +3459,6 @@ export function SnapsWorkspace() {
 
         <section className="bg-newBgColorInner border border-newBorder rounded-[8px] p-[18px] flex flex-col gap-[12px]">
           <div className="flex items-center justify-between gap-[10px]">
-            <div className="text-[16px] font-[700]">Pixelle 쇼츠 결과</div>
-            <Button
-              secondary
-              loading={videoDrafting}
-              onClick={attachShortsToDraft}
-              className="rounded-[8px] !h-[36px]"
-            >
-              {scheduleType === 'schedule' ? '예약 첨부' : '초안 첨부'}
-            </Button>
-          </div>
-          <div className="grid grid-cols-2 gap-[8px]">
-            <input
-              value={videoUrl}
-              onChange={(event) => setVideoUrl(event.target.value)}
-              className="h-[38px] bg-newBgLineColor border border-newBorder rounded-[8px] px-[10px] text-[12px]"
-              placeholder="영상 URL"
-            />
-            <input
-              value={videoThumbnail}
-              onChange={(event) => setVideoThumbnail(event.target.value)}
-              className="h-[38px] bg-newBgLineColor border border-newBorder rounded-[8px] px-[10px] text-[12px]"
-              placeholder="썸네일 URL"
-            />
-          </div>
-          <label className="flex items-center gap-[8px] text-[12px] text-textItemBlur">
-            <input
-              type="checkbox"
-              checked={saveVideoToMediaLibrary}
-              onChange={(event) => setSaveVideoToMediaLibrary(event.target.checked)}
-            />
-            미디어 라이브러리에 영상 URL 저장
-          </label>
-          {shortsScript ? (
-            <div className="flex flex-col gap-[10px]">
-              {!!shortsScript.coreSummary && (
-                <div className="rounded-[8px] bg-newBgLineColor border border-newBorder p-[10px] text-[12px] leading-[1.5]">
-                  <div className="font-[700] mb-[4px]">핵심 요약</div>
-                  {shortsScript.coreSummary}
-                </div>
-              )}
-              <div className="rounded-[8px] bg-newBgLineColor border border-newBorder p-[12px]">
-                <div className="text-[14px] font-[700]">{shortsScript.title}</div>
-                <div className="mt-[6px] text-[12px] text-amber-200">{shortsScript.hook}</div>
-              </div>
-              <div className="rounded-[8px] bg-newBgLineColor border border-newBorder p-[12px] text-[12px] leading-[1.6]">
-                {shortsScript.narration}
-              </div>
-              {!!shortsScript.storyboard?.length && (
-                <div className="max-h-[180px] overflow-auto flex flex-col gap-[8px]">
-                  {shortsScript.storyboard.map((scene) => (
-                    <div key={scene.scene} className="rounded-[8px] bg-btnSimple p-[10px] text-[12px] leading-[1.5]">
-                      <div className="font-[700]">
-                        장면 {scene.scene}
-                        {scene.startSecond !== undefined && scene.endSecond !== undefined
-                          ? ` · ${scene.startSecond}-${scene.endSecond}s`
-                          : ''}
-                      </div>
-                      <div>{scene.visual}</div>
-                      {!!scene.overlayText && (
-                        <div className="text-textItemBlur">화면 자막: {scene.overlayText}</div>
-                      )}
-                      <div className="text-textItemBlur">{scene.narration}</div>
-                      {!!scene.pixellePrompt && (
-                        <div className="mt-[4px] text-textItemBlur">
-                          Pixelle: {scene.pixellePrompt}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-              {!!shortsScript.uploadMetadata && (
-                <div className="rounded-[8px] bg-newBgLineColor border border-newBorder p-[10px] text-[12px] leading-[1.5]">
-                  <div className="font-[700] mb-[4px]">업로드 메타데이터</div>
-                  <div>{shortsScript.uploadMetadata.title}</div>
-                  <div className="text-textItemBlur">{shortsScript.uploadMetadata.description}</div>
-                  {!!shortsScript.uploadMetadata.hashtags?.length && (
-                    <div className="mt-[6px] text-textItemBlur">
-                      {shortsScript.uploadMetadata.hashtags.join(' ')}
-                    </div>
-                  )}
-                </div>
-              )}
-              <details className="text-[12px] text-textItemBlur">
-                <summary className="cursor-pointer">JSON</summary>
-                <pre className="mt-[8px] max-h-[180px] overflow-auto whitespace-pre-wrap bg-newBgLineColor border border-newBorder rounded-[8px] p-[12px] leading-[1.6]">
-                  {JSON.stringify(videoResult, null, 2)}
-                </pre>
-              </details>
-            </div>
-          ) : (
-            <div className="min-h-[180px] rounded-[8px] border border-dashed border-newBorder bg-newBgLineColor flex items-center justify-center text-textItemBlur text-[14px]">
-              쇼츠 대본 또는 Pixelle 작업 결과가 여기에 표시됩니다.
-            </div>
-          )}
-        </section>
-
-        <section className="bg-newBgColorInner border border-newBorder rounded-[8px] p-[18px] flex flex-col gap-[12px]">
-          <div className="flex items-center justify-between gap-[10px]">
             <div className="text-[16px] font-[700]">받은 반응함</div>
             <div className="flex gap-[8px]">
               <Button
@@ -2605,6 +3596,31 @@ export function SnapsWorkspace() {
                   </div>
                 ))}
               </div>
+              {!!feedbackView.conversionSignals?.length && (
+                <div className="grid grid-cols-2 maxMedia:grid-cols-1 gap-[8px]">
+                  {feedbackView.conversionSignals.slice(0, 4).map((signal) => (
+                    <div
+                      key={signal.id}
+                      className="rounded-[8px] border border-newBorder bg-newBgLineColor p-[10px] text-[12px] leading-[1.45]"
+                    >
+                      <div className="flex items-center justify-between gap-[8px]">
+                        <span className="font-[700]">{signal.label}</span>
+                        <span
+                          className={clsx(
+                            'text-[11px]',
+                            signal.priority === 'high'
+                              ? 'text-amber-200'
+                              : 'text-textItemBlur'
+                          )}
+                        >
+                          {signal.count}
+                        </span>
+                      </div>
+                      <div className="mt-[6px] text-textItemBlur">{signal.action}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
               {!!feedbackView.highlights?.length && (
                 <div className="flex flex-col gap-[6px]">
                   {feedbackView.highlights.map((highlight: string) => (
@@ -2677,6 +3693,8 @@ export function SnapsWorkspace() {
           )}
         </div>
       </section>
+        </div>
+      </details>
     </div>
   );
 }
