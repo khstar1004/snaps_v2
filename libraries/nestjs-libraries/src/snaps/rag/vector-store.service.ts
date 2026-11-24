@@ -6,6 +6,10 @@ import {
   SnapsTargetPlatform,
   snapsTargetPlatforms,
 } from '@gitroom/nestjs-libraries/snaps/transform/platform-rules';
+import {
+  SnapsSerialized,
+  writeSnapsFileAtomic,
+} from '@gitroom/nestjs-libraries/snaps/utils/serialized-store';
 
 export type SnapsStoredStyleExample = {
   id: string;
@@ -32,6 +36,7 @@ export class SnapsVectorStoreService {
   private readonly dataDir =
     process.env.SNAPS_DATA_DIR || path.join(process.cwd(), 'var', 'snaps');
 
+  @SnapsSerialized()
   async addExample(
     organizationId: string,
     example: Omit<SnapsStoredStyleExample, 'id' | 'organizationId' | 'createdAt'>
@@ -81,6 +86,7 @@ export class SnapsVectorStoreService {
     return this.readExamples(organizationId);
   }
 
+  @SnapsSerialized()
   async replaceExamples(
     organizationId: string,
     examples: SnapsStoredStyleExample[]
@@ -92,6 +98,7 @@ export class SnapsVectorStoreService {
     };
   }
 
+  @SnapsSerialized()
   async deleteExample(organizationId: string, exampleId: string) {
     const examples = await this.readExamples(organizationId);
     const next = examples.filter((example) => example.id !== exampleId);
@@ -102,6 +109,7 @@ export class SnapsVectorStoreService {
     };
   }
 
+  @SnapsSerialized()
   async importExamples(organizationId: string, examples: unknown[] = []) {
     const current = await this.readExamples(organizationId);
     const incoming = examples
@@ -266,8 +274,6 @@ export class SnapsVectorStoreService {
   }
 
   private async atomicWrite(filePath: string, content: string) {
-    const tmpPath = `${filePath}.${process.pid}.${Date.now()}.tmp`;
-    await fs.writeFile(tmpPath, content, 'utf8');
-    await fs.rename(tmpPath, filePath);
+    await writeSnapsFileAtomic(filePath, content);
   }
 }

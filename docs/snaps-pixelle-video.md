@@ -8,7 +8,7 @@ Pixelle-Video는 메인 앱 코드에 섞지 않고 `external/Pixelle-Video`에 
 - `snaps-pixelle-video`: Pixelle-Video FastAPI 호환 서버
 - `ComfyUI`: 호스트 PC에서 GPU로 실행하는 로컬 모델 런타임
 
-메인 앱은 `PIXELLE_VIDEO_URL=http://snaps-pixelle-video:8000`으로 Pixelle 어댑터를 호출한다.
+메인 앱 컨테이너는 `PIXELLE_VIDEO_URL=http://snaps-pixelle-video:8000`으로 Pixelle 어댑터를 호출한다. 호스트에서 백엔드를 직접 실행하는 개발 환경에서는 `PIXELLE_VIDEO_HOST_URL=http://localhost:8000`을 함께 둘 수 있고, 코드도 Docker 서비스명 URL 실패 시 같은 포트의 `localhost`를 fallback으로 시도한다.
 
 ## 실행
 

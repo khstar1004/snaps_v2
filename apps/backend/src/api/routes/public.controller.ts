@@ -28,6 +28,12 @@ import { promisify } from 'util';
 import { OnlyURL } from '@gitroom/nestjs-libraries/dtos/webhooks/webhooks.dto';
 import { isSafePublicHttpsUrl } from '@gitroom/nestjs-libraries/dtos/webhooks/webhook.url.validator';
 import { ssrfSafeDispatcher } from '@gitroom/nestjs-libraries/dtos/webhooks/ssrf.safe.dispatcher';
+import { SnapsLinkAttributionService } from '@gitroom/nestjs-libraries/snaps/sales/link-attribution.service';
+import {
+  SnapsApprovalCommentInput,
+  SnapsApprovalReviewInput,
+  SnapsApprovalWorkflowService,
+} from '@gitroom/nestjs-libraries/snaps/approvals/approval-workflow.service';
 
 const pump = promisify(pipeline);
 
@@ -39,7 +45,9 @@ export class PublicController {
     private _agentGraphInsertService: AgentGraphInsertService,
     private _postsService: PostsService,
     private _nowpayments: Nowpayments,
-    private _subscriptionService: SubscriptionService
+    private _subscriptionService: SubscriptionService,
+    private _snapsSales: SnapsLinkAttributionService,
+    private _snapsApprovals: SnapsApprovalWorkflowService
   ) {}
   @Post('/agent')
   async createAgent(@Body() body: { text: string; apiKey: string }) {
@@ -76,6 +84,86 @@ export class PublicController {
   @Get(`/posts/:id/comments`)
   async getComments(@Param('id') postId: string) {
     return { comments: await this._postsService.getComments(postId) };
+  }
+
+  @Get('/snaps/link/:organizationId/:slug')
+  async getSnapsSalesLink(
+    @Param('organizationId') organizationId: string,
+    @Param('slug') slug: string
+  ) {
+    return this._snapsSales.publicLink(slug, organizationId);
+  }
+
+  @Get('/snaps/link/:organizationId/:slug/go')
+  async goSnapsSalesLink(
+    @Param('organizationId') organizationId: string,
+    @Param('slug') slug: string,
+    @Req() req: Request,
+    @RealIP() ip: string,
+    @UserAgent() userAgent: string,
+    @Res() res: Response
+  ) {
+    const click = await this._snapsSales.recordPublicClick(slug, organizationId, {
+      ip,
+      userAgent,
+      referer: req.headers.referer,
+    });
+    return res.redirect(302, click.redirectUrl);
+  }
+
+  @Get('/snaps/link/:slug')
+  async getLegacySnapsSalesLink(@Param('slug') slug: string) {
+    return this._snapsSales.publicEntry(slug);
+  }
+
+  @Get('/snaps/review/:organizationId/:token')
+  async getSnapsApprovalReview(
+    @Param('organizationId') organizationId: string,
+    @Param('token') token: string
+  ) {
+    return this._snapsApprovals.publicReview(organizationId, token);
+  }
+
+  @Post('/snaps/review/:organizationId/:token/comment')
+  async addSnapsApprovalReviewComment(
+    @Param('organizationId') organizationId: string,
+    @Param('token') token: string,
+    @Body() body?: SnapsApprovalCommentInput
+  ) {
+    return this._snapsApprovals.addPublicReviewComment(
+      organizationId,
+      token,
+      body
+    );
+  }
+
+  @Post('/snaps/review/:organizationId/:token/review')
+  async reviewSnapsApprovalReview(
+    @Param('organizationId') organizationId: string,
+    @Param('token') token: string,
+    @Body() body?: SnapsApprovalReviewInput
+  ) {
+    return this._snapsApprovals.publicReviewDecision(
+      organizationId,
+      token,
+      body
+    );
+  }
+
+  @Get('/snaps/link/:slug/go')
+  async goLegacySnapsSalesLink(
+    @Param('slug') slug: string,
+    @Req() req: Request,
+    @RealIP() ip: string,
+    @UserAgent() userAgent: string,
+    @Res() res: Response
+  ) {
+    const click = await this._snapsSales.recordPublicClick(slug, undefined, {
+      ip,
+      userAgent,
+      referer: req.headers.referer,
+    });
+    return res.redirect(302, click.redirectUrl);
   }
 
   @Post('/t')

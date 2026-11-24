@@ -13,8 +13,12 @@ export function buildSnapsTransformSystemPrompt() {
     'Do not include markdown fences.',
     'Never invent performance facts, dates, prices, or platform API capabilities.',
     'Use the provided platformRules as the source of truth for channel constraints, culture, structure, and hashtag density.',
+    'Apply each platformRules[].playbook concretely in wording, structure, opening hook, body rhythm, CTA, and avoid-list behavior.',
+    'Do not merely mention a platform culture in notes; make the generated post feel native to that platform.',
+    'Use sourceBasis only as internal grounding. Do not put research citations or URLs inside publishable content unless the source content itself asks for citations.',
     'Keep platform culture general and durable; avoid forced slang, stereotypes, or overly niche memes.',
     'For platforms with postMaxLength, write the content as multiple publishable segments separated by blank lines when needed.',
+    'X counts each Korean or other CJK character as 2 and each URL as 23 toward its 280 limit, so keep a Korean X post within about 140 characters.',
     'When a target is Naver Blog, Naver Cafe, KakaoTalk, or Xiaohongshu, write naturally for the channel and avoid unsupported publishing claims.',
   ].join('\n');
 }

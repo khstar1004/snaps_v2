@@ -106,9 +106,20 @@ try {
   Invoke-Step "snaps product shell verifier" "node" @("scripts/verify-snaps-product-shell.mjs")
   Invoke-Step "snaps runtime smoke contract verifier" "node" @("scripts/verify-snaps-runtime-contract.mjs")
   Invoke-Step "snaps DB contract verifier" "node" @("scripts/verify-snaps-db-contract.mjs")
+  Invoke-Step "snaps SQL migration verifier" "node" @("scripts/verify-snaps-postgres-migration.mjs")
   Invoke-Step "snaps platform contract verifier" "node" @("scripts/verify-snaps-platform-contract.mjs")
   Invoke-Step "snaps provider contract verifier" "node" @("scripts/verify-snaps-provider-contract.mjs")
   Invoke-Step "snaps demo workspace verifier" "node" @("scripts/verify-snaps-demo-workspace.mjs")
+  Invoke-Step "snaps virtual scenario verifier" "node_modules\.bin\ts-node.cmd" @(
+    "--transpile-only",
+    "-r",
+    "tsconfig-paths/register",
+    "--project",
+    "tsconfig.base.json",
+    "--compiler-options",
+    '{\"module\":\"commonjs\"}',
+    "scripts/verify-snaps-scenario.ts"
+  )
   Invoke-Step "snaps Naver Cafe live verifier dry-run" "node_modules\.bin\ts-node.cmd" @(
     "--transpile-only",
     "-r",
@@ -213,6 +224,18 @@ try {
     "--",
     "--runInBand"
   )
+  $previousTz = $env:TZ
+  $env:TZ = "UTC"
+  try {
+    Invoke-Step "Jest workspace timezone smoke under UTC" "node_modules\.bin\jest.cmd" @(
+      "libraries/nestjs-libraries/src/snaps/snaps.core.spec.ts",
+      "--runInBand",
+      "--testNamePattern",
+      "workspace timezone"
+    )
+  } finally {
+    $env:TZ = $previousTz
+  }
 
   $previousDatabaseUrl = $env:DATABASE_URL
   if (-not $env:DATABASE_URL) {

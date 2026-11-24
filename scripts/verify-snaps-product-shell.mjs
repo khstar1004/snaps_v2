@@ -28,6 +28,7 @@ const requiredFiles = [
   'apps/frontend/src/app/(app)/(site)/snaps/page.tsx',
   'apps/frontend/src/app/(app)/(preview)/p/[id]/page.tsx',
   'apps/frontend/src/components/snaps/snaps-workspace.tsx',
+  'apps/frontend/src/components/snaps/snaps-shorts-workspace.tsx',
   'apps/frontend/src/components/snaps/snaps-launch-button.tsx',
   'apps/extension/manifest.json',
   'apps/extension/manifest.dev.json',
@@ -82,7 +83,7 @@ const routeChecks = [
 ];
 
 const navigationChecks = [
-  ['apps/frontend/src/components/layout/top.menu.tsx', "name: 'snaps'", 'main menu label'],
+  ['apps/frontend/src/components/layout/top.menu.tsx', "t('snaps_transform', '변환')", 'main menu label'],
   ['apps/frontend/src/components/layout/top.menu.tsx', "path: '/snaps'", 'main menu route'],
   ['apps/frontend/src/components/launches/launches.component.tsx', 'SnapsLaunchButton', 'calendar launch import'],
   ['apps/frontend/src/components/launches/launches.component.tsx', '<SnapsLaunchButton />', 'calendar launch placement'],
@@ -159,7 +160,7 @@ const brandChecks = [
   ['apps/backend/src/api/routes/copilot.controller.ts', "mastra.getAgent('snaps')", 'Copilot memory agent lookup'],
   ['apps/frontend/src/components/agents/agent.chat.tsx', 'agent="snaps"', 'Copilot frontend agent id'],
   ['apps/frontend/src/components/snaps/snaps-workspace.tsx', '연결된 게시물 ID', 'connected post import placeholder'],
-  ['apps/frontend/src/components/snaps/snaps-workspace.tsx', '미디어 라이브러리에 영상 URL 저장', 'media library copy'],
+  ['apps/frontend/src/components/snaps/snaps-shorts-workspace.tsx', '미디어 라이브러리에 저장', 'media library copy'],
 ];
 
 const policyChecks = [

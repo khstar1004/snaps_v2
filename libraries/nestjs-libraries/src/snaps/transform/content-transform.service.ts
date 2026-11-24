@@ -17,8 +17,10 @@ import {
   normalizeTargetPlatforms,
   SnapsTargetPlatform,
   snapsPlatformRules,
+  fitSnapsContent,
 } from '@gitroom/nestjs-libraries/snaps/transform/platform-rules';
 import { SnapsRagService } from '@gitroom/nestjs-libraries/snaps/rag/rag.service';
+import { cleanSnapsMultilineText } from '@gitroom/nestjs-libraries/snaps/utils/multiline-text';
 
 @Injectable()
 export class SnapsContentTransformService {
@@ -163,7 +165,7 @@ export class SnapsContentTransformService {
         platform,
         label: rule.label,
         title: this.cleanTitle(found?.title),
-        content: content.slice(0, rule.maxLength),
+        content: fitSnapsContent(platform, content),
         hashtags: this.cleanHashtags(
           found?.hashtags || rule.defaultHashtags,
           rule.hashtagLimit
@@ -185,17 +187,19 @@ export class SnapsContentTransformService {
     body: SnapsTransformRequestDto
   ): SnapsVariant {
     const rule = snapsPlatformRules[platform];
-    const normalized = body.sourceText.trim().replace(/\s+/g, ' ');
+    const normalized = cleanSnapsMultilineText(body.sourceText, 50000);
     const hashtags = this.cleanHashtags(rule.defaultHashtags, rule.hashtagLimit);
     const prefix = this.fallbackPrefix(platform);
     const suffix = hashtags.length ? `\n\n${hashtags.join(' ')}` : '';
-    const content = `${prefix}${normalized}${suffix}`.slice(0, rule.maxLength);
+    const content = fitSnapsContent(platform, `${prefix}${normalized}${suffix}`);
 
     return {
       platform,
       label: rule.label,
       title:
-        platform.includes('naver') || platform === 'xiaohongshu'
+        platform.includes('naver') ||
+        platform === 'xiaohongshu' ||
+        platform === 'pinterest'
           ? this.makeTitle(normalized)
           : undefined,
       content,
@@ -210,8 +214,17 @@ export class SnapsContentTransformService {
     if (platform === 'threads') {
       return '이건 이렇게 보면 돼.\n\n';
     }
+    if (platform === 'bluesky') {
+      return '이건 다르게 보면: ';
+    }
     if (platform === 'instagram') {
       return '오늘 저장해둘 인사이트.\n\n';
+    }
+    if (platform === 'facebook') {
+      return '오늘 공유드릴 업데이트입니다.\n\n';
+    }
+    if (platform === 'pinterest') {
+      return '제목: 저장해둘 아이디어\n\n설명: ';
     }
     if (platform === 'youtube') {
       return 'Title: 핵심 요약 Shorts\n\nDescription:\n';
@@ -228,14 +241,17 @@ export class SnapsContentTransformService {
     if (platform === 'naver-cafe') {
       return '안녕하세요. 같이 보면 좋을 내용을 정리해봤습니다.\n\n';
     }
+    if (platform === 'kakao-talk') {
+      return '오늘 확인하면 좋은 안내입니다.\n\n';
+    }
     if (platform === 'linkedin') {
-      return 'A practical takeaway:\n\n';
+      return '실무적으로 보면,\n\n';
     }
     return '';
   }
 
   private makeTitle(content: string) {
-    return content.slice(0, 48).replace(/[.!?。！？]$/, '');
+    return content.replace(/\s+/g, ' ').trim().slice(0, 48).replace(/[.!?。！？]$/, '');
   }
 
   private cleanHashtags(hashtags?: unknown, limit = 20) {

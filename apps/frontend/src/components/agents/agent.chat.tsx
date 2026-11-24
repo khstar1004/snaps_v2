@@ -33,6 +33,7 @@ import dayjs from 'dayjs';
 import { makeId } from '@gitroom/nestjs-libraries/services/make.is';
 import { ExistingDataContextProvider } from '@gitroom/frontend/components/launches/helpers/use.existing.data';
 import { useT } from '@gitroom/react/translation/get.transation.service.client';
+import { SnapsWorkspace } from '@gitroom/frontend/components/snaps/snaps-workspace';
 
 export const AgentChat: FC = () => {
   const { backendUrl } = useVariables();
@@ -60,9 +61,13 @@ export const AgentChat: FC = () => {
             '--copilot-kit-background-color': 'var(--new-bg-color)',
           } as CopilotKitCSSProperties
         }
-        className="trz agent bg-newBgColorInner flex flex-col gap-[15px] transition-all flex-1 items-center relative"
+        className="trz agent bg-newBgColorInner flex flex-col gap-[14px] transition-all flex-1 items-stretch relative overflow-hidden p-[14px]"
       >
-        <div className="absolute left-0 w-full h-full pb-[20px]">
+        <div className="max-h-[42vh] min-h-[280px] overflow-auto scrollbar scrollbar-thumb-fifth scrollbar-track-newBgColor">
+          <SnapsWorkspace surface="agent" />
+        </div>
+        <div className="relative flex-1 min-h-[360px]">
+          <div className="absolute left-0 w-full h-full pb-[20px]">
           <CopilotChat
             className="w-full h-full"
             labels={{
@@ -81,6 +86,7 @@ You can also use me as an MCP Server, check Settings >> Public API
             UserMessage={Message}
             Input={NewInput}
           />
+          </div>
         </div>
       </div>
     </CopilotKit>

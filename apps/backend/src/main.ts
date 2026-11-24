@@ -10,7 +10,7 @@ Runtime.install({ shutdownSignals: [] });
 process.env.TZ = 'UTC';
 
 import cookieParser from 'cookie-parser';
-import { Logger, ValidationPipe } from '@nestjs/common';
+import { INestApplication, Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 
@@ -47,7 +47,7 @@ async function start() {
     },
   });
 
-  await startMcp(app);
+  await startMcpWithStartupBudget(app);
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -97,3 +97,48 @@ function checkConfiguration() {
 }
 
 start();
+
+async function startMcpWithStartupBudget(app: INestApplication) {
+  const timeoutMs = Number(process.env.SNAPS_MCP_STARTUP_TIMEOUT_MS || 5000);
+  if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) {
+    await startMcp(app);
+    return;
+  }
+
+  let timeout: NodeJS.Timeout | undefined;
+  let completed = false;
+  const mcpTask = startMcp(app)
+    .then(() => {
+      completed = true;
+      Logger.log('MCP routes initialized');
+    })
+    .catch((error) => {
+      completed = true;
+      Logger.warn(`MCP route initialization failed: ${compactStartupError(error)}`);
+    });
+
+  await Promise.race([
+    mcpTask,
+    new Promise<void>((resolve) => {
+      timeout = setTimeout(() => {
+        if (!completed) {
+          Logger.warn(
+            `MCP route initialization still running after ${timeoutMs}ms; continuing backend startup`
+          );
+        }
+        resolve();
+      }, timeoutMs);
+      timeout.unref?.();
+    }),
+  ]);
+
+  if (timeout) {
+    clearTimeout(timeout);
+  }
+}
+
+function compactStartupError(error: unknown) {
+  return error instanceof Error
+    ? error.message.replace(/\s+/g, ' ').slice(0, 240)
+    : String(error || 'unknown error').replace(/\s+/g, ' ').slice(0, 240);
+}

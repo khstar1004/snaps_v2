@@ -17,6 +17,7 @@ import { useVariables } from '@gitroom/react/helpers/variable.context';
 import useCookie from 'react-use-cookie';
 import { SVGLine } from '@gitroom/frontend/components/launches/launches.component';
 import { LoadingComponent } from '@gitroom/frontend/components/layout/loading';
+import { SnapsWorkspace } from '@gitroom/frontend/components/snaps/snaps-workspace';
 const allowedIntegrations = [
   'facebook',
   'instagram',
@@ -145,28 +146,31 @@ export const PlatformAnalytics = () => {
 
   if (!sortedIntegrations.length && !isLoading) {
     return (
-      <div className="bg-newBgColorInner p-[20px] flex flex-col gap-[15px] transition-all flex-1 justify-center items-center text-center">
-        <div>
-          <img src="/peoplemarketplace.svg" />
+      <div className="bg-newBgColorInner p-[20px] flex flex-col gap-[24px] transition-all flex-1 overflow-auto">
+        <div className="flex flex-col gap-[15px] justify-center items-center text-center min-h-[320px]">
+          <div>
+            <img src="/peoplemarketplace.svg" />
+          </div>
+          <div className="text-[48px]">
+            {t('can_t_show_analytics_yet', "Can't show analytics yet")}
+            <br />
+            {t(
+              'you_have_to_add_social_media_channels',
+              'You have to add Social Media channels'
+            )}
+          </div>
+          <div className="text-[20px]">
+            {t('supported', 'Supported:')}
+            {allowedIntegrations.map((p) => capitalize(p)).join(', ')}
+          </div>
+          <Button onClick={() => router.push('/launches')}>
+            {t(
+              'go_to_the_calendar_to_add_channels',
+              'Go to the calendar to add channels'
+            )}
+          </Button>
         </div>
-        <div className="text-[48px]">
-          {t('can_t_show_analytics_yet', "Can't show analytics yet")}
-          <br />
-          {t(
-            'you_have_to_add_social_media_channels',
-            'You have to add Social Media channels'
-          )}
-        </div>
-        <div className="text-[20px]">
-          {t('supported', 'Supported:')}
-          {allowedIntegrations.map((p) => capitalize(p)).join(', ')}
-        </div>
-        <Button onClick={() => router.push('/launches')}>
-          {t(
-            'go_to_the_calendar_to_add_channels',
-            'Go to the calendar to add channels'
-          )}
-        </Button>
+        <SnapsWorkspace surface="analytics" />
       </div>
     );
   }
@@ -272,7 +276,7 @@ export const PlatformAnalytics = () => {
           ))}
         </div>
       </div>
-      <div className="bg-newBgColorInner flex-1 flex-col flex p-[20px] gap-[12px]">
+      <div className="bg-newBgColorInner flex-1 flex-col flex p-[20px] gap-[12px] overflow-auto">
         {!!options.length && (
           <div className="flex-1 flex flex-col gap-[14px]">
             <div className="max-w-[200px]">
@@ -297,6 +301,7 @@ export const PlatformAnalytics = () => {
             </div>
           </div>
         )}
+        <SnapsWorkspace surface="analytics" />
       </div>
     </>
   );
