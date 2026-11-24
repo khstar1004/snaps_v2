@@ -222,6 +222,7 @@ declared(env, 'NAVER_CLIENT_ID', '.env.example NAVER_CLIENT_ID');
 declared(env, 'NAVER_CLIENT_SECRET', '.env.example NAVER_CLIENT_SECRET');
 for (const needle of [
   '# PIXELLE_VIDEO_URL=',
+  '# PIXELLE_VIDEO_HOST_URL=',
   '# SNAPS_PIXELLE_CONFIRM=',
   '# SNAPS_PIXELLE_SMOKE_ID=',
   '# SNAPS_INBOX_CLEAR_CONFIRM=',

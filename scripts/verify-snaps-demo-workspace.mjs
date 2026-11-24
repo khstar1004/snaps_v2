@@ -29,9 +29,11 @@ const validActivityTypes = new Set([
   'source',
   'report',
   'video',
+  'media',
   'inbox',
   'delete',
 ]);
+const validFeedbackStatuses = new Set(['unread', 'unresolved', 'resolved']);
 
 function assert(condition, message) {
   if (!condition) {
@@ -48,7 +50,16 @@ assert(demo.product === 'snaps', 'demo workspace product must be snaps');
 assert(demo.kind === 'workspace-demo', 'demo workspace kind must be workspace-demo');
 assert(typeof demo.exportedAt === 'string', 'demo workspace exportedAt is required');
 
-for (const name of ['sources', 'styleExamples', 'reports', 'inboxItems', 'activity']) {
+for (const name of [
+  'sources',
+  'styleExamples',
+  'reports',
+  'mediaAssets',
+  'inboxItems',
+  'replyTemplates',
+  'inboxNotes',
+  'activity',
+]) {
   assertArray(name);
 }
 
@@ -85,14 +96,73 @@ for (const report of demo.reports) {
   );
 }
 
+for (const asset of demo.mediaAssets) {
+  assert(typeof asset.id === 'string' && asset.id, 'media asset id is required');
+  assert(
+    typeof asset.url === 'string' && /^https?:\/\//.test(asset.url),
+    `media asset ${asset.id} needs an http url`
+  );
+  assert(
+    typeof asset.altText === 'string' && asset.altText.trim().length >= 5,
+    `media asset ${asset.id} needs alt text`
+  );
+  assert(
+    Array.isArray(asset.targetPlatforms) &&
+      asset.targetPlatforms.every((platform) => validPlatforms.has(platform)),
+    `media asset ${asset.id} has invalid target platforms`
+  );
+}
+
 for (const item of demo.inboxItems) {
   assert(typeof item.id === 'string' && item.id, 'inbox item id is required');
   assert(validPlatforms.has(item.platform), `inbox item ${item.id} has invalid platform`);
   assert(validSentiments.has(item.sentiment), `inbox item ${item.id} has invalid sentiment`);
   assert(
+    !item.status || validFeedbackStatuses.has(item.status),
+    `inbox item ${item.id} has invalid status`
+  );
+  assert(
     typeof item.content === 'string' && item.content.trim().length >= 5,
     `inbox item ${item.id} needs content`
   );
+}
+
+for (const template of demo.replyTemplates) {
+  assert(typeof template.id === 'string' && template.id, 'reply template id is required');
+  assert(
+    !template.platform || validPlatforms.has(template.platform),
+    `reply template ${template.id} has invalid platform`
+  );
+  assert(
+    !template.sentiment || validSentiments.has(template.sentiment),
+    `reply template ${template.id} has invalid sentiment`
+  );
+  assert(
+    typeof template.title === 'string' && template.title,
+    `reply template ${template.id} needs title`
+  );
+  assert(
+    typeof template.body === 'string' && template.body.trim().length >= 5,
+    `reply template ${template.id} needs body`
+  );
+  assert(Array.isArray(template.tags), `reply template ${template.id} needs tags`);
+}
+
+for (const note of demo.inboxNotes) {
+  assert(typeof note.id === 'string' && note.id, 'inbox note id is required');
+  assert(
+    !note.platform || validPlatforms.has(note.platform),
+    `inbox note ${note.id} has invalid platform`
+  );
+  assert(
+    typeof note.note === 'string' && note.note.trim().length >= 5,
+    `inbox note ${note.id} needs note text`
+  );
+  assert(
+    typeof note.author === 'string' || typeof note.postId === 'string',
+    `inbox note ${note.id} needs author or postId`
+  );
+  assert(Array.isArray(note.tags), `inbox note ${note.id} needs tags`);
 }
 
 for (const entry of demo.activity) {
@@ -102,5 +172,5 @@ for (const entry of demo.activity) {
 }
 
 console.log(
-  `verify-snaps-demo-ok sources=${demo.sources.length} styleExamples=${demo.styleExamples.length} reports=${demo.reports.length} inbox=${demo.inboxItems.length} activity=${demo.activity.length}`
+  `verify-snaps-demo-ok sources=${demo.sources.length} styleExamples=${demo.styleExamples.length} reports=${demo.reports.length} mediaAssets=${demo.mediaAssets.length} inbox=${demo.inboxItems.length} replyTemplates=${demo.replyTemplates.length} inboxNotes=${demo.inboxNotes.length} activity=${demo.activity.length}`
 );

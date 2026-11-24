@@ -2,6 +2,10 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { promises as fs } from 'fs';
 import path from 'path';
 import { makeId } from '@gitroom/nestjs-libraries/services/make.is';
+import {
+  SnapsSerialized,
+  writeSnapsFileAtomic,
+} from '@gitroom/nestjs-libraries/snaps/utils/serialized-store';
 
 export type SnapsActivityType =
   | 'transform'
@@ -11,6 +15,27 @@ export type SnapsActivityType =
   | 'report'
   | 'video'
   | 'agent'
+  | 'competitor'
+  | 'sales'
+  | 'bulk'
+  | 'feed'
+  | 'calendar'
+  | 'category'
+  | 'condition'
+  | 'visual'
+  | 'comment'
+  | 'hashtag'
+  | 'listening'
+  | 'trend'
+  | 'recycle'
+  | 'recurring'
+  | 'repurpose'
+  | 'idea'
+  | 'brand'
+  | 'media'
+  | 'approval'
+  | 'coach'
+  | 'experiment'
   | 'inbox'
   | 'delete';
 
@@ -31,6 +56,27 @@ const snapsActivityTypes: SnapsActivityType[] = [
   'report',
   'video',
   'agent',
+  'competitor',
+  'sales',
+  'bulk',
+  'feed',
+  'calendar',
+  'category',
+  'condition',
+  'visual',
+  'comment',
+  'hashtag',
+  'listening',
+  'trend',
+  'recycle',
+  'recurring',
+  'repurpose',
+  'idea',
+  'brand',
+  'media',
+  'approval',
+  'coach',
+  'experiment',
   'inbox',
   'delete',
 ];
@@ -40,6 +86,7 @@ export class SnapsActivityLogService {
   private readonly dataDir =
     process.env.SNAPS_DATA_DIR || path.join(process.cwd(), 'var', 'snaps');
 
+  @SnapsSerialized()
   async record(
     organizationId: string,
     entry: Omit<SnapsActivityLogEntry, 'id' | 'organizationId' | 'createdAt'>
@@ -72,6 +119,7 @@ export class SnapsActivityLogService {
     }
   }
 
+  @SnapsSerialized()
   async importEntries(organizationId: string, entries: unknown[] = []) {
     const current = await this.list(organizationId);
     const incoming = entries
@@ -138,9 +186,7 @@ export class SnapsActivityLogService {
   }
 
   private async atomicWrite(filePath: string, content: string) {
-    const tmpPath = `${filePath}.${process.pid}.${Date.now()}.tmp`;
-    await fs.writeFile(tmpPath, content, 'utf8');
-    await fs.rename(tmpPath, filePath);
+    await writeSnapsFileAtomic(filePath, content);
   }
 
   private cleanRecord(value: unknown): Record<string, unknown> | undefined {

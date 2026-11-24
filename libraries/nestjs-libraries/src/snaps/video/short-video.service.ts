@@ -105,8 +105,8 @@ export class SnapsShortVideoService {
   async generate(body?: SnapsShortVideoRequest) {
     const request = this.normalizeRequest(body);
     const script = await this.script(request);
-    const pixelleUrl = process.env.PIXELLE_VIDEO_URL;
-    if (!pixelleUrl) {
+    const pixelleUrls = this.resolvePixelleBaseUrls();
+    if (!pixelleUrls.length) {
       return {
         status: 'script-ready',
         message: 'PIXELLE_VIDEO_URL is not configured. Script is ready for Pixelle submission.',
@@ -114,56 +114,117 @@ export class SnapsShortVideoService {
       };
     }
 
-    const response = await fetch(`${pixelleUrl.replace(/\/$/, '')}/generate`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        ...request,
-        sourceText: this.cleanSourceText(request.sourceText),
-        durationSeconds: script.durationSeconds,
-        platform: request.platform || 'youtube',
-        script,
-      }),
-    });
+    let lastError: unknown;
+    for (const pixelleUrl of pixelleUrls) {
+      try {
+        const response = await fetch(`${pixelleUrl}/generate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...request,
+            sourceText: this.cleanSourceText(request.sourceText),
+            durationSeconds: script.durationSeconds,
+            platform: request.platform || 'youtube',
+            script,
+          }),
+        });
 
-    if (!response.ok) {
-      throw new Error(
-        `Pixelle request failed: ${response.status} ${await this.readPixelleResponseSnippet(response)}`
-      );
+        if (!response.ok) {
+          throw new Error(
+            `Pixelle request failed at ${pixelleUrl}: ${response.status} ${await this.readPixelleResponseSnippet(response)}`
+          );
+        }
+
+        return this.normalizePixelleResponse(
+          await this.readPixelleResponsePayload(response),
+          script
+        );
+      } catch (error) {
+        lastError = error;
+      }
     }
 
-    return this.normalizePixelleResponse(
-      await this.readPixelleResponsePayload(response),
-      script
+    throw new Error(
+      `Pixelle request failed for configured endpoints (${pixelleUrls.join(', ')}): ${this.compactError(lastError)}`
     );
   }
 
   async status(jobId: string) {
-    const pixelleUrl = process.env.PIXELLE_VIDEO_URL;
-    if (!pixelleUrl) {
+    const pixelleUrls = this.resolvePixelleBaseUrls();
+    if (!pixelleUrls.length) {
       return {
         status: 'not-configured',
         message: 'PIXELLE_VIDEO_URL is not configured.',
       };
     }
 
-    const response = await fetch(
-      `${pixelleUrl.replace(/\/$/, '')}/status/${encodeURIComponent(jobId)}`,
-      {
-        method: 'GET',
-        headers: { Accept: 'application/json' },
-      }
-    );
+    let lastError: unknown;
+    for (const pixelleUrl of pixelleUrls) {
+      try {
+        const response = await fetch(
+          `${pixelleUrl}/status/${encodeURIComponent(jobId)}`,
+          {
+            method: 'GET',
+            headers: { Accept: 'application/json' },
+          }
+        );
 
-    if (!response.ok) {
-      throw new Error(
-        `Pixelle status failed: ${response.status} ${await this.readPixelleResponseSnippet(response)}`
-      );
+        if (!response.ok) {
+          throw new Error(
+            `Pixelle status failed at ${pixelleUrl}: ${response.status} ${await this.readPixelleResponseSnippet(response)}`
+          );
+        }
+
+        return this.normalizePixelleResponse(
+          await this.readPixelleResponsePayload(response)
+        );
+      } catch (error) {
+        lastError = error;
+      }
     }
 
-    return this.normalizePixelleResponse(
-      await this.readPixelleResponsePayload(response)
+    throw new Error(
+      `Pixelle status failed for configured endpoints (${pixelleUrls.join(', ')}): ${this.compactError(lastError)}`
     );
+  }
+
+  private resolvePixelleBaseUrls() {
+    const urls: string[] = [];
+    const add = (value?: string) => {
+      const normalized = value?.trim().replace(/\/$/, '');
+      if (normalized && !urls.includes(normalized)) {
+        urls.push(normalized);
+      }
+    };
+
+    const hostUrl = process.env.PIXELLE_VIDEO_HOST_URL;
+    const configuredUrl = process.env.PIXELLE_VIDEO_URL;
+    add(hostUrl);
+    add(configuredUrl);
+
+    const parsed = this.parseUrl(configuredUrl);
+    if (parsed && ['snaps-pixelle-video', 'pixelle-video'].includes(parsed.hostname)) {
+      parsed.hostname = 'localhost';
+      add(parsed.toString().replace(/\/$/, ''));
+    }
+
+    return urls;
+  }
+
+  private parseUrl(value?: string) {
+    const trimmed = value?.trim();
+    if (!trimmed) {
+      return undefined;
+    }
+    try {
+      return new URL(trimmed);
+    } catch {
+      return undefined;
+    }
+  }
+
+  private compactError(error: unknown) {
+    return error instanceof Error ? error.message : String(error || 'unknown error');
   }
 
   private normalizeScript(

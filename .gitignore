@@ -61,3 +61,4 @@ i18n.cache
 
 # SnapS local runtime data
 /var/snaps/
+apps/backend/var/snaps/

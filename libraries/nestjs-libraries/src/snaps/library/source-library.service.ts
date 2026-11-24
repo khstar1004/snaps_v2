@@ -3,6 +3,11 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { makeId } from '@gitroom/nestjs-libraries/services/make.is';
 import { SnapsSourceLibraryInputDto } from '@gitroom/nestjs-libraries/snaps/dto/source-library.dto';
+import { cleanSnapsMultilineText } from '@gitroom/nestjs-libraries/snaps/utils/multiline-text';
+import {
+  SnapsSerialized,
+  writeSnapsFileAtomic,
+} from '@gitroom/nestjs-libraries/snaps/utils/serialized-store';
 
 export type SnapsStoredSource = SnapsSourceLibraryInputDto & {
   id: string;
@@ -24,6 +29,7 @@ export class SnapsSourceLibraryService {
   private readonly dataDir =
     process.env.SNAPS_DATA_DIR || path.join(process.cwd(), 'var', 'snaps');
 
+  @SnapsSerialized()
   async saveSource(organizationId: string, body?: SnapsSourceLibraryInputDto) {
     const sources = await this.readSources(organizationId);
     const now = new Date().toISOString();
@@ -49,6 +55,7 @@ export class SnapsSourceLibraryService {
     return sources.find((source) => source.id === sourceId);
   }
 
+  @SnapsSerialized()
   async deleteSource(organizationId: string, sourceId: string) {
     const sources = await this.readSources(organizationId);
     const next = sources.filter((source) => source.id !== sourceId);
@@ -59,6 +66,7 @@ export class SnapsSourceLibraryService {
     };
   }
 
+  @SnapsSerialized()
   async importSources(organizationId: string, sources: unknown[] = []) {
     const current = await this.readSources(organizationId);
     const now = new Date().toISOString();
@@ -77,6 +85,7 @@ export class SnapsSourceLibraryService {
     };
   }
 
+  @SnapsSerialized()
   async saveReport(
     organizationId: string,
     title: string,
@@ -101,6 +110,7 @@ export class SnapsSourceLibraryService {
     return this.readReports(organizationId);
   }
 
+  @SnapsSerialized()
   async deleteReport(organizationId: string, reportId: string) {
     const reports = await this.readReports(organizationId);
     const next = reports.filter((report) => report.id !== reportId);
@@ -116,6 +126,7 @@ export class SnapsSourceLibraryService {
     return reports.find((report) => report.id === reportId);
   }
 
+  @SnapsSerialized()
   async importReports(organizationId: string, reports: unknown[] = []) {
     const current = await this.readReports(organizationId);
     const incoming = reports
@@ -233,7 +244,7 @@ export class SnapsSourceLibraryService {
     }
 
     const source = value as Partial<SnapsStoredSource>;
-    const sourceText = this.cleanText(source.sourceText, 50000);
+    const sourceText = cleanSnapsMultilineText(source.sourceText, 50000);
     if (sourceText.length < 5) {
       return undefined;
     }
@@ -510,8 +521,6 @@ export class SnapsSourceLibraryService {
   }
 
   private async atomicWrite(filePath: string, content: string) {
-    const tmpPath = `${filePath}.${process.pid}.${Date.now()}.tmp`;
-    await fs.writeFile(tmpPath, content, 'utf8');
-    await fs.rename(tmpPath, filePath);
+    await writeSnapsFileAtomic(filePath, content);
   }
 }

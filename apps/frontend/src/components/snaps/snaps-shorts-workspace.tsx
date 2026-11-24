@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@gitroom/react/form/button';
 import { useToaster } from '@gitroom/react/toaster/toaster';
 import { useFetch } from '@gitroom/helpers/utils/custom.fetch';
+import { describeSnapsScheduleResult } from '@gitroom/helpers/utils/snaps.schedule.result';
 import { useIntegrationList } from '@gitroom/frontend/components/launches/helpers/use.integration.list';
 
 const videoTargetPlatforms = [
@@ -61,6 +62,105 @@ type SnapsVideoResult = SnapsShortsScript & {
     percentage?: number;
     message?: string;
   };
+};
+
+type SnapsVoiceoverCaptionCue = {
+  id: string;
+  index: number;
+  startSecond: number;
+  endSecond: number;
+  text: string;
+  words: number;
+  readingLoad: number;
+  status: 'ready' | 'tight' | 'too-long';
+  warnings: string[];
+};
+
+type SnapsVoiceoverCaptionPreview = {
+  source: 'snaps-video-voiceover-captions';
+  platform: VideoTargetPlatform;
+  durationSeconds: number;
+  voiceover: {
+    voice: string;
+    voiceStyle: 'clear' | 'energetic' | 'calm' | 'news';
+    paceWpm: number;
+    estimatedWords: number;
+    estimatedVoiceSeconds: number;
+  };
+  captionStyle: 'karaoke' | 'lower-third' | 'subtitle';
+  captions: SnapsVoiceoverCaptionCue[];
+  sceneAlignments: Array<{
+    scene: number;
+    startSecond: number;
+    endSecond: number;
+    visual: string;
+    captionText: string;
+    pixellePrompt: string;
+    warnings: string[];
+  }>;
+  exports: {
+    srt: string;
+    webVtt: string;
+  };
+  summary: {
+    captionCount: number;
+    overrunCaptions: number;
+    silentGaps: number;
+    alignmentScore: number;
+    reviewRequired: boolean;
+  };
+  warnings: string[];
+  recommendations: string[];
+};
+
+type SnapsVideoPublishGuardPreview = {
+  source: 'snaps-video-publish-guard';
+  durationSeconds: number;
+  targetPlatforms: VideoTargetPlatform[];
+  creditBudget: {
+    textToImageModel: string;
+    imageToVideoModel: string;
+    totalCredits: number;
+    imageCredits: number;
+    videoCredits: number;
+    localizedVariantCredits: number;
+    billableOnlyOnSuccess: boolean;
+    rows: Array<{
+      id: string;
+      label: string;
+      unitCredits: number;
+      quantity: number;
+      totalCredits: number;
+      billable: boolean;
+      note: string;
+    }>;
+  };
+  disclosureChecklist: Array<{
+    platform: VideoTargetPlatform;
+    labelRequired: boolean;
+    severity: 'required' | 'recommended' | 'info';
+    reason: string;
+    operatorAction: string;
+  }>;
+  localizationPlan: {
+    sourceLanguage: string;
+    captionLanguage: string;
+    targetLanguages: string[];
+    rows: Array<{
+      language: string;
+      scriptDirection: 'ltr' | 'rtl';
+      supported: boolean;
+      voiceoverAction: string;
+      captionAction: string;
+      reviewAction: string;
+      warnings: string[];
+    }>;
+    warnings: string[];
+    recommendations: string[];
+  };
+  publishReadinessScore: number;
+  warnings: string[];
+  recommendations: string[];
 };
 
 type SnapsShortsHealth = {
@@ -286,6 +386,29 @@ export function SnapsShortsWorkspace() {
   const [currentJobId, setCurrentJobId] = useState('');
   const [statusCheckedAt, setStatusCheckedAt] = useState('');
   const [health, setHealth] = useState<SnapsShortsHealth | null>(null);
+  const [voiceoverVoice, setVoiceoverVoice] = useState('Korean energetic creator');
+  const [voiceoverStyle, setVoiceoverStyle] =
+    useState<SnapsVoiceoverCaptionPreview['voiceover']['voiceStyle']>('energetic');
+  const [captionStyle, setCaptionStyle] =
+    useState<SnapsVoiceoverCaptionPreview['captionStyle']>('karaoke');
+  const [voiceoverPreview, setVoiceoverPreview] =
+    useState<SnapsVoiceoverCaptionPreview | null>(null);
+  const [voiceoverLoading, setVoiceoverLoading] = useState(false);
+  const [publishGuardTextToImageModel, setPublishGuardTextToImageModel] =
+    useState('flux-schnell');
+  const [publishGuardImageToVideoModel, setPublishGuardImageToVideoModel] =
+    useState('none');
+  const [publishGuardRealisticPeople, setPublishGuardRealisticPeople] =
+    useState(false);
+  const [
+    publishGuardRealisticPlacesEvents,
+    setPublishGuardRealisticPlacesEvents,
+  ] = useState(false);
+  const [publishGuardTargetLanguages, setPublishGuardTargetLanguages] =
+    useState('Korean, English, Japanese');
+  const [publishGuardPreview, setPublishGuardPreview] =
+    useState<SnapsVideoPublishGuardPreview | null>(null);
+  const [publishGuardLoading, setPublishGuardLoading] = useState(false);
 
   const connectedByPlatform = useMemo(() => {
     return (integrations as ConnectedIntegration[]).reduce((all, integration) => {
@@ -553,6 +676,91 @@ export function SnapsShortsWorkspace() {
     }
   };
 
+  const previewVoiceoverCaptions = async () => {
+    const source = sourceText.trim() || shortsScript?.narration || shortsScript?.caption || '';
+    if (!source.trim()) {
+      toast.show('보이스오버 캡션으로 검수할 원문이나 대본이 필요합니다.', 'warning');
+      return;
+    }
+
+    setVoiceoverLoading(true);
+    try {
+      const response = await snapsFetch('/snaps/video/voiceover-captions/preview', {
+        method: 'POST',
+        body: JSON.stringify({
+          sourceText: source,
+          script: shortsScript,
+          durationSeconds,
+          platform: scriptPlatform,
+          voice: voiceoverVoice,
+          voiceStyle: voiceoverStyle,
+          captionStyle,
+        }),
+      });
+      if (!response.ok) {
+        throw new Error(await readSnapsError(response));
+      }
+      const preview = (await response.json()) as SnapsVoiceoverCaptionPreview;
+      setVoiceoverPreview(preview);
+      toast.show('보이스오버 캡션 타임라인을 만들었습니다.');
+    } catch (error) {
+      toast.show(
+        error instanceof Error
+          ? error.message
+          : '보이스오버 캡션 미리보기에 실패했습니다.',
+        'warning'
+      );
+    } finally {
+      setVoiceoverLoading(false);
+    }
+  };
+
+  const previewVideoPublishGuard = async () => {
+    const sceneCount =
+      shortsScript?.storyboard?.length || Math.max(3, Math.ceil(durationSeconds / 12));
+
+    setPublishGuardLoading(true);
+    try {
+      const response = await snapsFetch('/snaps/video/publish-guard/preview', {
+        method: 'POST',
+        body: JSON.stringify({
+          durationSeconds,
+          platform: scriptPlatform,
+          targetPlatforms,
+          sceneCount,
+          generatedImageCount: sceneCount,
+          generatedVideoCount:
+            publishGuardImageToVideoModel === 'none' ? 0 : sceneCount,
+          customAssetCount: 0,
+          textToImageModel: publishGuardTextToImageModel,
+          imageToVideoModel: publishGuardImageToVideoModel,
+          aiVoice: true,
+          aiGeneratedVisuals: true,
+          realisticPeople: publishGuardRealisticPeople,
+          realisticPlacesEvents: publishGuardRealisticPlacesEvents,
+          sourceLanguage: 'Korean',
+          captionLanguage: 'Korean',
+          targetLanguages: publishGuardTargetLanguages,
+        }),
+      });
+      if (!response.ok) {
+        throw new Error(await readSnapsError(response));
+      }
+      const preview = (await response.json()) as SnapsVideoPublishGuardPreview;
+      setPublishGuardPreview(preview);
+      toast.show('영상 게시 가드를 확인했습니다.');
+    } catch (error) {
+      toast.show(
+        error instanceof Error
+          ? error.message
+          : '영상 게시 가드 확인에 실패했습니다.',
+        'warning'
+      );
+    } finally {
+      setPublishGuardLoading(false);
+    }
+  };
+
   const refreshCurrentJob = async () => {
     const jobId = currentJobId || videoResult?.jobId;
     if (!jobId) {
@@ -659,13 +867,15 @@ export function SnapsShortsWorkspace() {
         throw new Error(await readSnapsError(response));
       }
 
-      await response.json();
-      toast.show(
-        scheduleType === 'schedule'
-          ? '쇼츠 영상을 연결된 채널 예약 게시물에 첨부했습니다.'
-          : '쇼츠 영상을 연결된 채널 초안에 첨부했습니다.'
+      const attached = await response.json();
+      const result = describeSnapsScheduleResult(
+        scheduleType === 'schedule' ? '쇼츠 예약 첨부' : '쇼츠 초안 첨부',
+        attached
       );
-      router.push('/launches?display=list');
+      toast.show(result.message, result.tone);
+      if (result.ok) {
+        router.push('/launches?display=list');
+      }
     } catch (error) {
       toast.show(
         error instanceof Error ? error.message : '쇼츠 초안 생성에 실패했습니다.',
@@ -885,6 +1095,141 @@ export function SnapsShortsWorkspace() {
               AI 영상 생성
             </Button>
           </div>
+
+          <div className="rounded-[8px] border border-newBorder bg-newBgLineColor p-[12px] flex flex-col gap-[10px]">
+            <div className="flex items-center justify-between gap-[10px]">
+              <div>
+                <div className="text-[13px] font-[700]">AI 보이스오버 캡션</div>
+              </div>
+              {voiceoverPreview && (
+                <span className="rounded-[999px] bg-btnPrimary/15 px-[8px] py-[4px] text-[11px] text-textColor">
+                  {voiceoverPreview.summary.alignmentScore}점
+                </span>
+              )}
+            </div>
+            <input
+              value={voiceoverVoice}
+              onChange={(event) => setVoiceoverVoice(event.target.value)}
+              className="h-[38px] bg-newBgColorInner border border-newBorder rounded-[8px] px-[10px] text-[12px] outline-none focus:border-btnPrimary"
+              placeholder="보이스 이름"
+            />
+            <div className="grid grid-cols-2 gap-[8px]">
+              <select
+                value={voiceoverStyle}
+                onChange={(event) =>
+                  setVoiceoverStyle(
+                    event.target.value as SnapsVoiceoverCaptionPreview['voiceover']['voiceStyle']
+                  )
+                }
+                className="h-[38px] bg-newBgColorInner border border-newBorder rounded-[8px] px-[10px] text-[12px] outline-none focus:border-btnPrimary"
+              >
+                <option value="energetic">Energetic</option>
+                <option value="clear">Clear</option>
+                <option value="calm">Calm</option>
+                <option value="news">News</option>
+              </select>
+              <select
+                value={captionStyle}
+                onChange={(event) =>
+                  setCaptionStyle(
+                    event.target.value as SnapsVoiceoverCaptionPreview['captionStyle']
+                  )
+                }
+                className="h-[38px] bg-newBgColorInner border border-newBorder rounded-[8px] px-[10px] text-[12px] outline-none focus:border-btnPrimary"
+              >
+                <option value="karaoke">Karaoke</option>
+                <option value="lower-third">Lower third</option>
+                <option value="subtitle">Subtitle</option>
+              </select>
+            </div>
+            <Button
+              secondary
+              loading={voiceoverLoading}
+              onClick={previewVoiceoverCaptions}
+              className="rounded-[8px] !h-[40px]"
+            >
+              보이스오버 캡션 미리보기
+            </Button>
+          </div>
+
+          <div className="rounded-[8px] border border-newBorder bg-newBgLineColor p-[12px] flex flex-col gap-[10px]">
+            <div className="flex items-center justify-between gap-[10px]">
+              <div className="text-[13px] font-[700]">영상 게시 가드</div>
+              {publishGuardPreview && (
+                <span className="rounded-[999px] bg-btnPrimary/15 px-[8px] py-[4px] text-[11px] text-textColor">
+                  {publishGuardPreview.creditBudget.totalCredits} credits
+                </span>
+              )}
+            </div>
+            <div className="grid grid-cols-2 gap-[8px]">
+              <select
+                value={publishGuardTextToImageModel}
+                onChange={(event) =>
+                  setPublishGuardTextToImageModel(event.target.value)
+                }
+                className="h-[38px] bg-newBgColorInner border border-newBorder rounded-[8px] px-[10px] text-[12px] outline-none focus:border-btnPrimary"
+                aria-label="AI 이미지 모델"
+              >
+                <option value="flux-schnell">flux schnell</option>
+                <option value="flux-dev">flux dev</option>
+                <option value="flux-1.1-pro">flux 1.1 pro</option>
+                <option value="flux-1.1-pro-ultra">flux 1.1 pro ultra</option>
+                <option value="ideogram-v2">ideogram v2</option>
+                <option value="gpt-image-1">gpt-image-1</option>
+              </select>
+              <select
+                value={publishGuardImageToVideoModel}
+                onChange={(event) =>
+                  setPublishGuardImageToVideoModel(event.target.value)
+                }
+                className="h-[38px] bg-newBgColorInner border border-newBorder rounded-[8px] px-[10px] text-[12px] outline-none focus:border-btnPrimary"
+                aria-label="AI 영상 모델"
+              >
+                <option value="none">no image-to-video</option>
+                <option value="framepack">framepack</option>
+                <option value="runway-gen3">runway gen3</option>
+                <option value="minimax">minimax</option>
+                <option value="kling-v1.5">kling v1.5</option>
+                <option value="google-veo2">google veo2</option>
+              </select>
+            </div>
+            <input
+              value={publishGuardTargetLanguages}
+              onChange={(event) =>
+                setPublishGuardTargetLanguages(event.target.value)
+              }
+              className="h-[38px] bg-newBgColorInner border border-newBorder rounded-[8px] px-[10px] text-[12px] outline-none focus:border-btnPrimary"
+              placeholder="Korean, English, Japanese"
+            />
+            <label className="flex items-center gap-[8px] text-[12px] text-textItemBlur">
+              <input
+                type="checkbox"
+                checked={publishGuardRealisticPeople}
+                onChange={(event) =>
+                  setPublishGuardRealisticPeople(event.target.checked)
+                }
+              />
+              현실 인물처럼 보이는 AI 장면
+            </label>
+            <label className="flex items-center gap-[8px] text-[12px] text-textItemBlur">
+              <input
+                type="checkbox"
+                checked={publishGuardRealisticPlacesEvents}
+                onChange={(event) =>
+                  setPublishGuardRealisticPlacesEvents(event.target.checked)
+                }
+              />
+              현실 장소/사건처럼 보이는 AI 장면
+            </label>
+            <Button
+              secondary
+              loading={publishGuardLoading}
+              onClick={previewVideoPublishGuard}
+              className="rounded-[8px] !h-[40px]"
+            >
+              게시 가드 확인
+            </Button>
+          </div>
         </div>
 
         <div className="p-[18px] flex flex-col gap-[14px]">
@@ -1052,6 +1397,204 @@ export function SnapsShortsWorkspace() {
           ) : (
             <div className="min-h-[170px] rounded-[8px] border border-dashed border-newBorder bg-newBgLineColor flex items-center justify-center text-textItemBlur text-[14px] text-center px-[12px]">
               대본을 생성하면 검수 화면이 열립니다.
+            </div>
+          )}
+
+          {voiceoverPreview && (
+            <div className="rounded-[8px] border border-newBorder bg-newBgLineColor p-[12px]">
+              <div className="flex flex-wrap items-center justify-between gap-[10px]">
+                <div className="text-[13px] font-[700]">보이스오버 캡션 타임라인</div>
+                <div className="flex flex-wrap gap-[6px] text-[11px] text-textItemBlur">
+                  <span>{voiceoverPreview.voiceover.voiceStyle}</span>
+                  <span>{voiceoverPreview.voiceover.paceWpm}wpm</span>
+                  <span>{voiceoverPreview.summary.captionCount} cues</span>
+                  <span>{voiceoverPreview.summary.alignmentScore}점</span>
+                </div>
+              </div>
+
+              {!!voiceoverPreview.warnings.length && (
+                <div className="mt-[10px] rounded-[8px] border border-amber-500/25 bg-amber-500/10 p-[10px] text-[12px] leading-[1.5] text-amber-100">
+                  {voiceoverPreview.warnings[0]}
+                </div>
+              )}
+
+              <div className="mt-[10px] grid grid-cols-[1fr_1fr] maxMedia:grid-cols-1 gap-[10px]">
+                <div className="max-h-[260px] overflow-auto rounded-[8px] border border-newBorder bg-newBgColorInner p-[10px]">
+                  <div className="text-[11px] font-[700] mb-[8px] text-textItemBlur">
+                    Caption cues
+                  </div>
+                  <div className="flex flex-col gap-[8px]">
+                    {voiceoverPreview.captions.slice(0, 10).map((caption) => (
+                      <div
+                        key={caption.id}
+                        className={clsx(
+                          'border-l-2 pl-[9px] text-[12px] leading-[1.45]',
+                          caption.status === 'ready'
+                            ? 'border-emerald-400'
+                            : caption.status === 'tight'
+                            ? 'border-amber-400'
+                            : 'border-red-400'
+                        )}
+                      >
+                        <div className="font-[700]">
+                          {caption.startSecond}-{caption.endSecond}s · {caption.words} words
+                        </div>
+                        <div className="mt-[3px]">{caption.text}</div>
+                        {!!caption.warnings.length && (
+                          <div className="mt-[3px] text-[11px] text-amber-200">
+                            {caption.warnings[0]}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="max-h-[260px] overflow-auto rounded-[8px] border border-newBorder bg-newBgColorInner p-[10px]">
+                  <div className="text-[11px] font-[700] mb-[8px] text-textItemBlur">
+                    Scene alignment
+                  </div>
+                  <div className="flex flex-col gap-[8px]">
+                    {voiceoverPreview.sceneAlignments.slice(0, 8).map((scene) => (
+                      <div
+                        key={`${scene.scene}-${scene.startSecond}`}
+                        className="border-l-2 border-btnPrimary pl-[9px] text-[12px] leading-[1.45]"
+                      >
+                        <div className="font-[700]">
+                          Scene {scene.scene} · {scene.startSecond}-{scene.endSecond}s
+                        </div>
+                        <div className="mt-[3px] text-textItemBlur">{scene.captionText}</div>
+                        {!!scene.warnings.length && (
+                          <div className="mt-[3px] text-[11px] text-amber-200">
+                            {scene.warnings[0]}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <details className="mt-[10px] text-[12px] text-textItemBlur">
+                <summary className="cursor-pointer">SRT/WebVTT</summary>
+                <pre className="mt-[8px] max-h-[160px] overflow-auto whitespace-pre-wrap rounded-[8px] border border-newBorder bg-newBgColorInner p-[10px] leading-[1.6]">
+                  {voiceoverPreview.exports.srt}
+                </pre>
+              </details>
+            </div>
+          )}
+
+          {publishGuardPreview && (
+            <div className="rounded-[8px] border border-newBorder bg-newBgLineColor p-[12px]">
+              <div className="flex flex-wrap items-center justify-between gap-[10px]">
+                <div className="text-[13px] font-[700]">영상 게시 가드</div>
+                <div className="flex flex-wrap gap-[6px] text-[11px] text-textItemBlur">
+                  <span>{publishGuardPreview.creditBudget.totalCredits} credits</span>
+                  <span>{publishGuardPreview.publishReadinessScore}점</span>
+                  <span>
+                    {publishGuardPreview.localizationPlan.targetLanguages.length} languages
+                  </span>
+                </div>
+              </div>
+
+              {!!publishGuardPreview.warnings.length && (
+                <div className="mt-[10px] rounded-[8px] border border-amber-500/25 bg-amber-500/10 p-[10px] text-[12px] leading-[1.5] text-amber-100">
+                  {publishGuardPreview.warnings[0]}
+                </div>
+              )}
+
+              <div className="mt-[10px] grid grid-cols-[1fr_1fr_1fr] maxMedia:grid-cols-1 gap-[10px]">
+                <div className="max-h-[260px] overflow-auto rounded-[8px] border border-newBorder bg-newBgColorInner p-[10px]">
+                  <div className="text-[11px] font-[700] mb-[8px] text-textItemBlur">
+                    Credit budget
+                  </div>
+                  <div className="flex flex-col gap-[8px]">
+                    {publishGuardPreview.creditBudget.rows.map((row) => (
+                      <div
+                        key={row.id}
+                        className={clsx(
+                          'border-l-2 pl-[9px] text-[12px] leading-[1.45]',
+                          row.billable ? 'border-btnPrimary' : 'border-emerald-400'
+                        )}
+                      >
+                        <div className="font-[700]">
+                          {row.label} · {row.totalCredits}
+                        </div>
+                        <div className="mt-[3px] text-textItemBlur">
+                          {row.quantity} x {row.unitCredits} credits
+                        </div>
+                        <div className="mt-[3px] text-[11px] text-textItemBlur">
+                          {row.note}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="max-h-[260px] overflow-auto rounded-[8px] border border-newBorder bg-newBgColorInner p-[10px]">
+                  <div className="text-[11px] font-[700] mb-[8px] text-textItemBlur">
+                    AI 공개 체크
+                  </div>
+                  <div className="flex flex-col gap-[8px]">
+                    {publishGuardPreview.disclosureChecklist.map((item) => (
+                      <div
+                        key={item.platform}
+                        className={clsx(
+                          'border-l-2 pl-[9px] text-[12px] leading-[1.45]',
+                          item.labelRequired
+                            ? 'border-amber-400'
+                            : item.severity === 'recommended'
+                            ? 'border-sky-400'
+                            : 'border-emerald-400'
+                        )}
+                      >
+                        <div className="font-[700]">
+                          {item.platform} ·{' '}
+                          {item.labelRequired ? '라벨 필요' : item.severity}
+                        </div>
+                        <div className="mt-[3px] text-textItemBlur">
+                          {item.reason}
+                        </div>
+                        <div className="mt-[3px] text-[11px] text-amber-100">
+                          {item.operatorAction}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="max-h-[260px] overflow-auto rounded-[8px] border border-newBorder bg-newBgColorInner p-[10px]">
+                  <div className="text-[11px] font-[700] mb-[8px] text-textItemBlur">
+                    Multiple languages
+                  </div>
+                  <div className="flex flex-col gap-[8px]">
+                    {publishGuardPreview.localizationPlan.rows.map((row) => (
+                      <div
+                        key={row.language}
+                        className={clsx(
+                          'border-l-2 pl-[9px] text-[12px] leading-[1.45]',
+                          row.supported ? 'border-emerald-400' : 'border-red-400'
+                        )}
+                      >
+                        <div className="font-[700]">
+                          {row.language} · {row.supported ? 'supported' : 'review'}
+                        </div>
+                        <div className="mt-[3px] text-textItemBlur">
+                          {row.captionAction}
+                        </div>
+                        <div className="mt-[3px] text-[11px] text-textItemBlur">
+                          {row.reviewAction}
+                        </div>
+                        {!!row.warnings.length && (
+                          <div className="mt-[3px] text-[11px] text-amber-200">
+                            {row.warnings[0]}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 

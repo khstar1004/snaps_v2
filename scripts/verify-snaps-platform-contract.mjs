@@ -60,19 +60,26 @@ function platformRuleKeys(content) {
   if (!match) {
     fail('Could not find snapsPlatformRules');
   }
-  return [...match[1].matchAll(/^\s*(?:'([^']+)'|([a-z][a-z0-9-]*)):\s*\{/gm)].map(
+  return [...match[1].matchAll(/^\s{2}(?:'([^']+)'|([a-z][a-z0-9-]*)):\s*\{/gm)].map(
     (match) => match[1] || match[2]
   );
+}
+
+function platformRuleBlock(content, platform) {
+  const escaped = platform.includes('-') ? `'${platform}'` : platform;
+  const ruleMatch = content.match(
+    new RegExp(`${escaped}: \\{([\\s\\S]*?)\\n\\s{4}\\},`)
+  );
+  if (!ruleMatch) {
+    fail(`Could not find platform rule block for ${platform}`);
+  }
+  return ruleMatch[1];
 }
 
 function publishModePlatforms(content, mode) {
   const matches = [];
   for (const platform of platformRuleKeys(content)) {
-    const escaped = platform.includes('-') ? `'${platform}'` : platform;
-    const ruleMatch = content.match(
-      new RegExp(`${escaped}: \\{([\\s\\S]*?)\\n\\s*\\},`)
-    );
-    if (ruleMatch?.[1]?.includes(`publishMode: '${mode}'`)) {
+    if (platformRuleBlock(content, platform).includes(`publishMode: '${mode}'`)) {
       matches.push(platform);
     }
   }
@@ -129,6 +136,26 @@ if (!platformRules.includes("return normalized.length ? [...new Set(normalized)]
 }
 if (!workspace.includes("type TargetPlatform = (typeof targetPlatforms)[number]['id'];")) {
   fail('SnapsWorkspace TargetPlatform must derive from the UI target platform list');
+}
+
+for (const platform of backendPlatforms) {
+  const rule = platformRuleBlock(platformRules, platform);
+  if (!rule.includes('playbook: {')) {
+    fail(`${platform} is missing a platform playbook`);
+  }
+  for (const field of [
+    'sourceBasis',
+    'audienceMindset',
+    'nativeGrammar',
+    'openingMoves',
+    'bodyMoves',
+    'ctaMoves',
+    'avoid',
+  ]) {
+    if (!rule.includes(`${field}:`)) {
+      fail(`${platform} playbook is missing ${field}`);
+    }
+  }
 }
 
 console.log(

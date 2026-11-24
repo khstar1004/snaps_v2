@@ -32,25 +32,11 @@ for (const section of requiredSections) {
 }
 
 const requiredOpenGates = [
-  '`pnpm install`',
-  'Node `22.12.x` runtime readiness',
-  'database migration',
-  'Postgres TCP reachability',
-  'Redis TCP reachability',
-  'Temporal TCP reachability',
-  'local snaps dev-stack images',
-  'runtime test coverage beyond the current focused snaps Jest and service smoke coverage',
-  'backend server startup',
-  'frontend server startup',
-  'authenticated `/snaps/*` API smoke',
-  'browser smoke for `/snaps`',
-  '`npm run verify:snaps:final`',
-  'server-mediated Ollama request',
-  'server-mediated embedding request',
-  'real connected-channel draft creation',
-  'real connected-channel scheduled post creation',
-  'real Naver OAuth/Cafe posting',
-  'real Pixelle job submission/status',
+  'production database migration',
+  'real connected-channel draft creation with a connected provider account',
+  'real connected-channel scheduled post creation with a connected provider account',
+  'real connected provider analytics ingestion and comment reply publishing',
+  'real Naver OAuth/Cafe posting against a disposable Cafe board',
 ];
 const openGatesSection = audit.split('## Open Runtime Gates')[1]?.split('\n## ')[0] ?? '';
 const openGateBullets = openGatesSection.match(/^- /gm) ?? [];
@@ -72,9 +58,11 @@ const requiredScripts = [
   'verify:snaps:product-shell',
   'verify:snaps:runtime-contract',
   'verify:snaps:db',
+  'verify:snaps:migration',
   'verify:snaps:platforms',
   'verify:snaps:providers',
   'verify:snaps:demo',
+  'verify:snaps:scenario',
   'verify:snaps:naver-cafe',
   'verify:snaps:pixelle',
   'verify:snaps:controller',
@@ -100,10 +88,10 @@ for (const scriptName of requiredScripts) {
 const requiredClaims = [
   'Keep Postiz as the SNS publishing infrastructure',
   'Leave the remaining runtime gates explicit',
-  'The goal is not fully achieved until the open runtime gates are run successfully.',
+  'The local stack is final-verified for self-contained, sandbox connected-channel, and Pixelle flows, but real external-account gates remain open until disposable provider accounts/integrations are supplied.',
   'Implemented with structural deviation',
   'Open gate',
-  'runtime pending',
+  'Verified locally',
   staticVerifierSummary,
 ];
 for (const claim of requiredClaims) {

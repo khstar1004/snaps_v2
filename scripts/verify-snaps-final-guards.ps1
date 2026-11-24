@@ -144,6 +144,30 @@ try {
     }
 
   Invoke-ExpectedFinalFailure `
+    -Name "sandbox channel requires confirmation env" `
+    -Arguments @("-Auth", "dummy", "-SkipPreflight", "-SkipBuild", "-IncludeSandboxChannel", "-ShowOrg", "guard-org") `
+    -ExpectedText "SNAPS_SANDBOX_CHANNEL_CONFIRM is required" `
+    -ClearEnv @(
+      "SNAPS_SANDBOX_CHANNEL_CONFIRM"
+    )
+
+  Invoke-ExpectedFinalFailure `
+    -Name "sandbox channel requires exact confirmation" `
+    -Arguments @("-Auth", "dummy", "-SkipPreflight", "-SkipBuild", "-IncludeSandboxChannel", "-ShowOrg", "guard-org") `
+    -ExpectedText "SNAPS_SANDBOX_CHANNEL_CONFIRM must be set to 'sandbox'" `
+    -SetEnv @{
+      SNAPS_SANDBOX_CHANNEL_CONFIRM = "wrong"
+    }
+
+  Invoke-ExpectedFinalFailure `
+    -Name "sandbox channel requires show org" `
+    -Arguments @("-Auth", "dummy", "-SkipPreflight", "-SkipBuild", "-IncludeSandboxChannel") `
+    -ExpectedText "-IncludeSandboxChannel requires -ShowOrg" `
+    -SetEnv @{
+      SNAPS_SANDBOX_CHANNEL_CONFIRM = "sandbox"
+    }
+
+  Invoke-ExpectedFinalFailure `
     -Name "Naver Cafe live requires env" `
     -Arguments @("-Auth", "dummy", "-SkipPreflight", "-SkipBuild", "-IncludeNaverCafeLive") `
     -ExpectedText "NAVER_CAFE_ACCESS_TOKEN is required" `
@@ -231,6 +255,31 @@ try {
     -ExpectedText "SNAPS_DB_PUSH_CONFIRM must be set to 'push'" `
     -SetEnv @{
       SNAPS_DB_PUSH_CONFIRM = "wrong"
+    }
+
+  Invoke-ExpectedFinalFailure `
+    -Name "snaps SQL migration requires confirmation env" `
+    -Arguments @("-Auth", "dummy", "-SkipPreflight", "-SkipBuild", "-ApplySnapsSqlMigration") `
+    -ExpectedText "SNAPS_SQL_MIGRATION_CONFIRM is required" `
+    -ClearEnv @(
+      "SNAPS_SQL_MIGRATION_CONFIRM"
+    )
+
+  Invoke-ExpectedFinalFailure `
+    -Name "snaps SQL migration requires exact confirmation" `
+    -Arguments @("-Auth", "dummy", "-SkipPreflight", "-SkipBuild", "-ApplySnapsSqlMigration") `
+    -ExpectedText "SNAPS_SQL_MIGRATION_CONFIRM must be set to 'apply'" `
+    -SetEnv @{
+      SNAPS_SQL_MIGRATION_CONFIRM = "wrong"
+    }
+
+  Invoke-ExpectedFinalFailure `
+    -Name "migration paths are mutually exclusive" `
+    -Arguments @("-Auth", "dummy", "-SkipPreflight", "-SkipBuild", "-ApplyDbPush", "-ApplySnapsSqlMigration") `
+    -ExpectedText "-ApplyDbPush and -ApplySnapsSqlMigration are mutually exclusive" `
+    -SetEnv @{
+      SNAPS_DB_PUSH_CONFIRM = "push"
+      SNAPS_SQL_MIGRATION_CONFIRM = "apply"
     }
 
   Invoke-ExpectedFinalFailure `

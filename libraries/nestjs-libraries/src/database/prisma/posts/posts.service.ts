@@ -46,6 +46,8 @@ type PostWithConditionals = Post & {
 @Injectable()
 export class PostsService {
   private storage = UploadFactory.createStorage();
+  private readonly defaultPostingTimeMinutes = [540, 780, 1080];
+
   constructor(
     private _postRepository: PostsRepository,
     private _integrationManager: IntegrationManager,
@@ -939,9 +941,13 @@ export class PostsService {
       orgId,
       integrationId
     );
+    const availableTimes = findTimes.length
+      ? findTimes
+      : this.defaultPostingTimeMinutes;
+
     return this.findFreeDateTimeRecursive(
       orgId,
-      findTimes,
+      availableTimes,
       dayjs.utc().startOf('day')
     );
   }

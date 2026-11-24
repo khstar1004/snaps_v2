@@ -3,6 +3,11 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { makeId } from '@gitroom/nestjs-libraries/services/make.is';
 import { SnapsAgentPrepareResult } from '@gitroom/nestjs-libraries/snaps/agent/command-planner.service';
+import { cleanSnapsMultilineText } from '@gitroom/nestjs-libraries/snaps/utils/multiline-text';
+import {
+  SnapsSerialized,
+  writeSnapsFileAtomic,
+} from '@gitroom/nestjs-libraries/snaps/utils/serialized-store';
 
 export type SnapsStoredAgentTaskStatus =
   | 'requires_confirmation'
@@ -46,6 +51,7 @@ export class SnapsAgentTaskService {
   private readonly dataDir =
     process.env.SNAPS_DATA_DIR || path.join(process.cwd(), 'var', 'snaps');
 
+  @SnapsSerialized()
   async createFromPrepared(
     organizationId: string,
     prepared: SnapsAgentPrepareResult
@@ -105,6 +111,7 @@ export class SnapsAgentTaskService {
     return tasks.find((task) => task.id === taskId);
   }
 
+  @SnapsSerialized()
   async delete(organizationId: string, taskId: string) {
     const tasks = await this.readTasks(organizationId);
     const next = tasks.filter((task) => task.id !== taskId);
@@ -115,6 +122,7 @@ export class SnapsAgentTaskService {
     };
   }
 
+  @SnapsSerialized()
   async setFavorite(organizationId: string, taskId: string, favorite: boolean) {
     return this.patchTask(organizationId, taskId, (task) => ({
       ...task,
@@ -123,6 +131,7 @@ export class SnapsAgentTaskService {
     }));
   }
 
+  @SnapsSerialized()
   async setRating(
     organizationId: string,
     taskId: string,
@@ -141,6 +150,7 @@ export class SnapsAgentTaskService {
     }));
   }
 
+  @SnapsSerialized()
   async importTasks(organizationId: string, tasks: unknown[] = []) {
     const current = await this.readTasks(organizationId);
     const incoming = tasks
@@ -321,7 +331,7 @@ export class SnapsAgentTaskService {
           message.type === 'result'
             ? message.type
             : undefined;
-        const content = this.cleanText(message.content, 4000);
+        const content = cleanSnapsMultilineText(message.content, 4000);
         if (!type || !content) {
           return undefined;
         }
@@ -396,9 +406,7 @@ export class SnapsAgentTaskService {
   }
 
   private async atomicWrite(filePath: string, content: string) {
-    const tmpPath = `${filePath}.${process.pid}.${Date.now()}.tmp`;
-    await fs.writeFile(tmpPath, content, 'utf8');
-    await fs.rename(tmpPath, filePath);
+    await writeSnapsFileAtomic(filePath, content);
   }
 
   private cleanText(value: unknown, maxLength = 1000) {

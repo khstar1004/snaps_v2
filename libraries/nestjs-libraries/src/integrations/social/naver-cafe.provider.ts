@@ -154,9 +154,12 @@ export class NaverCafeProvider extends SocialAbstract implements SocialProvider 
         settings.clubId
       )}/menu/${encodeURIComponent(settings.menuId)}/articles`;
 
+      // Naver's cafe write API URL-decodes subject/content a second time: the official
+      // samples percent-encode them before the form encoding (Python quote() + form data,
+      // Java URLEncoder twice). Single encoding turns "+" into spaces and breaks on "%".
       const params = new URLSearchParams({
-        subject,
-        content,
+        subject: encodeURIComponent(subject),
+        content: encodeURIComponent(content),
       });
       if (settings.category) {
         params.set('category', settings.category);
@@ -252,6 +255,15 @@ export class NaverCafeProvider extends SocialAbstract implements SocialProvider 
   }
 
   private toCafeContent(message: string) {
+    // Cafe renders content as HTML. snaps sends plain text with line breaks, which
+    // would collapse into one paragraph, so escape it and keep the breaks as <br>.
+    if (!/<\/?[a-z][\s\S]*>/i.test(message)) {
+      return message
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/\r?\n/g, '<br>');
+    }
     return striptags(message, ['p', 'br', 'strong', 'b', 'em', 'u', 'a'])
       .replace(/<strong>/g, '<b>')
       .replace(/<\/strong>/g, '</b>');

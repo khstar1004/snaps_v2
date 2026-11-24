@@ -7,12 +7,41 @@ import {
   SnapsReportGeneratorService,
 } from '@gitroom/nestjs-libraries/snaps/analytics/report-generator.service';
 import { SnapsShortVideoService } from '@gitroom/nestjs-libraries/snaps/video/short-video.service';
+import { SnapsVideoVoiceoverCaptionService } from '@gitroom/nestjs-libraries/snaps/video/voiceover-caption.service';
+import { SnapsVideoPublishGuardService } from '@gitroom/nestjs-libraries/snaps/video/video-publish-guard.service';
 import { SnapsVectorStoreService } from '@gitroom/nestjs-libraries/snaps/rag/vector-store.service';
 import { SnapsRagService } from '@gitroom/nestjs-libraries/snaps/rag/rag.service';
 import { SnapsContentTransformService } from '@gitroom/nestjs-libraries/snaps/transform/content-transform.service';
 import { SnapsSourceLibraryService } from '@gitroom/nestjs-libraries/snaps/library/source-library.service';
 import { SnapsFeedbackInboxService } from '@gitroom/nestjs-libraries/snaps/inbox/feedback-inbox.service';
 import { SnapsActivityLogService } from '@gitroom/nestjs-libraries/snaps/activity/activity-log.service';
+import { SnapsLinkAttributionService } from '@gitroom/nestjs-libraries/snaps/sales/link-attribution.service';
+import { SnapsCompetitorAnalyticsService } from '@gitroom/nestjs-libraries/snaps/competitors/competitor-analytics.service';
+import { SnapsBulkCampaignService } from '@gitroom/nestjs-libraries/snaps/bulk/bulk-campaign.service';
+import { SnapsFeedIntakeService } from '@gitroom/nestjs-libraries/snaps/feeds/feed-intake.service';
+import { SnapsCarouselVisualService } from '@gitroom/nestjs-libraries/snaps/visuals/carousel-visual.service';
+import { SnapsVisualFeedPlannerService } from '@gitroom/nestjs-libraries/snaps/planner/visual-feed-planner.service';
+import { SnapsFirstCommentService } from '@gitroom/nestjs-libraries/snaps/comments/first-comment.service';
+import { SnapsHashtagSetService } from '@gitroom/nestjs-libraries/snaps/hashtags/hashtag-set.service';
+import { SnapsHashtagTrackerService } from '@gitroom/nestjs-libraries/snaps/hashtags/hashtag-tracker.service';
+import { SnapsSocialListeningService } from '@gitroom/nestjs-libraries/snaps/listening/social-listening.service';
+import { SnapsTrendRadarService } from '@gitroom/nestjs-libraries/snaps/trends/trend-radar.service';
+import { SnapsPostPreviewService } from '@gitroom/nestjs-libraries/snaps/previews/post-preview.service';
+import { SnapsAdDisclosureGuardService } from '@gitroom/nestjs-libraries/snaps/compliance/ad-disclosure-guard.service';
+import { SnapsEvergreenRecycleService } from '@gitroom/nestjs-libraries/snaps/recycle/evergreen-recycle.service';
+import { SnapsRecurringPostService } from '@gitroom/nestjs-libraries/snaps/recurring/recurring-post.service';
+import { SnapsRepurposeQueueService } from '@gitroom/nestjs-libraries/snaps/repurpose/repurpose-queue.service';
+import { SnapsApprovalWorkflowService } from '@gitroom/nestjs-libraries/snaps/approvals/approval-workflow.service';
+import { SnapsViralCoachService } from '@gitroom/nestjs-libraries/snaps/coach/viral-coach.service';
+import { SnapsPostVariationService } from '@gitroom/nestjs-libraries/snaps/experiments/post-variation.service';
+import { SnapsSourceResolverService } from '@gitroom/nestjs-libraries/snaps/source-resolver/source-resolver.service';
+import { SnapsContentCalendarService } from '@gitroom/nestjs-libraries/snaps/calendar/content-calendar.service';
+import { SnapsPostConditionService } from '@gitroom/nestjs-libraries/snaps/conditions/post-condition.service';
+import { SnapsContentCategoryService } from '@gitroom/nestjs-libraries/snaps/categories/content-category.service';
+import { SnapsContentIdeaService } from '@gitroom/nestjs-libraries/snaps/ideas/content-idea.service';
+import { SnapsBrandKitService } from '@gitroom/nestjs-libraries/snaps/brand/brand-kit.service';
+import { SnapsMediaAssetService } from '@gitroom/nestjs-libraries/snaps/media/media-asset.service';
+import { SnapsCreativeBriefService } from '@gitroom/nestjs-libraries/snaps/creative/creative-brief.service';
 import { buildSnapsPublishingPayload } from '@gitroom/nestjs-libraries/snaps/schedule/publishing-payload.builder';
 import { buildSnapsVideoVariants } from '@gitroom/nestjs-libraries/snaps/video/video-variant.builder';
 import { NaverCafeProvider } from '@gitroom/nestjs-libraries/integrations/social/naver-cafe.provider';
@@ -182,7 +211,36 @@ async function main() {
     const reports = new SnapsReportGeneratorService(ollama);
     const inbox = new SnapsFeedbackInboxService(ollama);
     const shorts = new SnapsShortVideoService(ollama);
+    const voiceoverCaptions = new SnapsVideoVoiceoverCaptionService();
+    const videoPublishGuard = new SnapsVideoPublishGuardService();
     const activity = new SnapsActivityLogService();
+    const sales = new SnapsLinkAttributionService();
+    const competitors = new SnapsCompetitorAnalyticsService();
+    const bulk = new SnapsBulkCampaignService();
+    const feeds = new SnapsFeedIntakeService();
+    const carouselVisuals = new SnapsCarouselVisualService();
+    const visualFeedPlanner = new SnapsVisualFeedPlannerService();
+    const firstComments = new SnapsFirstCommentService();
+    const hashtagSets = new SnapsHashtagSetService();
+    const hashtagTracker = new SnapsHashtagTrackerService();
+    const socialListening = new SnapsSocialListeningService();
+    const trendRadar = new SnapsTrendRadarService();
+    const postPreviews = new SnapsPostPreviewService();
+    const adDisclosureGuard = new SnapsAdDisclosureGuardService();
+    const recycler = new SnapsEvergreenRecycleService();
+    const recurringPosts = new SnapsRecurringPostService();
+    const repurposeQueue = new SnapsRepurposeQueueService();
+    const approvals = new SnapsApprovalWorkflowService();
+    const viralCoach = new SnapsViralCoachService();
+    const postVariations = new SnapsPostVariationService();
+    const sourceResolver = new SnapsSourceResolverService();
+    const contentCalendar = new SnapsContentCalendarService();
+    const postConditions = new SnapsPostConditionService();
+    const contentCategories = new SnapsContentCategoryService();
+    const ideas = new SnapsContentIdeaService();
+    const brandKits = new SnapsBrandKitService();
+    const mediaAssets = new SnapsMediaAssetService();
+    const creativeBriefs = new SnapsCreativeBriefService();
 
     await verifyJsonStoreRecovery(dataDir, orgId, {
       sourceLibrary,
@@ -242,6 +300,1034 @@ async function main() {
         !cleanActivity.detail &&
         !JSON.stringify(activityList).includes('[object Object]'),
       'activity import should reject object titles and array details'
+    );
+
+    const salesCampaign = await sales.saveCampaign(orgId, {
+      title: 'Smoke sales campaign',
+      destinationUrl: 'https://example.com/offer',
+      cta: '상담 신청',
+      platform: 'instagram',
+      tags: ['sales', 'smoke'],
+    });
+    const secondarySalesCampaign = await sales.saveCampaign(orgId, {
+      title: 'Smoke sales webinar',
+      destinationUrl: 'https://example.com/webinar',
+      cta: '웨비나 신청',
+      platform: 'linkedin',
+      tags: ['sales', 'webinar'],
+    });
+    assert(
+      salesCampaign.trackingUrl.includes('utm_campaign=smoke-sales-campaign') &&
+        salesCampaign.linkInBioUrl.includes('/snaps/link/'),
+      'sales campaign should create tracking and link-in-bio URLs'
+    );
+    await sales.recordEvent(orgId, {
+      campaignId: salesCampaign.id,
+      eventType: 'click',
+      platform: 'instagram',
+    });
+    await sales.recordEvent(orgId, {
+      campaignId: salesCampaign.id,
+      eventType: 'purchase',
+      amount: 49000,
+      currency: 'KRW',
+    });
+    const salesSummary = await sales.summary(orgId);
+    assert(
+      salesSummary.clicks === 1 &&
+        salesSummary.purchases === 1 &&
+        salesSummary.revenue === 49000,
+      'sales summary should attribute clicks, purchases, and revenue'
+    );
+    const salesReport = await sales.report(orgId);
+    assert(
+      salesReport.metrics.sales.revenue === 49000 &&
+        salesReport.source === 'snaps-sales-attribution',
+      'sales report should expose revenue metrics'
+    );
+    const salesProposal = await sales.proposal(orgId, {
+      leadName: 'Smoke lead',
+      segment: 'B2B marketing team',
+      sourceAsset: salesCampaign.title,
+      pilotDays: 14,
+      targetRevenue: 299000,
+    });
+    assert(
+      salesProposal.source === 'snaps-sales-proposal' &&
+        salesProposal.pricing.pilotFee > 0 &&
+        salesProposal.followUpMessages.length >= 2 &&
+        salesProposal.successMetrics.some((metric) => metric.includes('299000')),
+      'sales proposal should turn attribution data into an executable pilot offer'
+    );
+    const publicSalesLink = await sales.publicLink(salesCampaign.slug, orgId);
+    assert(
+      publicSalesLink.source === 'snaps-public-sales-link' &&
+        publicSalesLink.clickPath.includes(`/public/snaps/link/${orgId}/`) &&
+        publicSalesLink.destinationHost === 'example.com',
+      'sales public link should expose a link-in-bio landing contract'
+    );
+    const publicSalesHub = await sales.publicHub(orgId);
+    const publicSalesEntry = await sales.publicEntry(orgId);
+    assert(
+      publicSalesHub.source === 'snaps-public-sales-hub' &&
+        publicSalesHub.linkInBioUrl.endsWith(`/snaps/link/${encodeURIComponent(orgId)}`) &&
+        publicSalesHub.links.some((link) => link.campaignId === salesCampaign.id) &&
+        publicSalesHub.links.some((link) => link.campaignId === secondarySalesCampaign.id) &&
+        publicSalesEntry.source === 'snaps-public-sales-hub',
+      'sales public hub should expose multiple organization links'
+    );
+    const publicSalesClick = await sales.recordPublicClick(salesCampaign.slug, orgId, {
+      smoke: true,
+    });
+    const salesSummaryAfterPublicClick = await sales.summary(orgId);
+    assert(
+      publicSalesClick.redirectUrl.includes('utm_campaign=smoke-sales-campaign') &&
+        salesSummaryAfterPublicClick.clicks === 2,
+      'sales public link click should record attribution and return a redirect URL'
+    );
+
+    const competitor = await competitors.saveProfile(orgId, {
+      name: 'Smoke Rival',
+      handle: '@smokerival',
+      profileUrl: 'https://instagram.com/smokerival',
+      platform: 'instagram',
+      niche: 'AI content ops',
+      tags: ['competitor', 'smoke'],
+    });
+    await competitors.recordSnapshot(orgId, {
+      competitorId: competitor.id,
+      followers: 12000,
+      followersGrowth: 320,
+      postsCount: 8,
+      videosCount: 4,
+      photosCount: 4,
+      engagement: 560,
+      engagementRate: 4.7,
+      topPosts: [
+        {
+          title: 'Rival top reel',
+          format: 'video',
+          engagement: 560,
+          hook: '3초 안에 문제를 보여준다',
+        },
+      ],
+    });
+    const competitorSummary = await competitors.summary(orgId);
+    assert(
+      competitorSummary.competitors === 1 &&
+        competitorSummary.totalEngagement === 560 &&
+        competitorSummary.videoShare === 0.5,
+      'competitor summary should rank profiles and content mix'
+    );
+    const competitorReport = await competitors.report(orgId);
+    assert(
+      competitorReport.metrics.competitors.engagement === 560 &&
+        competitorReport.source === 'snaps-competitor-analysis',
+      'competitor report should expose competitor metrics'
+    );
+    const competitorImportPreview = competitors.previewImport({
+      importText:
+        'name,handle,profileUrl,platform,niche,followers,followersGrowth,postsCount,videosCount,photosCount,engagement,engagementRate,topPostTitle,topPostFormat,topPostEngagement,topPostHook\n' +
+        'CSV Rival,@csvrival,https://instagram.com/csvrival,instagram,AI content ops,15000,260,10,6,4,760,5.1,"CSV rival reel",video,760,"show the problem fast"',
+    });
+    assert(
+      competitorImportPreview.acceptedRows === 1 &&
+        competitorImportPreview.snapshotRows === 1 &&
+        competitorImportPreview.rows[0].topPosts[0].title === 'CSV rival reel',
+      'competitor import preview should parse public CSV snapshots'
+    );
+    const competitorImport = await competitors.importPublicSnapshots(orgId, {
+      importText: JSON.stringify({
+        insights: [
+          {
+            account: {
+              name: 'JSON Rival',
+              username: 'jsonrival',
+              provider: 'instagram',
+            },
+            followers: 21000,
+            followers_growth: 310,
+            posts_count: 9,
+            videos_count: 5,
+            photos_count: 4,
+            engagement: 880,
+            engagement_rate: 4.2,
+          },
+        ],
+      }),
+    });
+    assert(
+      competitorImport.imported.profiles === 1 &&
+        competitorImport.imported.snapshots === 1,
+      'competitor import should persist public JSON snapshots'
+    );
+
+    const ideaPreview = ideas.generate({
+      topic: 'AI 콘텐츠 운영 14일 챌린지',
+      audience: 'B2B 마케터',
+      goal: '상담 댓글 증가',
+      targetPlatforms: ['threads', 'instagram'],
+      count: 4,
+      cta: '댓글로 파일럿이라고 남기세요.',
+    });
+    assert(
+      ideaPreview.source === 'snaps-idea-board' &&
+        ideaPreview.ideas.length === 4 &&
+        ideaPreview.ideas[0].targetPlatforms.includes('threads'),
+      'idea board should generate channel-agnostic ideas'
+    );
+    const savedIdea = await ideas.save(orgId, {
+      ...ideaPreview.ideas[0],
+      linkUrl: 'https://example.com/idea',
+    });
+    assert(
+      savedIdea.status === 'inbox' && savedIdea.tags.includes('idea'),
+      'idea board should save generated ideas'
+    );
+    const plannedIdea = await ideas.updateStatus(orgId, savedIdea.id, {
+      status: 'planned',
+      group: 'This week',
+    });
+    assert(
+      plannedIdea.idea.status === 'planned' &&
+        plannedIdea.idea.group === 'This week',
+      'idea board should update idea status and group'
+    );
+    const promotedIdeaSource = await sourceLibrary.saveSource(
+      orgId,
+      ideas.toSourceInput(plannedIdea.idea)
+    );
+    const promotedIdea = await ideas.markPromoted(orgId, savedIdea.id);
+    assert(
+      promotedIdea.status === 'drafted' &&
+        promotedIdeaSource.sourcePlatform === 'idea-board',
+      'idea board should promote ideas into source library input'
+    );
+    const importedIdeas = await ideas.importIdeas(orgId, [promotedIdea]);
+    assert(
+      importedIdeas.imported === 1,
+      'idea board should import stored ideas'
+    );
+    const malformedIdea = await ideas
+      .save(orgId, { body: { invalid: true } })
+      .then(() => false)
+      .catch(() => true);
+    assert(malformedIdea, 'idea board should reject malformed ideas');
+
+    const brandKitPreview = brandKits.analyze({
+      name: 'snaps B2B 파일럿',
+      audience: '5인 이하 B2B 브랜드 대표와 마케터',
+      voice: '명확하고 실무적인 조언자',
+      tone: '근거 중심, 과장 없음',
+      targetPlatforms: ['threads', 'instagram'],
+      requiredTerms: ['snaps', '콘텐츠 운영'],
+      bannedTerms: ['무조건', '완벽한'],
+      hashtags: ['#콘텐츠운영', '#snaps'],
+      websiteText: 'Brand: snaps B2B 파일럿\n데이터와 사례를 바탕으로 말합니다.',
+    });
+    assert(
+      brandKitPreview.source === 'snaps-brand-kit' &&
+        brandKitPreview.targetPlatforms.includes('threads') &&
+        brandKitPreview.promptGuidance.includes('Required terms'),
+      'brand kit should analyze voice, audience, and platform guidance'
+    );
+    const savedBrandKit = await brandKits.save(orgId, brandKitPreview);
+    const appliedBrandKit = await brandKits.apply(orgId, savedBrandKit.id, {
+      sourceText: '이번 주 콘텐츠 운영 메모',
+    });
+    assert(
+      appliedBrandKit.source === 'snaps-brand-kit-application' &&
+        appliedBrandKit.transformPatch.tone.includes('명확') &&
+        appliedBrandKit.hashtagAppend.includes('#snaps'),
+      'brand kit should apply guidance to transform inputs'
+    );
+    const importedBrandKits = await brandKits.importBrandKits(orgId, [
+      savedBrandKit,
+    ]);
+    assert(
+      importedBrandKits.imported === 1,
+      'brand kit should import stored guidance'
+    );
+    const malformedBrandKit = await brandKits
+      .save(orgId, { bannedTerms: ['only invalid without voice signal'] })
+      .then(() => false)
+      .catch(() => true);
+    assert(malformedBrandKit, 'brand kit should reject malformed guidance saves');
+
+    const mediaAssetPreview = mediaAssets.preview({
+      title: 'AI 콘텐츠 운영 카드뉴스 커버',
+      url: 'https://example.com/snaps-cover.png',
+      mediaType: 'image',
+      altText: '콘텐츠 운영 과정을 보여주는 카드뉴스 커버',
+      caption: '원문 하나를 SNS별 콘텐츠로 바꾸는 흐름을 보여줍니다.',
+      campaign: '서비스 스모크 캠페인',
+      tags: ['media', 'pilot'],
+      targetPlatforms: ['instagram', 'youtube'],
+      width: 1080,
+      height: 1350,
+    });
+    assert(
+      mediaAssetPreview.source === 'snaps-media-library' &&
+        mediaAssetPreview.platformFit.some((fit) => fit.platform === 'youtube') &&
+        mediaAssetPreview.warnings.some((warning) => warning.includes('YouTube')),
+      'media library should preview platform fit and warnings'
+    );
+    const savedMediaAsset = await mediaAssets.save(orgId, mediaAssetPreview);
+    const attachedMediaAsset = await mediaAssets.attach(orgId, savedMediaAsset.id, {
+      targetPlatforms: ['instagram', 'linkedin'],
+    });
+    assert(
+      attachedMediaAsset.source === 'snaps-media-library-attach' &&
+        attachedMediaAsset.transform.variants.length === 2 &&
+        attachedMediaAsset.transform.variants[0].media?.[0]?.path === savedMediaAsset.url,
+      'media library should attach assets to platform variants'
+    );
+    const importedMediaAssets = await mediaAssets.importAssets(orgId, [
+      savedMediaAsset,
+    ]);
+    assert(
+      importedMediaAssets.imported === 1,
+      'media library should import stored assets'
+    );
+    const malformedMediaAsset = await mediaAssets
+      .save(orgId, { title: 'missing url' })
+      .then(() => false)
+      .catch(() => true);
+    assert(malformedMediaAsset, 'media library should reject malformed assets');
+
+    const creativeBriefPreview = creativeBriefs.preview({
+      title: 'AI 콘텐츠 운영 디자인 브리프',
+      sourceText:
+        '원문 하나를 카드뉴스, 숏폼 커버, 링크드인 이미지로 재사용하는 캠페인입니다.',
+      mediaType: 'video',
+      aspectRatio: 'story',
+      targetPlatforms: ['instagram', 'youtube'],
+      cta: '댓글로 파일럿이라고 남겨주세요.',
+    });
+    assert(
+      creativeBriefPreview.source === 'snaps-creative-brief' &&
+        creativeBriefPreview.items.length === 3 &&
+        creativeBriefPreview.items[0].storyboard.length >= 3,
+      'creative briefs should generate design handoff items and storyboards'
+    );
+    const creativeBriefMediaInput = creativeBriefs.toMediaAssetInput(
+      creativeBriefPreview,
+      { itemId: creativeBriefPreview.items[0].id }
+    );
+    assert(
+      String(creativeBriefMediaInput.url).startsWith('data:image/svg+xml') &&
+        creativeBriefMediaInput.source === 'snaps-creative-brief',
+      'creative briefs should prepare media-library inputs'
+    );
+
+    const approval = await approvals.submit(orgId, {
+      title: 'Approval service smoke',
+      reviewer: 'client@example.com',
+      variants: [
+        {
+          platform: 'threads',
+          label: 'Threads',
+          content: '승인 워크플로우 서비스 스모크 콘텐츠입니다.',
+          hashtags: ['#snaps'],
+          settings: {},
+          publishMode: 'schedule',
+        },
+      ],
+      note: 'client approval',
+    });
+    assert(
+      approval.status === 'pending' && approval.variants.length === 1,
+      'approval workflow should submit pending variant requests'
+    );
+    const publicApprovalLink = await approvals.createPublicReviewLink(
+      orgId,
+      approval.id,
+      {
+        reviewer: 'client@example.com',
+        note: 'share externally',
+        expiresInDays: 14,
+        allowDecision: true,
+      }
+    );
+    const publicApprovalReview = await approvals.publicReview(
+      orgId,
+      publicApprovalLink.token
+    );
+    assert(
+      publicApprovalLink.source === 'snaps-approval-public-link' &&
+        publicApprovalLink.publicReviewUrl.includes('/snaps/review/') &&
+        publicApprovalReview.source === 'snaps-public-approval-review' &&
+        publicApprovalReview.approvalId === approval.id,
+      'approval workflow should create public client review links'
+    );
+    const publicApprovalComment = await approvals.addPublicReviewComment(
+      orgId,
+      publicApprovalLink.token,
+      {
+        actor: 'client@example.com',
+        message: '공개 리뷰 링크에서 남긴 피드백입니다.',
+        selection: '공개 CTA',
+      }
+    );
+    assert(
+      publicApprovalComment.source === 'snaps-public-approval-comment' &&
+        publicApprovalComment.review.comments.length === 1,
+      'approval workflow should accept public review comments'
+    );
+    const publicApprovalDecision = await approvals.publicReviewDecision(
+      orgId,
+      publicApprovalLink.token,
+      {
+        decision: 'request-changes',
+        reviewer: 'client@example.com',
+        note: 'public changes requested',
+      }
+    );
+    assert(
+      publicApprovalDecision.review.status === 'changes-requested',
+      'approval workflow should accept public approval decisions when enabled'
+    );
+    const approvalComment = await approvals.addComment(orgId, approval.id, {
+      actor: 'client@example.com',
+      message: 'CTA를 더 구체적으로 바꾸면 좋겠습니다.',
+      visibility: 'reviewer',
+      variantPlatform: 'threads',
+      variantIndex: 0,
+      selection: 'CTA',
+    });
+    assert(
+      approvalComment.approval.comments.length >= 2 &&
+        approvalComment.comment.resolved === false,
+      'approval workflow should store draft comments'
+    );
+    const resolvedApprovalComment = await approvals.resolveComment(
+      orgId,
+      approval.id,
+      approvalComment.comment.id,
+      {
+        actor: 'snaps operator',
+        resolved: true,
+      }
+    );
+    assert(
+      resolvedApprovalComment.comment.resolved === true &&
+        resolvedApprovalComment.approval.comments[0].resolved === true,
+      'approval workflow should resolve draft comments'
+    );
+    const rejectedApprovalComment = await approvals
+      .addComment(orgId, approval.id, {
+        message: { invalid: true },
+      })
+      .then(() => false)
+      .catch(() => true);
+    assert(
+      rejectedApprovalComment,
+      'approval workflow should reject malformed comment messages'
+    );
+    const approved = await approvals.review(orgId, approval.id, {
+      decision: 'approve',
+      reviewer: 'client@example.com',
+      note: 'approved',
+    });
+    assert(
+      approved.status === 'approved' && approved.history[0].action === 'approve',
+      'approval workflow should approve requests with history'
+    );
+    const scheduledApproval = await approvals.markScheduled(orgId, approval.id, {
+      note: 'draft created',
+    });
+    assert(
+      scheduledApproval.status === 'scheduled',
+      'approval workflow should mark approved requests as scheduled'
+    );
+    const importedApprovals = await approvals.importApprovals(orgId, [
+      scheduledApproval,
+    ]);
+    assert(
+      importedApprovals.imported === 1,
+      'approval workflow should import stored approval requests'
+    );
+    const importedApprovalList = await approvals.list(orgId);
+    assert(
+      importedApprovalList.some(
+        (item) =>
+          item.id === scheduledApproval.id &&
+          item.comments.some((comment) => comment.resolved)
+      ),
+      'approval workflow should preserve resolved comments during import'
+    );
+
+    const scorecard = viralCoach.score({
+      platform: 'instagram',
+      title: 'AI 콘텐츠 운영 체크리스트',
+      content:
+        '콘텐츠 만드는 사람이 가장 많이 놓치는 첫 3초 훅을 고치는 방법입니다. 문제를 먼저 보여주고 저장할 만한 체크리스트로 정리하세요. 댓글로 다음 주제를 알려주세요.',
+      visualDescription:
+        '첫 화면에 큰 자막, 체크리스트 카드, 문제 장면이 순서대로 보입니다.',
+      hashtags: ['#콘텐츠', '#마케팅', '#릴스'],
+      durationSeconds: 30,
+    });
+    assert(
+      scorecard.source === 'snaps-viral-ai-coach' &&
+        scorecard.categories.length === 6 &&
+        scorecard.suggestedHooks.length === 10 &&
+        scorecard.hashtagPlan.final.length <= scorecard.hashtagPlan.limit,
+      'viral coach should score drafts and return hooks plus hashtag plan'
+    );
+
+    const variationLab = postVariations.preview({
+      sourceText:
+        '하나의 성과 좋은 게시물을 여러 훅과 CTA로 바꿔 테스트합니다.\n숫자 증거, 체크리스트, 댓글 질문을 나눠서 어떤 메시지가 저장과 리드를 만드는지 확인합니다.',
+      title: 'Smoke post variation lab',
+      topic: '콘텐츠 실험',
+      audience: 'B2B 마케터',
+      cta: '댓글로 실험이라고 남기면 샘플 훅을 보내드립니다.',
+      targetPlatforms: ['threads', 'instagram', 'linkedin'],
+      variantCount: 5,
+      goal: 'leads',
+      competitorHook: '손작업 콘텐츠를 줄이세요',
+      tags: ['experiment', 'runtime'],
+    });
+    const variationSources = postVariations.toSourceInputs(variationLab.items);
+    const variationVariants = postVariations.toVariants(variationLab.items);
+    assert(
+      variationLab.source === 'snaps-post-variation-lab' &&
+        variationLab.totalVariants === 5 &&
+        !!variationLab.winningVariantId &&
+        variationLab.items[0].status === 'winner' &&
+        variationSources[0].sourcePlatform === 'post-variation-lab' &&
+        variationVariants.some((variant) => variant.settings.source === 'snaps-post-variation-lab'),
+      'post variation lab should rank hooks and convert ready winners to sources and variants'
+    );
+
+    const articlePreview = await sourceResolver.preview({
+      url: 'https://example.com/article',
+      htmlText:
+        '<html><head><title>Resolved Article</title><meta name="description" content="A source resolver smoke article" /></head><body><article><h1>Resolved Article</h1><p>Source resolver extracts article body text from public pages and turns it into reusable social source material.</p><p>Teams can remix this page into posts, carousels, approvals, and reports without manually copying every paragraph.</p></article></body></html>',
+      customInstructions: 'Turn this into Korean B2B social posts.',
+      tags: ['resolver', 'article'],
+    });
+    assert(
+      articlePreview.source === 'snaps-source-resolver' &&
+        articlePreview.sourceType === 'article' &&
+        articlePreview.sourceInput.sourceText.includes('Source resolver extracts article body text'),
+      'source resolver should extract article HTML into source input'
+    );
+    const researchPreview = await sourceResolver.preview({
+      sourceType: 'research',
+      query: 'AI 콘텐츠 자동화',
+    });
+    assert(
+      researchPreview.sourceType === 'research' &&
+        researchPreview.sourceInput.sourcePlatform === 'ai-research',
+      'source resolver should build deterministic research source briefs'
+    );
+
+    const calendarPreview = contentCalendar.preview({
+      sourceText:
+        'AI 콘텐츠 운영 14일 캠페인은 하나의 원문을 플랫폼별 게시물, 쇼츠, 카드뉴스로 재사용합니다.',
+      campaign: 'Smoke content calendar',
+      audience: 'B2B 콘텐츠 마케터',
+      cadence: 'weekdays',
+      days: 7,
+      postsPerDay: 1,
+      targetPlatforms: ['threads', 'instagram', 'linkedin'],
+      contentPillars: '교육,문제 인식,사례',
+      goals: 'reach,save,lead',
+      formats: 'text,carousel,short-video',
+      startDate: '2026-06-01T09:00:00+09:00',
+    });
+    assert(
+      calendarPreview.source === 'snaps-content-calendar' &&
+        calendarPreview.acceptedItems >= 5 &&
+        calendarPreview.items.some((item) => item.format === 'short-video'),
+      'content calendar should build dated multi-platform campaign slots'
+    );
+    const calendarSources = contentCalendar.toSourceInputs(calendarPreview.items);
+    const calendarVariants = contentCalendar.toVariants(calendarPreview.items[0]);
+    assert(
+      calendarSources[0].sourcePlatform === 'content-calendar' &&
+        calendarVariants[0].settings.source === 'snaps-content-calendar',
+      'content calendar slots should convert to source imports and schedulable variants'
+    );
+
+    const categoryPreview = contentCategories.preview({
+      sourceText:
+        'SocialBee식 콘텐츠 카테고리 큐는 교육, 사례, 프로모션 버킷을 일정 순서로 반복합니다.',
+      campaign: 'Smoke category queue',
+      categories:
+        '교육|evergreen|#12b8b8|저장형 튜토리얼|2\n사례|share-once|#f6c85f|고객 전후 비교|1\n프로모션|share-once|#ef6f6c|상담 CTA|1',
+      categorySequence: '교육,교육,사례,프로모션',
+      days: 7,
+      postsPerDay: 1,
+      targetPlatforms: ['threads', 'instagram'],
+      startDate: '2026-06-01T09:00:00+09:00',
+      linkUrl: 'https://example.com/offer',
+    });
+    assert(
+      categoryPreview.source === 'snaps-content-categories' &&
+        categoryPreview.acceptedItems >= 7 &&
+        categoryPreview.categoryMix.some((category) => category.name === '교육'),
+      'content categories should build weighted category-based queues'
+    );
+    const categorySources = contentCategories.toSourceInputs(categoryPreview.items);
+    const categoryVariants = contentCategories.toVariants(categoryPreview.items[0]);
+    assert(
+      categorySources[0].sourcePlatform === 'content-categories' &&
+        categoryVariants[0].settings.source === 'snaps-content-categories' &&
+        categoryVariants[0].content.includes('utm_campaign='),
+      'content categories should convert queue items to source imports and schedulable variants'
+    );
+
+    const conditionPreview = postConditions.preview({
+      parentTitle: 'Smoke parent post',
+      parentPlatform: 'instagram',
+      parentPublishedAt: '2026-06-01T09:00:00+09:00',
+      followUpText:
+        '조건이 충족된 상위 게시물에 자료 링크와 상담 CTA를 후속 댓글로 붙입니다.',
+      conditionType: 'engagement-rate',
+      threshold: 3.5,
+      metrics: {
+        likes: 120,
+        comments: 18,
+        impressions: 4200,
+        engagementRate: 4.2,
+      },
+      baseline: {
+        averageImpressions: 3000,
+        averageEngagementRate: 3.1,
+      },
+      targetPlatforms: ['instagram', 'threads'],
+      tags: ['condition', 'runtime'],
+    });
+    assert(
+      conditionPreview.source === 'snaps-post-condition' &&
+        conditionPreview.triggerMet === true &&
+        conditionPreview.status === 'ready',
+      'post conditions should evaluate engagement triggers'
+    );
+    const conditionSource = postConditions.toSourceInput(conditionPreview.item);
+    const conditionVariants = postConditions.toVariants(conditionPreview.item);
+    assert(
+      conditionSource.sourcePlatform === 'post-condition' &&
+        conditionVariants.some((variant) => variant.platform === 'threads'),
+      'post conditions should convert triggered follow-ups to source input and variants'
+    );
+    const waitingCondition = postConditions.preview({
+      followUpText: '아직 조건이 충족되지 않은 후속 포스트입니다.',
+      conditionType: 'comments',
+      threshold: 10,
+      metrics: { comments: 2 },
+      targetPlatforms: ['threads'],
+    });
+    assert(
+      waitingCondition.status === 'waiting' &&
+        postConditions.toVariants(waitingCondition.item).length === 0,
+      'post conditions should not queue waiting follow-ups'
+    );
+
+    const bulkFuturePublishDate = new Date(
+      Date.now() + 7 * 24 * 60 * 60 * 1000
+    ).toISOString();
+    const bulkPreview = bulk.preview({
+      csvText:
+        'title,topic,caption,platforms,publishDate,linkUrl,tags\n' +
+        `Bulk row,CSV campaign,"캠페인 CSV 행을 한번에 검증합니다.","instagram|threads",${bulkFuturePublishDate},https://example.com/bulk,"csv|bulk"`,
+      defaultTone: '간결한 한국어',
+    });
+    assert(
+      bulkPreview.acceptedRows === 1 &&
+        bulkPreview.readyToSchedule === 1 &&
+        bulkPreview.rows[0].platforms.includes('instagram'),
+      'bulk CSV preview should parse platform and schedule rows'
+    );
+    const bulkSources = bulk.toSourceInputs(bulkPreview.rows);
+    const bulkVariants = bulk.toVariants(bulkPreview.rows[0]);
+    assert(
+      bulkSources[0].sourcePlatform === 'bulk-csv' &&
+        bulkVariants.some((variant) => variant.platform === 'threads'),
+      'bulk CSV rows should convert to source imports and schedulable variants'
+    );
+
+    const feedPreview = await feeds.preview({
+      feedXml:
+        '<rss><channel><item><title>Feed row</title><link>https://example.com/feed</link><description>RSS 피드 항목을 콘텐츠 큐로 검증합니다.</description><category>rss</category></item></channel></rss>',
+      defaultPlatforms: ['instagram', 'threads'],
+      defaultTone: '간결한 한국어',
+    });
+    assert(
+      feedPreview.acceptedItems === 1 &&
+        feedPreview.readyToSchedule === 1 &&
+        feedPreview.items[0].platforms.includes('instagram'),
+      'RSS feed preview should parse items and selected platforms'
+    );
+    const feedSources = feeds.toSourceInputs(feedPreview.items);
+    const feedVariants = feeds.toVariants(feedPreview.items[0]);
+    assert(
+      feedSources[0].sourcePlatform === 'rss-feed' &&
+        feedVariants.some((variant) => variant.platform === 'threads'),
+      'RSS feed items should convert to source imports and schedulable variants'
+    );
+
+    const carouselPreview = carouselVisuals.preview({
+      sourceText:
+        'AI 콘텐츠 운영 체크리스트\n원문을 플랫폼별 문법으로 재작성합니다.\n저장할 만한 인사이트를 카드뉴스로 쪼갭니다.\n마지막 장에는 상담 CTA를 둡니다.',
+      title: 'Smoke carousel',
+      topic: 'visual smoke',
+      targetPlatforms: ['instagram', 'linkedin'],
+      template: 'report',
+      aspectRatio: 'portrait',
+      slideCount: 5,
+    });
+    assert(
+      carouselPreview.slideCount >= 3 &&
+        carouselPreview.media.length === carouselPreview.slideCount &&
+        carouselPreview.exportHtml.includes('Smoke carousel'),
+      'carousel visual preview should build slide media and export HTML'
+    );
+    const carouselVariants = carouselVisuals.toVariants(carouselPreview, [
+      'instagram',
+      'linkedin',
+    ]);
+    assert(
+      carouselVariants.length === 2 &&
+        carouselVariants.every((variant) => variant.media?.length === carouselPreview.slideCount),
+      'carousel visual preview should convert to media-bearing platform variants'
+    );
+    const visualPlannerPreview = visualFeedPlanner.preview({
+      platform: 'instagram',
+      viewMode: 'vertical',
+      items: [
+        {
+          title: 'Launch cover',
+          imageUrl: 'https://example.com/launch-cover.png',
+          status: 'scheduled',
+          caption: '런칭 커버가 피드 첫 줄에서 자연스러운지 확인합니다.',
+          mediaType: 'image',
+        },
+        {
+          title: 'Reels cover',
+          imageUrl: 'https://example.com/reels-cover.png',
+          status: 'draft',
+          caption: '릴스 커버를 두 번째 칸에 배치합니다.',
+          mediaType: 'video',
+        },
+      ],
+    });
+    const visualPlannerVariants = visualFeedPlanner.toVariants(
+      visualPlannerPreview,
+      ['instagram']
+    );
+    assert(
+      visualPlannerPreview.source === 'snaps-visual-feed-planner' &&
+        visualPlannerPreview.columns === 3 &&
+        visualPlannerPreview.items[0].row === 1 &&
+        visualPlannerPreview.recommendations.length >= 1 &&
+        visualPlannerVariants.length === 2 &&
+        visualPlannerVariants[0].settings.source === 'snaps-visual-feed-planner',
+      'visual feed planner should preview grid cells and convert them to variants'
+    );
+    const firstCommentPreview = firstComments.preview({
+      sourceText:
+        '첫 댓글에는 해시태그와 자료 링크를 분리해 캡션을 가볍게 유지합니다. https://example.com/guide',
+      topic: 'first comment smoke',
+      globalComment: '#snaps #firstcomment\n\n댓글로 파일럿이라고 남기면 자료를 보내드립니다.',
+      strategy: 'hashtags',
+      variants: [
+        {
+          platform: 'instagram',
+          label: 'Instagram',
+          title: 'First comment smoke',
+          content: '본문은 간결하게 유지합니다.',
+          hashtags: ['#snaps', '#firstcomment'],
+          settings: { __type: 'instagram', post_type: 'post' },
+          publishMode: 'schedule',
+        },
+      ],
+    });
+    const firstCommentVariants = firstComments.toVariants(firstCommentPreview);
+    const firstCommentPayload = buildSnapsPublishingPayload({
+      variants: firstCommentVariants,
+      integrations: [{ platform: 'instagram', integrationId: 'ig-first-comment' }],
+      scheduleType: 'draft',
+    });
+    assert(
+      firstCommentPreview.source === 'snaps-first-comment-planner' &&
+        firstCommentPreview.supportedItems === 1 &&
+        firstCommentVariants[0].settings.firstComment &&
+        firstCommentPayload.payload?.posts[0]?.value.length === 2,
+      'first comment planner should attach a first comment to the publishing value chain'
+    );
+    const hashtagSetPreview = hashtagSets.preview({
+      title: 'Smoke hashtag group',
+      topic: 'hashtag smoke',
+      hashtagText: '#snaps #firstcomment #콘텐츠운영 #마케팅자동화 #파일럿 #초과태그',
+      reusableText: '자료가 필요하면 댓글로 파일럿이라고 남겨주세요.',
+      placement: 'first-comment',
+      strategy: 'campaign',
+      targetPlatforms: ['instagram', 'linkedin'],
+      variants: firstCommentVariants,
+    });
+    assert(
+      hashtagSetPreview.source === 'snaps-hashtag-set' &&
+        hashtagSetPreview.hashtags.length >= 5 &&
+        hashtagSetPreview.platformPlans.some((plan) => plan.overLimit > 0),
+      'hashtag set manager should preview stored hashtag groups with platform limits'
+    );
+    const savedHashtagSet = await hashtagSets.save(orgId, hashtagSetPreview);
+    const appliedHashtagSet = await hashtagSets.apply(orgId, savedHashtagSet.id, {
+      variants: firstCommentVariants,
+      placement: 'first-comment',
+    });
+    const hashtagSetPayload = buildSnapsPublishingPayload({
+      variants: appliedHashtagSet.transform.variants,
+      integrations: [{ platform: 'instagram', integrationId: 'ig-hashtag-set' }],
+      scheduleType: 'draft',
+    });
+    assert(
+      appliedHashtagSet.source === 'snaps-hashtag-set-application' &&
+        appliedHashtagSet.transform.variants[0].settings.hashtagSetId ===
+          savedHashtagSet.id &&
+        String(appliedHashtagSet.transform.variants[0].settings.firstComment).includes('#snaps') &&
+        hashtagSetPayload.payload?.posts[0]?.value.length === 2,
+      'hashtag set manager should apply saved groups to captions or first comments'
+    );
+    const importedHashtagSets = await hashtagSets.importSets(orgId, [
+      savedHashtagSet,
+    ]);
+    assert(
+      importedHashtagSets.imported === 1,
+      'hashtag set manager should import stored sets'
+    );
+    const malformedHashtagSet = await hashtagSets
+      .save(orgId, { tags: ['missing real hashtag signal'] })
+      .then(() => false)
+      .catch(() => true);
+    assert(malformedHashtagSet, 'hashtag set manager should reject malformed saves');
+
+    const hashtagTrackerPreview = hashtagTracker.preview({
+      title: 'Smoke hashtag tracker',
+      topic: 'hashtag smoke',
+      goal: 'engagement',
+      hashtagText: '#snaps #firstcomment #콘텐츠운영 #마케팅자동화',
+      targetPlatforms: ['instagram', 'x'],
+      variants: firstCommentVariants,
+      importText:
+        'hashtag,platform,posts,impressions,engagements,comments,saves,clicks\n' +
+        '#snaps,instagram,7,11200,740,44,116,51\n' +
+        '#firstcomment,instagram,4,6800,288,30,42,18\n' +
+        '#마케팅자동화,x,11,17400,540,39,21,72',
+    });
+    const trackedSetInput = hashtagTracker.toHashtagSetInput(hashtagTrackerPreview, {
+      setTitle: 'Tracked smoke hashtags',
+    });
+    assert(
+      hashtagTrackerPreview.source === 'snaps-hashtag-tracker' &&
+        hashtagTrackerPreview.trackedHashtags >= 3 &&
+        hashtagTrackerPreview.items[0].action === 'keep' &&
+        Array.isArray(trackedSetInput.hashtags) &&
+        trackedSetInput.hashtags.length >= 2,
+      'hashtag tracker should score metrics and produce a reusable hashtag set input'
+    );
+
+    const listeningPreview = socialListening.preview({
+      title: 'Smoke listening monitor',
+      query: 'snaps OR #콘텐츠자동화',
+      keywords: ['snaps', '#콘텐츠자동화', '가격', '데모', 'Buffer', '비교'],
+      excludeKeywords: ['카지노'],
+      targetPlatforms: ['instagram', 'threads', 'x'],
+      importText: [
+        'platform,author,content,postId,engagement',
+        'instagram,@lead,"snaps 가격표와 데모 링크 받을 수 있나요? #콘텐츠자동화",ig-1,24',
+        'threads,@ops,"Buffer랑 비교하면 댓글 응대까지 되나요?",th-2,7',
+        'x,@spam,"카지노 무료머니 snaps",x-3,2',
+      ].join('\n'),
+      campaign: 'smoke listening',
+    });
+    assert(
+      listeningPreview.source === 'snaps-social-listening' &&
+        listeningPreview.matchedItems >= 2 &&
+        listeningPreview.highIntentItems >= 1 &&
+        listeningPreview.noiseItems >= 1 &&
+        listeningPreview.signals.some((signal) => signal.id === 'pricing') &&
+        listeningPreview.clusters.some((cluster) => cluster.id === 'lead'),
+      'social listening should classify keyword matches, noise, signals, and clusters'
+    );
+    const savedListeningMonitor = await socialListening.save(orgId, {
+      ...listeningPreview,
+      tags: ['listening', 'smoke'],
+      importText:
+        'platform,author,content,postId,engagement\ninstagram,@lead,"snaps 가격표와 데모 링크 받을 수 있나요?",ig-1,24',
+    });
+    const listeningRun = await socialListening.run(orgId, savedListeningMonitor.id, {
+      importText:
+        'platform,author,content,postId,engagement\ninstagram,@lead,"snaps 데모와 가격이 궁금합니다",ig-4,31',
+    });
+    const listeningInboxImport = socialListening.toInboxImport(listeningRun.preview);
+    assert(
+      listeningRun.preview.highIntentItems === 1 &&
+        listeningInboxImport.items.length === 1 &&
+        listeningInboxImport.items[0].platform === 'instagram',
+      'social listening should run saved monitors and promote high-intent mentions to inbox input'
+    );
+    const importedListeningMonitors = await socialListening.importMonitors(orgId, [
+      savedListeningMonitor,
+    ]);
+    assert(
+      importedListeningMonitors.imported === 1,
+      'social listening should import stored monitors'
+    );
+    const malformedListeningMonitor = await socialListening
+      .save(orgId, { tags: ['missing real listening signal'] })
+      .then(() => false)
+      .catch(() => true);
+    assert(
+      malformedListeningMonitor,
+      'social listening should reject malformed monitor saves'
+    );
+
+    const trendPreview = trendRadar.preview({
+      title: 'Smoke trend radar',
+      industry: 'B2B 콘텐츠 자동화',
+      region: 'KR',
+      windowDays: 7,
+      targetPlatforms: ['instagram', 'threads', 'linkedin'],
+      keywords: ['#콘텐츠자동화', '가격 문의', '예약 발행'],
+      importText: [
+        'topic,platform,volume,previousVolume,engagement,sentiment,competitor,format,content,source',
+        '#콘텐츠자동화,instagram,46,18,930,positive,Rival Studio,reels,"3초 안에 수작업 문제를 보여준 릴스",competitor',
+        '가격 문의 자동응대,threads,22,8,210,mixed,,thread,"가격표와 데모 링크를 요청하는 댓글이 늘어남",listening',
+        '예약 발행 오류 알림,x,18,5,160,negative,,post,"오류가 있으면 바로 알려줘야 한다는 불만 리스크",listening',
+      ].join('\n'),
+      listeningPreview,
+      hashtagTrackerPreview,
+    });
+    const trendSources = trendRadar.toSourceInputs(trendPreview);
+    assert(
+      trendPreview.source === 'snaps-trend-radar' &&
+        trendPreview.totalTrends >= 3 &&
+        trendPreview.alerts.some((alert) => alert.severity === 'high') &&
+        trendPreview.trends.some((trend) => trend.competitorLead === 'Rival Studio') &&
+        trendSources.length === trendPreview.contentIdeas.length &&
+        trendSources[0].sourcePlatform === 'trend-radar',
+      'trend radar should merge listening, competitor, hashtag signals into alerts and source ideas'
+    );
+
+    const postPreview = postPreviews.preview({
+      content:
+        '가격 문의가 많은 B2B 콘텐츠 운영팀을 위해 첫 줄 훅과 링크 카드, 이미지 alt text를 게시 전에 확인합니다. '.repeat(
+          4
+        ) + 'https://example.com/service-smoke #snaps',
+      targetPlatforms: ['instagram', 'linkedin', 'x'],
+      device: 'desktop',
+      linkUrl: 'https://example.com/service-smoke',
+      linkTitle: 'Service smoke link preview',
+      linkDescription: 'Post preview smoke covers platform feed cuts.',
+      linkImage: 'https://example.com/preview.png',
+      media: [{ path: 'https://example.com/preview.png' }],
+      imageDescription: 'Generated platform preview cards',
+    });
+    assert(
+      postPreview.source === 'snaps-post-preview-inspector' &&
+        postPreview.cards.length >= 3 &&
+        postPreview.cards.some((card) => card.hiddenCharacters >= 0) &&
+        postPreview.cards.some((card) => card.mediaPreview.altTextSuggestion) &&
+        postPreview.averageAccessibilityScore > 0,
+      'post preview inspector should score feed cuts, link previews, and alt text'
+    );
+    const adDisclosure = adDisclosureGuard.check({
+      relationship: 'affiliate',
+      variants: [
+        { platform: 'threads', content: '제휴 링크로 산 키보드 후기입니다.\n#키보드 #데스크셋업' },
+        { platform: 'linkedin', content: '[광고] 제휴 링크, 구매 시 수수료를 받습니다\n키보드 후기' },
+      ],
+    });
+    assert(
+      adDisclosure.status === 'block' &&
+        adDisclosure.cards[0].findings.some((item) => item.rule === 'disclosure-missing') &&
+        adDisclosure.cards[0].fixedContent.startsWith('[광고] 제휴 마케팅 활동의 일환으로') &&
+        adDisclosure.cards[1].status === 'pass',
+      'ad disclosure guard should block undisclosed affiliate posts and pass disclosed ones'
+    );
+
+    const recyclePreview = recycler.preview({
+      sourceText:
+        '성과가 좋았던 체크리스트를 재활용합니다.\n문제 인식형으로 다시 보여줍니다.\n실행 순서형으로 다시 정리합니다.\n성과 근거를 붙여 신뢰도를 높입니다.',
+      title: 'Smoke evergreen',
+      topic: 'evergreen smoke',
+      category: 'education',
+      cadence: 'biweekly',
+      repeatCount: 4,
+      targetPlatforms: ['instagram', 'threads'],
+      performanceNote: '저장률이 높은 게시물',
+    });
+    assert(
+      recyclePreview.acceptedItems === 4 &&
+        recyclePreview.items[0].cadence === 'biweekly' &&
+        recyclePreview.items[0].angle,
+      'evergreen recycle preview should build recurring angle items'
+    );
+    const recycleSources = recycler.toSourceInputs(recyclePreview.items);
+    const recycleVariants = recycler.toVariants(recyclePreview.items[0]);
+    assert(
+      recycleSources[0].sourcePlatform === 'evergreen-recycle' &&
+        recycleVariants.some((variant) => variant.platform === 'threads'),
+      'evergreen recycle items should convert to source imports and schedulable variants'
+    );
+
+    const recurringPreview = recurringPosts.preview({
+      sourceText:
+        '2주 파일럿 모집 반복 게시\n같은 제안을 매주 다른 각도로 보여줍니다.\n댓글과 상담 CTA를 유지하고 날짜별 큐를 만듭니다.',
+      title: 'Smoke recurring',
+      topic: 'recurring smoke',
+      cadence: 'weekly',
+      repeatCount: 4,
+      localTime: '10:30',
+      targetPlatforms: ['instagram', 'threads'],
+      cta: '댓글로 파일럿이라고 남겨주세요.',
+    });
+    assert(
+      recurringPreview.source === 'snaps-recurring-posts' &&
+        recurringPreview.acceptedItems === 4 &&
+        recurringPreview.items[0].publishDate &&
+        recurringPreview.items[0].variation,
+      'recurring post preview should build dated recurring items'
+    );
+    const recurringSources = recurringPosts.toSourceInputs(recurringPreview.items);
+    const recurringVariants = recurringPosts.toVariants(recurringPreview.items[0]);
+    assert(
+      recurringSources[0].sourcePlatform === 'recurring-posts' &&
+        recurringVariants.some((variant) => variant.platform === 'threads'),
+      'recurring post items should convert to source imports and schedulable variants'
+    );
+
+    const repurposePreview = repurposeQueue.preview({
+      sourceText: repurposeQueue.sampleSource,
+      sourcePlatform: 'youtube',
+      workflowMode: 'schedule',
+      contentFilter: 'all-content',
+      targetPlatforms: ['threads', 'linkedin'],
+      scheduleSlots:
+        'Authority|monday|09:00|10:00\nCommunity|wednesday|15:00|16:00',
+      now: '2026-06-01T09:00:00+09:00',
+      activatedAt: '2026-06-01T09:00:00+09:00',
+      dedupeExisting: true,
+    });
+    assert(
+      repurposePreview.source === 'snaps-repurpose-queue' &&
+        repurposePreview.acceptedItems >= 3 &&
+        repurposePreview.scheduleSlots.length === 2 &&
+        repurposePreview.items.some((item) => item.contentScope === 'existing') &&
+        repurposePreview.recommendations.some((item) => item.includes('Check Now')),
+      'repurpose queue should map source items into posting-plan slots'
+    );
+    const repurposeSources = repurposeQueue.toSourceInputs(repurposePreview.items);
+    const repurposeVariants = repurposeQueue.toVariants(repurposePreview.items[0]);
+    assert(
+      repurposeSources[0].sourcePlatform === 'repurpose-queue' &&
+        repurposeVariants.some((variant) => variant.platform === 'threads') &&
+        repurposeVariants[0].settings?.source === 'snaps-repurpose-queue',
+      'repurpose queue items should convert to source imports and schedulable variants'
     );
 
     const source = await sourceLibrary.saveSource(orgId, {
@@ -433,6 +1519,33 @@ async function main() {
       kakaoTalkVariant?.publishMode === 'assist',
       'KakaoTalk assist variant missing'
     );
+    const expandedPlatformTransform = await transformer.transform(orgId, {
+      sourceText: '고객 전환 신호를 바탕으로 커뮤니티, 페이지, 핀 채널용 게시물을 준비합니다.',
+      targetPlatforms: ['bluesky', 'facebook', 'pinterest'],
+      useRag: false,
+    });
+    const expandedPlatforms = expandedPlatformTransform.variants.map(
+      (variant) => variant.platform
+    );
+    assert(
+      expandedPlatforms.includes('bluesky') &&
+        expandedPlatforms.includes('facebook') &&
+        expandedPlatforms.includes('pinterest'),
+      'expanded Blotato-style platforms should produce variants'
+    );
+    const expandedBluesky = expandedPlatformTransform.variants.find(
+      (variant) => variant.platform === 'bluesky'
+    );
+    assert(
+      !!expandedBluesky && expandedBluesky.content.length <= 300,
+      'Bluesky fallback should respect the post length budget'
+    );
+    assert(
+      (expandedPlatformTransform.variants.find(
+        (variant) => variant.platform === 'pinterest'
+      )?.settings as Record<string, unknown>)?.__type === 'pinterest',
+      'Pinterest fallback should carry provider settings'
+    );
     const partialTransformer = new SnapsContentTransformService(
       new PartialOllama() as any,
       rag
@@ -475,7 +1588,7 @@ async function main() {
       malformedTransform.provider === 'ollama' &&
         malformedInstagram?.content.includes('비정상 variant') &&
         malformedThreads?.content === '정상 Threads 결과' &&
-        malformedThreads.hashtags.join(' ') === '#threads #update',
+        malformedThreads.hashtags.join(' ') === '#threads',
       'malformed Ollama variants should fallback per platform without discarding valid variants'
     );
     const schedulePayload = buildSnapsPublishingPayload({
@@ -486,7 +1599,7 @@ async function main() {
           integrationId: 'instagram-integration',
         },
       ],
-      publishDate: '2026-05-05T10:00:00.000Z',
+      publishDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
       scheduleType: 'schedule',
     });
     assert(schedulePayload.payload?.type === 'schedule', 'schedule payload type missing');
@@ -825,6 +1938,59 @@ async function main() {
       ],
     });
     assert(imported.imported === 2, 'feedback import failed');
+    assert(
+      imported.items.every((item) => item.status === 'unread' && !item.readAt),
+      'feedback inbox should default imported items to unread'
+    );
+    const unreadFeedback = await inbox.listItems(orgId, {
+      status: 'unread',
+      search: '기능',
+    });
+    assert(
+      unreadFeedback.some((item) => item.id === imported.items[0].id),
+      'feedback inbox should filter unread items by search'
+    );
+    const markedUnresolved = await inbox.updateItemStatus(orgId, imported.items[0].id, {
+      status: 'unresolved',
+    });
+    assert(
+      markedUnresolved.updated &&
+        markedUnresolved.item?.status === 'unresolved' &&
+        !!markedUnresolved.item.readAt &&
+        !markedUnresolved.item.resolvedAt,
+      'feedback inbox should mark unread items as read and unresolved'
+    );
+    const unresolvedFeedback = await inbox.listItems(orgId, {
+      status: 'unresolved',
+      search: '기능',
+    });
+    assert(
+      unresolvedFeedback.some((item) => item.id === imported.items[0].id),
+      'feedback inbox should filter unresolved items by search'
+    );
+    const markedResolved = await inbox.updateItemStatus(orgId, imported.items[0].id, {
+      status: 'resolved',
+    });
+    assert(
+      markedResolved.updated &&
+        markedResolved.item?.status === 'resolved' &&
+        !!markedResolved.item.readAt &&
+        !!markedResolved.item.resolvedAt,
+      'feedback inbox should mark items as resolved'
+    );
+    const resolvedFeedback = await inbox.listItems(orgId, {
+      status: 'resolved',
+      search: '기능',
+    });
+    assert(
+      resolvedFeedback.some((item) => item.id === imported.items[0].id),
+      'feedback inbox should filter resolved items by search'
+    );
+    const rejectedFeedbackStatus = await inbox
+      .updateItemStatus(orgId, imported.items[0].id, { status: 'waiting' })
+      .then(() => false)
+      .catch(() => true);
+    assert(rejectedFeedbackStatus, 'feedback inbox should reject invalid statuses');
     await inbox.importStoredItems(orgId, [
       {
         id: 'legacy-positive-feedback',
@@ -908,6 +2074,170 @@ async function main() {
     assert(summary.bySentiment.praise >= 1, 'feedback praise classification missing');
     assert(summary.bySentiment.complaint >= 1, 'feedback complaint classification missing');
     assert(summary.bySentiment.collaboration >= 1, 'feedback collaboration classification missing');
+    const savedReplyTemplate = await inbox.saveReplyTemplate(orgId, {
+      title: '질문 링크 안내',
+      platform: 'instagram',
+      sentiment: 'question',
+      body: '문의 주셔서 감사합니다. 자료 링크를 바로 안내드릴게요.',
+      cta: '필요하시면 DM으로 예시도 보내드리겠습니다.',
+      tags: ['FAQ', '링크 요청'],
+    });
+    const listedReplyTemplates = await inbox.listReplyTemplates(orgId, {
+      platform: 'instagram',
+      sentiment: 'question',
+    });
+    assert(
+      savedReplyTemplate.saved &&
+        listedReplyTemplates.some(
+          (template) =>
+            template.id === savedReplyTemplate.template.id &&
+            template.body.includes('자료 링크') &&
+            template.tags.includes('FAQ')
+        ),
+      'feedback reply templates should save and filter by platform/sentiment'
+    );
+    const rejectedReplyTemplate = await inbox
+      .saveReplyTemplate(orgId, { body: { invalid: true } })
+      .then(() => false)
+      .catch(() => true);
+    assert(rejectedReplyTemplate, 'feedback reply template should reject malformed body');
+    const importedReplyTemplates = await inbox.importReplyTemplates(orgId, [
+      {
+        id: {
+          invalid: true,
+        },
+        platform: 'threads',
+        sentiment: 'positive',
+        body: '좋게 봐주셔서 감사합니다. 다음 편도 이어서 정리하겠습니다.',
+        tags: ['칭찬'],
+      },
+      {
+        platform: 'instagram',
+        body: {
+          invalid: true,
+        },
+      },
+    ]);
+    assert(
+      importedReplyTemplates.imported === 1 &&
+        (await inbox.listReplyTemplates(orgId)).some(
+          (template) =>
+            template.platform === 'threads' &&
+            template.sentiment === 'praise' &&
+            !JSON.stringify(template).includes('[object Object]')
+        ),
+      'feedback reply template import should normalize sentiment and reject malformed content'
+    );
+    const deletedReplyTemplate = await inbox.deleteReplyTemplate(
+      orgId,
+      savedReplyTemplate.template.id
+    );
+    assert(deletedReplyTemplate.deleted, 'feedback reply template delete failed');
+    const savedInboxNote = await inbox.saveInboxNote(orgId, {
+      platform: 'instagram',
+      author: 'lead-a',
+      postId: 'post-123',
+      note: '가격 문의 리드입니다. 다음 답변에서 파일럿 CTA를 포함합니다.',
+      tags: ['lead', 'pricing'],
+    });
+    const listedInboxNotes = await inbox.listInboxNotes(orgId, {
+      platform: 'instagram',
+      author: 'lead',
+    });
+    assert(
+      savedInboxNote.saved &&
+        listedInboxNotes.some(
+          (note) =>
+            note.id === savedInboxNote.note.id &&
+            note.note.includes('파일럿') &&
+            note.tags.includes('pricing')
+        ),
+      'feedback inbox notes should save and filter customer context'
+    );
+    const assignmentReplyTemplate = await inbox.saveReplyTemplate(orgId, {
+      title: '배정 가격 질문 답변',
+      platform: 'instagram',
+      sentiment: 'question',
+      body: '가격표와 구매 링크를 함께 안내드리겠습니다.',
+      tags: ['assignment', 'pricing'],
+    });
+    await inbox.importItems(orgId, {
+      items: [
+        {
+          platform: 'instagram',
+          author: 'lead-a',
+          postId: 'post-123',
+          content: '가격은 얼마이고 구매 링크는 어디서 보나요?',
+        },
+      ],
+    });
+    const assignmentPreview = await inbox.previewAssignments(orgId, {
+      status: 'unread',
+      search: '가격',
+      defaultSlaMinutes: 90,
+    });
+    assert(
+      assignmentPreview.source === 'snaps-inbox-assignments' &&
+        assignmentPreview.total >= 1 &&
+        assignmentPreview.cases.some(
+          (item) =>
+            item.assigneeRole === 'sales' &&
+            item.replyTemplateId === assignmentReplyTemplate.template.id &&
+            item.noteMatches.some((note) => note.id === savedInboxNote.note.id)
+        ),
+      'feedback assignment preview should route sales cases with templates and customer notes'
+    );
+    const moderationPreview = await inbox.previewAssignments(orgId, {
+      items: [
+        {
+          platform: 'threads',
+          content: '카지노 광고 링크입니다 http://spam.example',
+        },
+      ],
+    });
+    assert(
+      moderationPreview.cases[0]?.assigneeRole === 'moderation' &&
+        moderationPreview.warnings.some((warning) => warning.includes('스팸')),
+      'feedback assignment preview should flag spam for moderation'
+    );
+    const rejectedInboxNote = await inbox
+      .saveInboxNote(orgId, { note: '대상 없는 메모' })
+      .then(() => false)
+      .catch(() => true);
+    assert(rejectedInboxNote, 'feedback inbox note should require author or postId');
+    const importedInboxNotes = await inbox.importInboxNotes(orgId, [
+      {
+        id: {
+          invalid: true,
+        },
+        platform: 'threads',
+        author: 'lead-b',
+        note: '상담 신청 링크를 요청했습니다.',
+        tags: ['상담'],
+      },
+      {
+        platform: 'instagram',
+        author: 'bad-note',
+        note: {
+          invalid: true,
+        },
+      },
+    ]);
+    assert(
+      importedInboxNotes.imported === 1 &&
+        (await inbox.listInboxNotes(orgId)).some(
+          (note) =>
+            note.platform === 'threads' &&
+            note.author === 'lead-b' &&
+            !JSON.stringify(note).includes('[object Object]')
+        ),
+      'feedback inbox note import should normalize customer notes and reject malformed content'
+    );
+    const deletedInboxNote = await inbox.deleteInboxNote(
+      orgId,
+      savedInboxNote.note.id
+    );
+    assert(deletedInboxNote.deleted, 'feedback inbox note delete failed');
     const feedbackItems = await inbox.listItems(orgId);
     const deletedFeedback = await inbox.deleteItem(orgId, feedbackItems[0].id);
     assert(deletedFeedback.deleted, 'feedback item delete failed');
@@ -920,8 +2250,60 @@ async function main() {
       platform: 'youtube',
     });
     assert(script.coreSummary.length > 0, 'shorts core summary missing');
-    assert(script.storyboard.length === 4, 'shorts fallback storyboard missing');
+    assert(
+      script.storyboard.length >= 4 &&
+        script.storyboard[script.storyboard.length - 1].endSecond === 45,
+      'shorts fallback storyboard missing'
+    );
     assert(script.uploadMetadata.hashtags.includes('#shorts'), 'shorts upload metadata missing');
+    const voiceoverCaptionPreview = voiceoverCaptions.preview({
+      sourceText: source.sourceText,
+      script,
+      durationSeconds: 45,
+      platform: 'instagram',
+      voiceStyle: 'energetic',
+      captionStyle: 'karaoke',
+    });
+    assert(
+      voiceoverCaptionPreview.source === 'snaps-video-voiceover-captions' &&
+        voiceoverCaptionPreview.captions.length >= 3 &&
+        voiceoverCaptionPreview.exports.srt.includes('-->') &&
+        voiceoverCaptionPreview.sceneAlignments.length >= 3 &&
+        voiceoverCaptionPreview.summary.alignmentScore > 0,
+      'voiceover caption preview should produce caption cues, scene alignment, SRT export, and a score'
+    );
+    const videoPublishGuardPreview = videoPublishGuard.preview({
+      durationSeconds: 45,
+      targetPlatforms: ['instagram', 'youtube', 'tiktok'],
+      sceneCount: script.storyboard.length,
+      generatedImageCount: script.storyboard.length,
+      generatedVideoCount: 0,
+      customAssetCount: 1,
+      textToImageModel: 'flux-schnell',
+      imageToVideoModel: 'none',
+      aiVoice: true,
+      aiGeneratedVisuals: true,
+      realisticPeople: true,
+      targetLanguages: ['Korean', 'English', 'Japanese'],
+      sourceLanguage: 'Korean',
+      captionLanguage: 'Korean',
+    });
+    assert(
+      videoPublishGuardPreview.source === 'snaps-video-publish-guard' &&
+        videoPublishGuardPreview.creditBudget.totalCredits > 0 &&
+        videoPublishGuardPreview.disclosureChecklist.some(
+          (item) => item.platform === 'youtube' && item.labelRequired
+        ) &&
+        videoPublishGuardPreview.disclosureChecklist.some(
+          (item) => item.platform === 'tiktok' && item.labelRequired
+        ) &&
+        videoPublishGuardPreview.disclosureChecklist.some(
+          (item) => item.platform === 'instagram' && item.labelRequired
+        ) &&
+        videoPublishGuardPreview.localizationPlan.rows.length >= 2 &&
+        videoPublishGuardPreview.publishReadinessScore > 0,
+      'video publish guard should estimate credits, disclosures, localization, and readiness'
+    );
     const malformedScript = await new SnapsShortVideoService(
       new MalformedShortsOllama() as any
     ).script({
@@ -1324,7 +2706,10 @@ async function verifyNaverCafeProvider() {
       capturedUrl.includes('/snap%20cafe/menu/board%201/articles'),
       'Naver Cafe URL did not encode club/menu ids'
     );
-    assert(capturedBody.includes('subject=Smoke+subject'), 'Naver Cafe subject missing');
+    assert(
+      decodeURIComponent(new URLSearchParams(capturedBody).get('subject') || '') === 'Smoke subject',
+      'Naver Cafe subject missing'
+    );
     assert(capturedBody.includes('category=notice'), 'Naver Cafe category missing');
     assert(posted[0]?.postId === '123', 'Naver Cafe post response not normalized');
 
@@ -1640,14 +3025,17 @@ async function verifyPixelleVideoClient(
 ) {
   const originalFetch = globalThis.fetch;
   const originalPixelleUrl = process.env.PIXELLE_VIDEO_URL;
+  const originalPixelleHostUrl = process.env.PIXELLE_VIDEO_HOST_URL;
   const seen = {
     generateUrl: '',
     generateBody: '',
     statusUrl: '',
+    fallbackGenerateUrl: '',
   };
 
   try {
     process.env.PIXELLE_VIDEO_URL = 'https://pixelle.example.test/root/';
+    delete process.env.PIXELLE_VIDEO_HOST_URL;
     globalThis.fetch = (async (url: string | URL, options?: RequestInit) => {
       const requestUrl = String(url);
       if (requestUrl.endsWith('/generate')) {
@@ -1731,6 +3119,39 @@ async function verifyPixelleVideoClient(
       'Pixelle status URL was not normalized correctly'
     );
 
+    process.env.PIXELLE_VIDEO_URL = 'http://snaps-pixelle-video:8000/';
+    globalThis.fetch = (async (url: string | URL) => {
+      const requestUrl = String(url);
+      if (requestUrl.startsWith('http://snaps-pixelle-video:8000')) {
+        throw new Error('simulated Docker DNS failure from host backend');
+      }
+      if (requestUrl === 'http://localhost:8000/generate') {
+        seen.fallbackGenerateUrl = requestUrl;
+        return new Response(JSON.stringify({ jobId: 'pixelle-fallback-job', status: 'queued' }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+      return new Response(JSON.stringify({ error: 'unexpected fallback pixelle path' }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }) as typeof fetch;
+    const fallbackGenerated = await shorts.generate({
+      sourceText,
+      durationSeconds: 30,
+      platform: 'tiktok',
+    });
+    assert(
+      fallbackGenerated.jobId === 'pixelle-fallback-job',
+      'Pixelle generate did not use localhost fallback for Docker service URL'
+    );
+    assert(
+      seen.fallbackGenerateUrl === 'http://localhost:8000/generate',
+      'Pixelle localhost fallback URL was not attempted'
+    );
+
+    process.env.PIXELLE_VIDEO_URL = 'https://pixelle.example.test/root/';
     globalThis.fetch = (async () =>
       new Response('<html><body>Pixelle gateway failed</body></html>', {
         status: 502,
@@ -1748,7 +3169,7 @@ async function verifyPixelleVideoClient(
       failureMessage = error instanceof Error ? error.message : String(error);
     }
     assert(
-      failureMessage.includes('Pixelle request failed: 502 Bad Gateway') &&
+      failureMessage.includes('Pixelle request failed at https://pixelle.example.test/root: 502 Bad Gateway') &&
         !failureMessage.includes('<html>'),
       'Pixelle HTML failures should be compacted before surfacing'
     );
@@ -1758,6 +3179,11 @@ async function verifyPixelleVideoClient(
       delete process.env.PIXELLE_VIDEO_URL;
     } else {
       process.env.PIXELLE_VIDEO_URL = originalPixelleUrl;
+    }
+    if (typeof originalPixelleHostUrl === 'undefined') {
+      delete process.env.PIXELLE_VIDEO_HOST_URL;
+    } else {
+      process.env.PIXELLE_VIDEO_HOST_URL = originalPixelleHostUrl;
     }
   }
 }

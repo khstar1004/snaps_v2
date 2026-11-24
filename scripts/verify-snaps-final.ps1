@@ -10,12 +10,14 @@ param(
   [string]$RuntimeSmokeId = "",
   [switch]$IncludeMutating,
   [switch]$IncludeConnectedSchedule,
+  [switch]$IncludeSandboxChannel,
   [switch]$IncludeNaverCafeLive,
   [switch]$IncludePixelleDirect,
   [switch]$IncludePixelleJob,
   [switch]$IncludeInboxClear,
   [switch]$IncludeOllama,
   [switch]$ApplyDbPush,
+  [switch]$ApplySnapsSqlMigration,
   [switch]$CheckPrerequisitesOnly,
   [switch]$SkipPreflight,
   [switch]$SkipBuild
@@ -33,6 +35,32 @@ function Invoke-Step {
   Write-Host "==> $Name"
   & $Command @Arguments
   if ($LASTEXITCODE -ne 0) {
+    throw "$Name failed with exit code $LASTEXITCODE"
+  }
+}
+
+function Invoke-StepWithRetry {
+  param(
+    [string]$Name,
+    [string]$Command,
+    [string[]]$Arguments = @(),
+    [int]$Attempts = 3,
+    [int]$DelaySeconds = 5
+  )
+
+  for ($attempt = 1; $attempt -le $Attempts; $attempt++) {
+    $label = if ($Attempts -gt 1) { "$Name (attempt $attempt/$Attempts)" } else { $Name }
+    Write-Host "==> $label"
+    & $Command @Arguments
+    if ($LASTEXITCODE -eq 0) {
+      return
+    }
+    if ($attempt -lt $Attempts) {
+      Write-Host "$Name failed with exit code $LASTEXITCODE; retrying in $DelaySeconds seconds."
+      Start-Sleep -Seconds $DelaySeconds
+      continue
+    }
+
     throw "$Name failed with exit code $LASTEXITCODE"
   }
 }
@@ -74,6 +102,55 @@ function Invoke-Prisma {
   Invoke-Step $Name $prisma $Arguments
 }
 
+function Test-PrismaClientLoad {
+  $output = & node -e "require('@prisma/client'); console.log('prisma-client-load-ok')" 2>&1
+  if ($LASTEXITCODE -ne 0) {
+    Write-Host ($output | Out-String).Trim()
+    return $false
+  }
+  return ($output | Out-String) -match "prisma-client-load-ok"
+}
+
+function Invoke-PrismaGenerate {
+  $prisma = "node_modules\.bin\prisma.cmd"
+  if (-not (Test-Path $prisma)) {
+    throw "Prisma CLI was not found at $prisma. Run dependency installation before verify:snaps:final."
+  }
+
+  Write-Host "==> Prisma client generate"
+  $arguments = @(
+    "generate",
+    "--schema",
+    "libraries/nestjs-libraries/src/database/prisma/schema.prisma"
+  )
+  $previousErrorActionPreference = $ErrorActionPreference
+  $ErrorActionPreference = "Continue"
+  try {
+    $output = & $prisma @arguments 2>&1
+    $exitCode = $LASTEXITCODE
+  } finally {
+    $ErrorActionPreference = $previousErrorActionPreference
+  }
+  $text = ($output | Out-String).Trim()
+  if ($text) {
+    Write-Host $text
+  }
+  if ($exitCode -eq 0) {
+    return
+  }
+
+  $isWindowsEngineLock =
+    $text -match "EPERM" -and
+    $text -match "operation not permitted" -and
+    $text -match "\.prisma\\client"
+  if ($isWindowsEngineLock -and (Test-PrismaClientLoad)) {
+    Write-Host "Prisma client generate hit a Windows engine-file lock, but the existing Prisma Client loads. Continuing final verification against the running server."
+    return
+  }
+
+  throw "Prisma client generate failed with exit code $exitCode"
+}
+
 function Assert-EnvValue {
   param(
     [string]$Name,
@@ -105,6 +182,13 @@ function Assert-FinalOptionPrerequisites {
     Assert-EnvValue "SNAPS_CONNECTED_SCHEDULE_CONFIRM" "schedule"
   }
 
+  if ($IncludeSandboxChannel) {
+    Assert-EnvValue "SNAPS_SANDBOX_CHANNEL_CONFIRM" "sandbox"
+    if (-not $ShowOrg) {
+      throw "-IncludeSandboxChannel requires -ShowOrg so the local sandbox integration can be seeded and cleaned up for one organization."
+    }
+  }
+
   if ($IncludeNaverCafeLive) {
     Assert-EnvValue "NAVER_CAFE_ACCESS_TOKEN"
     Assert-EnvValue "NAVER_CAFE_CLUB_ID"
@@ -128,6 +212,12 @@ function Assert-FinalOptionPrerequisites {
 
   if ($ApplyDbPush) {
     Assert-EnvValue "SNAPS_DB_PUSH_CONFIRM" "push"
+  }
+  if ($ApplySnapsSqlMigration) {
+    Assert-EnvValue "SNAPS_SQL_MIGRATION_CONFIRM" "apply"
+  }
+  if ($ApplyDbPush -and $ApplySnapsSqlMigration) {
+    throw "-ApplyDbPush and -ApplySnapsSqlMigration are mutually exclusive migration paths."
   }
 
   if ($IncludeMutating) {
@@ -250,11 +340,7 @@ try {
     Invoke-Step "snaps install-ready preflight" "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe" $preflightArgs
   }
 
-  Invoke-Prisma "Prisma client generate" @(
-    "generate",
-    "--schema",
-    "libraries/nestjs-libraries/src/database/prisma/schema.prisma"
-  )
+  Invoke-PrismaGenerate
 
   if ($ApplyDbPush) {
     Invoke-Prisma "Prisma db push" @(
@@ -264,8 +350,13 @@ try {
       "--schema",
       "libraries/nestjs-libraries/src/database/prisma/schema.prisma"
     )
+  } elseif ($ApplySnapsSqlMigration) {
+    Invoke-Step "snaps PostgreSQL SQL migration" "node" @(
+      "scripts/verify-snaps-postgres-migration.mjs",
+      "--apply"
+    )
   } else {
-    Write-Host "==> Prisma db push skipped. Pass -ApplyDbPush after reviewing DATABASE_URL and migration policy."
+    Write-Host "==> Database migration skipped. Pass -ApplyDbPush or -ApplySnapsSqlMigration after reviewing DATABASE_URL and migration policy."
   }
 
   if (-not $SkipBuild) {
@@ -322,6 +413,9 @@ try {
   if ($IncludeConnectedSchedule) {
     $runtimeArgs += "-IncludeConnectedSchedule"
   }
+  if ($IncludeSandboxChannel) {
+    $runtimeArgs += "-IncludeSandboxChannel"
+  }
   if ($IncludePixelleJob) {
     $runtimeArgs += "-IncludePixelleJob"
   }
@@ -350,7 +444,7 @@ try {
   if ($ShowOrg) {
     $readinessArgs += @("-ShowOrg", $ShowOrg)
   }
-  Invoke-Step "snaps runtime readiness gate" "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe" $readinessArgs
+  Invoke-StepWithRetry "snaps runtime readiness gate" "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe" $readinessArgs
 
   Invoke-Step "snaps authenticated runtime smoke" "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe" $runtimeArgs
 

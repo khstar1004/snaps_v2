@@ -44,6 +44,7 @@ export type AllProvidersSettings =
   | ProviderExtension<'instagram', InstagramDto>
   | ProviderExtension<'instagram-standalone', InstagramDto>
   | ProviderExtension<'naver-cafe', NaverCafeDto>
+  | ProviderExtension<'snapssandbox', None>
   | ProviderExtension<'medium', MediumSettingsDto>
   | ProviderExtension<'devto', DevToSettingsDto>
   | ProviderExtension<'hashnode', HashnodeSettingsDto>
@@ -83,6 +84,7 @@ export const allProviders = (setEmpty?: any) => {
     { value: InstagramDto, name: 'instagram' },
     { value: InstagramDto, name: 'instagram-standalone' },
     { value: NaverCafeDto, name: 'naver-cafe' },
+    { value: setEmpty, name: 'snapssandbox' },
     { value: MediumSettingsDto, name: 'medium' },
     { value: DevToSettingsDto, name: 'devto' },
     { value: WordpressDto, name: 'wordpress' },

@@ -64,6 +64,28 @@
       "createdAt": "2026-05-05T00:00:00.000Z"
     }
   ],
+  "mediaAssets": [
+    {
+      "id": "demo-media-bio-carousel-cover",
+      "product": "snaps",
+      "source": "snaps-media-library",
+      "title": "Bio weekly carousel cover",
+      "url": "https://example.com/demo-bio-carousel-cover.png",
+      "thumbnail": "https://example.com/demo-bio-carousel-cover-thumb.png",
+      "mediaType": "image",
+      "altText": "바이오 업계 주간 이슈 세 가지를 보여주는 카드뉴스 커버",
+      "caption": "이번 주 바이오 업계에서 저장해둘 변화 3가지를 카드뉴스로 정리했습니다.",
+      "campaign": "Bio weekly source",
+      "tags": ["bio", "carousel", "weekly"],
+      "targetPlatforms": ["instagram", "linkedin"],
+      "width": 1080,
+      "height": 1350,
+      "platformFit": [],
+      "warnings": [],
+      "createdAt": "2026-05-05T00:00:00.000Z",
+      "updatedAt": "2026-05-05T00:00:00.000Z"
+    }
+  ],
   "reports": [
     {
       "id": "demo-report-weekly-bio",
@@ -117,6 +139,7 @@
       "author": "demo-viewer-1",
       "postId": "demo-post-instagram",
       "sentiment": "question",
+      "status": "unread",
       "importedAt": "2026-05-05T00:00:00.000Z"
     },
     {
@@ -126,6 +149,8 @@
       "author": "demo-viewer-2",
       "postId": "demo-post-threads",
       "sentiment": "collaboration",
+      "status": "unresolved",
+      "readAt": "2026-05-05T01:00:00.000Z",
       "importedAt": "2026-05-05T00:00:00.000Z"
     },
     {
@@ -135,6 +160,9 @@
       "author": "demo-viewer-3",
       "postId": "demo-post-instagram",
       "sentiment": "praise",
+      "status": "resolved",
+      "readAt": "2026-05-05T01:05:00.000Z",
+      "resolvedAt": "2026-05-05T01:10:00.000Z",
       "importedAt": "2026-05-05T00:00:00.000Z"
     },
     {
@@ -144,7 +172,36 @@
       "author": "demo-viewer-4",
       "postId": "demo-post-naver-cafe",
       "sentiment": "complaint",
+      "status": "unresolved",
+      "readAt": "2026-05-05T01:15:00.000Z",
       "importedAt": "2026-05-05T00:00:00.000Z"
+    }
+  ],
+  "replyTemplates": [
+    {
+      "id": "demo-reply-template-source-link",
+      "organizationId": "demo",
+      "title": "자료 링크 안내",
+      "platform": "instagram",
+      "sentiment": "question",
+      "body": "문의 주셔서 감사합니다. 요청하신 자료 출처와 참고 링크를 바로 확인하실 수 있게 정리해드리겠습니다.",
+      "cta": "필요하시면 댓글이나 DM으로 상황을 남겨주세요.",
+      "tags": ["source", "link", "question"],
+      "createdAt": "2026-05-05T00:00:00.000Z",
+      "updatedAt": "2026-05-05T00:00:00.000Z"
+    }
+  ],
+  "inboxNotes": [
+    {
+      "id": "demo-inbox-note-source-link",
+      "organizationId": "demo",
+      "platform": "instagram",
+      "author": "demo-viewer-1",
+      "postId": "demo-post-instagram",
+      "note": "자료 출처를 반복해서 요청하는 리드입니다. 다음 답변에서는 원문 링크와 상담 CTA를 함께 안내합니다.",
+      "tags": ["source", "lead"],
+      "createdAt": "2026-05-05T00:00:00.000Z",
+      "updatedAt": "2026-05-05T00:00:00.000Z"
     }
   ],
   "activity": [

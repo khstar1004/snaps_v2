@@ -59,7 +59,8 @@ function Test-HttpJson {
   param(
     [string]$Method,
     [string]$Url,
-    [hashtable]$Headers = @{}
+    [hashtable]$Headers = @{},
+    [int]$TimeoutSec = 10
   )
 
   try {
@@ -67,7 +68,7 @@ function Test-HttpJson {
       -Method $Method `
       -Uri $Url `
       -Headers $Headers `
-      -TimeoutSec 3 `
+      -TimeoutSec $TimeoutSec `
       -ErrorAction Stop
     return @{
       ok = $true

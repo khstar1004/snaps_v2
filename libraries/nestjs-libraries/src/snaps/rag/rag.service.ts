@@ -9,6 +9,7 @@ import {
   SnapsTargetPlatform,
   snapsTargetPlatforms,
 } from '@gitroom/nestjs-libraries/snaps/transform/platform-rules';
+import { cleanSnapsMultilineText } from '@gitroom/nestjs-libraries/snaps/utils/multiline-text';
 
 @Injectable()
 export class SnapsRagService {
@@ -108,7 +109,7 @@ export class SnapsRagService {
       ? (body as Partial<SnapsStyleExampleDto>)
       : {};
     const platform = this.cleanString(request.platform, 60);
-    const content = this.cleanString(request.content, 50000);
+    const content = cleanSnapsMultilineText(request.content, 50000);
 
     if (!(snapsTargetPlatforms as readonly string[]).includes(platform)) {
       throw new BadRequestException('platform is required.');

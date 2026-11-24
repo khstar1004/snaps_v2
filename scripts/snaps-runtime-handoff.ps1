@@ -187,6 +187,7 @@ try {
   Write-Host "   authenticated runtime smoke with SNAPS_RUNTIME_CONFIRM=smoke"
   Write-Host "   -IncludeOllama with SNAPS_OLLAMA_RAG_CONFIRM=embed"
   Write-Host "   -ApplyDbPush with SNAPS_DB_PUSH_CONFIRM=push"
+  Write-Host "   -ApplySnapsSqlMigration with SNAPS_SQL_MIGRATION_CONFIRM=apply"
   Write-Host "   -IncludeMutating with SNAPS_MUTATING_CONFIRM=mutate"
   Write-Host "   -ConnectedIntegrationId with SNAPS_CONNECTED_DRAFT_CONFIRM=draft"
   Write-Host "   -IncludeConnectedSchedule with -ConnectedIntegrationId and SNAPS_CONNECTED_SCHEDULE_CONFIRM=schedule"
