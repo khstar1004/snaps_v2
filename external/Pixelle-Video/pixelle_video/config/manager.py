@@ -116,10 +116,12 @@ class ConfigManager:
     
     def set_llm_config(self, api_key: str, base_url: str, model: str):
         """Set LLM configuration"""
+        from pixelle_video.utils.llm_util import normalize_openai_base_url
+
         self.update({
             "llm": {
                 "api_key": api_key,
-                "base_url": base_url,
+                "base_url": normalize_openai_base_url(base_url),
                 "model": model,
             }
         })
@@ -144,6 +146,14 @@ class ConfigManager:
                 "prompt_prefix": self.config.comfyui.video.prompt_prefix,
             }
         }
+
+    def get_api_providers_config(self) -> dict:
+        """Get direct API provider configuration as dict"""
+        return self.config.api_providers.model_dump()
+
+    def set_api_provider_config(self, provider: str, updates: dict):
+        """Set configuration for a direct API provider"""
+        self.update({"api_providers": {provider: updates}})
     
     def set_comfyui_config(
         self, 
@@ -169,4 +179,3 @@ class ConfigManager:
         
         if updates:
             self.update({"comfyui": updates})
-

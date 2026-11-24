@@ -16,6 +16,9 @@ function requireEnv(name: string) {
   return value;
 }
 
+let completed = false;
+let failed = false;
+
 async function main() {
   const provider = new NaverCafeProvider();
   const settings: NaverCafeDto = {
@@ -38,6 +41,10 @@ async function main() {
   };
 
   if (dryRun) {
+    // The dry run is a finish, not a hang. Without this the sentinel below
+    // fired on every offline run: the script printed its own -dry-run-ok
+    // line and still exited 1, which took the whole preflight down with it.
+    completed = true;
     console.log(
       `verify-snaps-naver-cafe-dry-run-ok smokeId=${smokeId} clubId=${settings.clubId} menuId=${settings.menuId}`
     );
@@ -62,12 +69,46 @@ async function main() {
     throw new Error('Naver Cafe live smoke did not return a post id or URL.');
   }
 
+  completed = true;
+  process.exitCode = 0;
   console.log(
     `verify-snaps-naver-cafe-ok smokeId=${smokeId} postId=${result.postId || '-'} url=${result.releaseURL || '-'}`
   );
 }
 
+// Failing by default, cleared only when main() reaches its end.
+//
+// A promise that never settles does not hold the Node event loop open, so an
+// await that hangs does not fail this script - it ends it, with every check
+// after that point skipped and an exit code of 0. Measured on the controller
+// smoke: deleting the analytics timeout stopped the run at that check and it
+// still reported success.
+process.exitCode = 1;
+
 void main().catch((error) => {
+  failed = true;
   console.error(error instanceof Error ? error.message : String(error));
   process.exit(1);
+});
+
+process.on('exit', () => {
+  if (failed) {
+    return;
+  }
+  if (completed) {
+    // `completed` is the invariant; the exit code is only a copy of it.
+    // Two dry-run paths set the flag and returned without clearing the
+    // fail-by-default code above, so they printed their own -ok line and
+    // still exited 1 - which took the whole preflight down with them.
+    process.exitCode = 0;
+    return;
+  }
+  // Reported rather than just failed: without this line the run above
+  // produced no output at all, only a non-zero code, and the check it
+  // stopped on was invisible.
+  console.error(
+    'verify-snaps-naver-cafe did not finish: a check stopped without',
+    'settling, so everything after it was skipped'
+  );
+  process.exitCode = 1;
 });

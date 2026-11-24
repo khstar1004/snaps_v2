@@ -67,6 +67,66 @@ function Invoke-ExpectedFinalFailure {
   }
 }
 
+function Invoke-ExpectedNpmScriptFailure {
+  # Same contract as Invoke-ExpectedFinalFailure, for the live smokes that run
+  # as npm scripts rather than through verify-snaps-final.ps1. The DeepSeek
+  # smokes spend real API credits, so they belong under the same negative
+  # testing as the other live-effect scripts.
+  param(
+    [string]$Name,
+    [string]$ScriptName,
+    [string]$ExpectedText,
+    [string[]]$ClearEnv = @(),
+    [hashtable]$SetEnv = @{}
+  )
+
+  Write-Host "==> $Name"
+  $envNames = @($ClearEnv + @($SetEnv.Keys)) | Select-Object -Unique
+  $previousEnv = @{}
+  foreach ($envName in $envNames) {
+    $previousEnv[$envName] = [Environment]::GetEnvironmentVariable($envName)
+  }
+
+  try {
+    foreach ($envName in $ClearEnv) {
+      Set-ProcessEnv -Name $envName -Value $null
+    }
+    foreach ($envName in $SetEnv.Keys) {
+      Set-ProcessEnv -Name $envName -Value $SetEnv[$envName]
+    }
+
+    $previousErrorActionPreference = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try {
+      $output = & "npm.cmd" "run" $ScriptName "--silent" 2>&1
+      $exitCode = $LASTEXITCODE
+      $text = $output | Out-String
+    } finally {
+      $ErrorActionPreference = $previousErrorActionPreference
+    }
+
+    if ($exitCode -eq 0) {
+      throw "$Name was expected to fail, but $ScriptName succeeded."
+    }
+    # PowerShell wraps a native command's stderr into ErrorRecords and breaks
+    # the text at the console width, so the expected phrase can be split across
+    # lines mid-word ("SNAPS_DEEPSEEK_CONFIRM=" / "live"). Compare with all
+    # whitespace removed rather than trying to guess where it wrapped.
+    $flatText = [regex]::Replace($text, "\s+", "")
+    $flatExpected = [regex]::Replace($ExpectedText, "\s+", "")
+    if (-not $flatText.Contains($flatExpected)) {
+      Write-Host $text
+      throw "$Name failed with an unexpected message. Expected text: $ExpectedText"
+    }
+
+    Write-Host "$Name ok"
+  } finally {
+    foreach ($envName in $envNames) {
+      Set-ProcessEnv -Name $envName -Value $previousEnv[$envName]
+    }
+  }
+}
+
 $repoRoot = Resolve-Path (Join-Path $PSScriptRoot '..')
 Push-Location $repoRoot
 try {
@@ -248,6 +308,33 @@ try {
     -SetEnv @{
       SNAPS_MUTATING_CONFIRM = "wrong"
     }
+
+  foreach ($deepseekScript in @(
+    "verify:snaps:cardnews-deepseek",
+    "verify:snaps:core-deepseek"
+  )) {
+    Invoke-ExpectedNpmScriptFailure `
+      -Name "$deepseekScript requires confirmation env" `
+      -ScriptName $deepseekScript `
+      -ExpectedText "Set SNAPS_DEEPSEEK_CONFIRM=live" `
+      -ClearEnv @(
+        "SNAPS_DEEPSEEK_CONFIRM"
+      ) `
+      -SetEnv @{
+        AI_PROVIDER = "deepseek"
+        DEEPSEEK_API_KEY = "guard-placeholder-not-a-real-key"
+      }
+
+    Invoke-ExpectedNpmScriptFailure `
+      -Name "$deepseekScript requires exact confirmation" `
+      -ScriptName $deepseekScript `
+      -ExpectedText "Set SNAPS_DEEPSEEK_CONFIRM=live" `
+      -SetEnv @{
+        AI_PROVIDER = "deepseek"
+        DEEPSEEK_API_KEY = "guard-placeholder-not-a-real-key"
+        SNAPS_DEEPSEEK_CONFIRM = "wrong"
+      }
+  }
 
   Write-Host "verify-snaps-final-guards-ok"
 } finally {

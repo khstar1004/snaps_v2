@@ -94,7 +94,17 @@ services:
       NEXT_PUBLIC_POSTIZ_OAUTH_DISPLAY_NAME: 'snaps'
       NEXT_PUBLIC_POSTIZ_OAUTH_LOGO_URL: ''
       NEXT_PUBLIC_SNAPS_EXTENSION_URL: ''
+      AI_PROVIDER: 'ollama'
       SNAPS_LLM_PROVIDER: 'ollama'
+      DEEPSEEK_API_KEY: &deepseek_api_key ''
+      DEEPSEEK_BASE_URL: 'https://api.deepseek.com'
+      DEEPSEEK_CHAT_MODEL: 'deepseek-v4-flash'
+      DEEPSEEK_CHAT_TIMEOUT_MS: 120000
+      # The Ollama path has had its temperature and length budget here for a
+      # while; the DeepSeek path is the one actually in use and had neither,
+      # so it could not be tuned in the container at all.
+      DEEPSEEK_TEMPERATURE: 0.35
+      DEEPSEEK_MAX_TOKENS: 16000
       OLLAMA_BASE_URL: 'http://host.docker.internal:11434'
       OLLAMA_CHAT_MODEL: 'qwen3.5:9b'
       OLLAMA_EMBED_MODEL: 'nomic-embed-text:latest'
@@ -107,7 +117,23 @@ services:
       SNAPS_RAG_TOP_K: 5
       SNAPS_ALLOW_RULE_FALLBACK: 'true'
       SNAPS_DATA_DIR: '/config/snaps'
+      # Logs the underlying error when a transform or a DeepSeek call fails.
+      # Off by default; uncomment to diagnose a failing container.
+      # SNAPS_DEBUG_TRANSFORM: '1'
       PIXELLE_VIDEO_URL: 'http://snaps-pixelle-video:8000'
+      # Deadlines for the video HTTP calls. fetch() has no default timeout, so a
+      # render service that accepts the connection and then stops answering
+      # would hold a backend request open indefinitely. Rendering is slow, so
+      # the submit budget is generous while status polls give up quickly.
+      PIXELLE_TIMEOUT_MS: 120000
+      PIXELLE_STATUS_TIMEOUT_MS: 30000
+      SHORTS_MAKER_URL: 'http://snaps-shorts-maker:4100'
+      SHORTS_MAKER_TIMEOUT_MS: 120000
+      SHORTS_MAKER_STATUS_TIMEOUT_MS: 30000
+      # How long a single channel's analytics may take before the report
+      # skips it with a warning. A provider that accepts the connection and
+      # stalls is a wait, not an error, and the loop had nothing to end it.
+      SNAPS_ANALYTICS_TIMEOUT_MS: 15000
       NAVER_CLIENT_ID: ''
       NAVER_CLIENT_SECRET: ''
 
@@ -148,6 +174,8 @@ services:
         condition: service_healthy
       snaps-pixelle-video:
         condition: service_started
+      snaps-shorts-maker:
+        condition: service_started
 
   snaps-pixelle-video:
     build:
@@ -164,6 +192,14 @@ services:
       - ./external/Pixelle-Video/config.yaml:/app/config.yaml
       - ./external/Pixelle-Video/output:/app/output
       - ./external/Pixelle-Video/data:/app/data
+    # This publishes the Pixelle API on the host so its web UI is reachable at
+    # localhost:8000. Note what that exposes: api/app.py adds CORS and nothing
+    # else - /generate, /status/{job_id} and the file routes take no API key,
+    # no session and no Authorization header - so anything that can reach this
+    # host on 8000 can queue video generation work and read its output. The
+    # sibling snaps-shorts-maker service deliberately publishes no port for the
+    # same reason. Bind it to "127.0.0.1:8000:8000" if the UI only needs to be
+    # reachable from this machine.
     ports:
       - "8000:8000"
     networks:
@@ -174,6 +210,71 @@ services:
         condition: service_healthy
       snaps-redis:
         condition: service_healthy
+
+  # snaps-shorts-maker runs alongside snaps-pixelle-video as a second, independent
+  # shorts-video-production engine (see docs/snaps-shorts-maker.md). It is a vendored
+  # Next.js + Remotion app (external/Shorts-Maker) reachable only inside the docker
+  # network at http://snaps-shorts-maker:4100 - its port is intentionally NOT published.
+  snaps-shorts-maker:
+    build:
+      context: ./external/Shorts-Maker
+      dockerfile: Dockerfile
+    container_name: snaps-shorts-maker
+    restart: unless-stopped
+    environment:
+      APP_BASE_URL: 'http://snaps-shorts-maker:4100'
+      NEXT_PUBLIC_APP_URL: 'http://snaps-shorts-maker:4100'
+      AUTH_SESSION_SECRET: 'random string that is unique to every install - just type random characters here!'
+
+      # NODE_ENV=development is intentional here, not a mistake: lib/auth/local-bypass.ts
+      # only allows AUTH_LOCAL_BYPASS when NODE_ENV !== "production". This container is
+      # never reachable outside the internal docker network (no `ports:` mapping below),
+      # so using the local-bypass auth is the correct, minimal-touch way to let the
+      # snaps backend call it without a real login flow. See docs/snaps-shorts-maker.md.
+      NODE_ENV: 'development'
+      AUTH_LOCAL_BYPASS: 'true'
+      LOCAL_AUTH_BYPASS_ROLE: 'admin'
+
+      AI_PROVIDER: 'deepseek'
+      DEEPSEEK_API_KEY: *deepseek_api_key
+      DEEPSEEK_MODEL: 'deepseek-chat'
+
+      # Reuses the existing snaps-postgres container with its own database
+      # (shorts-maker-db-local) instead of requiring a real Supabase project. The
+      # database itself must be created and external/Shorts-Maker/scripts/local-postgres-schema.sql
+      # applied to it once, manually - see docs/snaps-shorts-maker.md.
+      LOCAL_POSTGRES_URL: 'postgresql://snaps-user:snaps-password@snaps-postgres:5432/shorts-maker-db-local'
+
+      # Rendered videos/uploads persist here across container restarts (see the
+      # shorts-maker-storage volume below).
+      LOCAL_STORAGE_ROOT: '/data/shorts-maker-storage'
+
+      # ffmpeg is installed on $PATH in external/Shorts-Maker/Dockerfile.
+      STUDIO_FFMPEG_PATH: 'ffmpeg'
+      FFMPEG_PATH: 'ffmpeg'
+
+      # === TTS / image provider settings.
+      # Image providers below are optional: image-provider-resolver falls back
+      # across the configured ones, and openverse/wikimedia need no key.
+      # TYPECAST is NOT optional if you want rendered video - it is the only TTS
+      # engine and lib/studio/tts-typecast.ts throws "TYPECAST_API_KEY가 필요합니다."
+      # without it, so narration (and therefore the render) cannot complete.
+      # See docs/snaps-shorts-maker.md.
+      TYPECAST_API_KEY: ''
+      TYPECAST_BASE_URL: ''
+      NAVER_CLIENT_ID: ''
+      NAVER_CLIENT_SECRET: ''
+      PEXELS_API_KEY: ''
+      PIXABAY_API_KEY: ''
+      GIPHY_API_KEY: ''
+    volumes:
+      - shorts-maker-storage:/data/shorts-maker-storage
+    networks:
+      - snaps-network
+      - temporal-network
+    depends_on:
+      snaps-postgres:
+        condition: service_started
 
   snaps-postgres:
     image: postgres:17-alpine
@@ -311,6 +412,9 @@ volumes:
     external: false
 
   snaps-uploads:
+    external: false
+
+  shorts-maker-storage:
     external: false
 
 networks:

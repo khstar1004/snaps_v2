@@ -44,6 +44,14 @@ export const Button: FC<
     <button
       {...props}
       type={props.type || 'button'}
+      // `pointer-events-none` below stops the mouse and nothing else. A focused
+      // button still fires on Enter or Space, because that path never goes
+      // through pointer events - so every "loading" button in the app could be
+      // submitted again from the keyboard while its request was in flight, and
+      // the ones that create something created it twice. Setting the attribute
+      // closes that path and is what a screen reader reads. It can only make a
+      // button less clickable than it already was.
+      disabled={props.disabled || loading}
       ref={ref}
       className={clsx(
         (props.disabled || loading) && 'opacity-50 pointer-events-none',

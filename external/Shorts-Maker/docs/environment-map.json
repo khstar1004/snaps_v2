@@ -1,0 +1,1279 @@
+{
+  "schemaVersion": 1,
+  "generatedBy": {
+    "command": "npm run docs:refresh",
+    "script": "scripts/generate-developer-docs.mjs"
+  },
+  "summary": {
+    "variableCount": 121,
+    "publicVariableCount": 8,
+    "serverOnlyVariableCount": 113,
+    "groupCount": 11
+  },
+  "groups": [
+    {
+      "id": "app-and-public",
+      "description": "App base URL and public client/runtime flags exposed to the browser build.",
+      "relatedDocs": [
+        "README.md",
+        "docs/OPERATIONS.md"
+      ],
+      "variables": [
+        {
+          "name": "APP_BASE_URL",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "app/api/studio/render-jobs/route.ts",
+            "app/api/studio/render-native/route.ts",
+            "lib/auth/codex.ts",
+            "lib/auth/google.ts",
+            "lib/publish/scheduler.ts",
+            "lib/publish/youtube.ts"
+          ],
+          "category": "app-and-public"
+        },
+        {
+          "name": "NEXT_PUBLIC_APP_URL",
+          "public": true,
+          "usedInTests": false,
+          "files": [
+            "lib/local/storage.ts",
+            "lib/studio/anchor-image-fetcher.ts"
+          ],
+          "category": "app-and-public"
+        },
+        {
+          "name": "NEXT_PUBLIC_HOME_V1",
+          "public": true,
+          "usedInTests": false,
+          "files": [
+            "lib/config/feature-flags.ts"
+          ],
+          "category": "app-and-public"
+        },
+        {
+          "name": "NEXT_PUBLIC_STUDIO_CAPTURE_MEMORY_HARD_LIMIT_MB",
+          "public": true,
+          "usedInTests": false,
+          "files": [
+            "lib/studio/render-memory-budget.ts"
+          ],
+          "category": "app-and-public"
+        },
+        {
+          "name": "NEXT_PUBLIC_STUDIO_CAPTURE_MEMORY_SOFT_LIMIT_MB",
+          "public": true,
+          "usedInTests": false,
+          "files": [
+            "lib/studio/render-memory-budget.ts"
+          ],
+          "category": "app-and-public"
+        },
+        {
+          "name": "NEXT_PUBLIC_STUDIO_RENDER_MEMORY_HARD_LIMIT_MB",
+          "public": true,
+          "usedInTests": true,
+          "files": [
+            "lib/studio/render-memory-budget.test.ts",
+            "lib/studio/render-memory-budget.ts"
+          ],
+          "category": "app-and-public"
+        },
+        {
+          "name": "NEXT_PUBLIC_STUDIO_RENDER_MEMORY_SOFT_LIMIT_MB",
+          "public": true,
+          "usedInTests": true,
+          "files": [
+            "lib/studio/render-memory-budget.test.ts",
+            "lib/studio/render-memory-budget.ts"
+          ],
+          "category": "app-and-public"
+        },
+        {
+          "name": "NEXT_PUBLIC_STUDIO_STEPPER_V1",
+          "public": true,
+          "usedInTests": false,
+          "files": [
+            "lib/config/feature-flags.ts"
+          ],
+          "category": "app-and-public"
+        },
+        {
+          "name": "NEXT_PUBLIC_SUPABASE_URL",
+          "public": true,
+          "usedInTests": false,
+          "files": [
+            "lib/supabase/server.ts",
+            "lib/supabase/storage.ts"
+          ],
+          "category": "app-and-public"
+        },
+        {
+          "name": "NODE_ENV",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "app/login/page.tsx",
+            "app/shorts-json-studio/use-studio-workflow-actions.ts",
+            "lib/auth/bootstrap.ts",
+            "lib/auth/codex-bridge.ts",
+            "lib/auth/local-bypass.ts",
+            "lib/auth/session.ts",
+            "lib/auth/store.ts",
+            "lib/local/postgres.ts",
+            "lib/local/storage.ts",
+            "lib/studio/image-query-planner.ts",
+            "lib/studio/render-remotion-server.ts",
+            "lib/supabase/server.ts"
+          ],
+          "category": "app-and-public"
+        },
+        {
+          "name": "VERCEL",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/auth/codex-bridge.ts"
+          ],
+          "category": "app-and-public"
+        }
+      ]
+    },
+    {
+      "id": "auth",
+      "description": "Session auth, bootstrap admin, local bypass, and login rate-limit settings.",
+      "relatedDocs": [
+        "docs/CODEX_GUIDE.md",
+        "docs/OPERATIONS.md"
+      ],
+      "variables": [
+        {
+          "name": "AUTH_BOOTSTRAP_ADMIN_EMAIL",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/auth/bootstrap.ts"
+          ],
+          "category": "auth"
+        },
+        {
+          "name": "AUTH_BOOTSTRAP_ADMIN_LOGIN_ID",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/auth/bootstrap.ts",
+            "lib/auth/store.ts"
+          ],
+          "category": "auth"
+        },
+        {
+          "name": "AUTH_BOOTSTRAP_ADMIN_NAME",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/auth/bootstrap.ts"
+          ],
+          "category": "auth"
+        },
+        {
+          "name": "AUTH_BOOTSTRAP_ADMIN_PASSWORD",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/auth/bootstrap.ts"
+          ],
+          "category": "auth"
+        },
+        {
+          "name": "AUTH_BOOTSTRAP_ADMIN_SYNC_ON_LOGIN",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/auth/bootstrap.ts"
+          ],
+          "category": "auth"
+        },
+        {
+          "name": "AUTH_GOOGLE_REDIRECT_URI",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/auth/google.ts"
+          ],
+          "category": "auth"
+        },
+        {
+          "name": "AUTH_LOCAL_BYPASS",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/auth/local-bypass.ts"
+          ],
+          "category": "auth"
+        },
+        {
+          "name": "AUTH_SESSION_SECRET",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/auth/session.ts"
+          ],
+          "category": "auth"
+        },
+        {
+          "name": "LOCAL_AUTH_BYPASS_DISPLAY_NAME",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/auth/local-bypass.ts"
+          ],
+          "category": "auth"
+        },
+        {
+          "name": "LOCAL_AUTH_BYPASS_LOGIN_ID",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/auth/local-bypass.ts"
+          ],
+          "category": "auth"
+        },
+        {
+          "name": "LOCAL_AUTH_BYPASS_ROLE",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/auth/local-bypass.ts"
+          ],
+          "category": "auth"
+        },
+        {
+          "name": "LOCAL_AUTH_BYPASS_USER_EMAIL",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/auth/local-bypass.ts"
+          ],
+          "category": "auth"
+        },
+        {
+          "name": "LOCAL_AUTH_BYPASS_USER_ID",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/auth/local-bypass.ts"
+          ],
+          "category": "auth"
+        }
+      ]
+    },
+    {
+      "id": "codex",
+      "description": "Codex OAuth, local bridge, CLI discovery, and model defaults.",
+      "relatedDocs": [
+        "docs/CODEX_GUIDE.md",
+        "docs/OPERATIONS.md"
+      ],
+      "variables": [
+        {
+          "name": "CODEX_CLI_PATH",
+          "public": false,
+          "usedInTests": true,
+          "files": [
+            "lib/auth/codex-local-cli.test.ts",
+            "lib/auth/codex-local-cli.ts",
+            "lib/studio/codex-script-transport.test.ts"
+          ],
+          "category": "codex"
+        },
+        {
+          "name": "CODEX_DEBUG_VALIDATION",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/studio/codex-script-core-runner.ts"
+          ],
+          "category": "codex"
+        },
+        {
+          "name": "CODEX_HOME",
+          "public": false,
+          "usedInTests": true,
+          "files": [
+            "lib/auth/codex-local.test.ts",
+            "lib/auth/codex-local.ts"
+          ],
+          "category": "codex"
+        },
+        {
+          "name": "CODEX_IMAGE_DISCOVERY_USE_CLI",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/studio/image-resolver.ts"
+          ],
+          "category": "codex"
+        },
+        {
+          "name": "CODEX_LOCAL_BRIDGE_CLI_FALLBACK_API",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/studio/codex-script-transport.ts"
+          ],
+          "category": "codex"
+        },
+        {
+          "name": "CODEX_LOCAL_CLI_MODEL",
+          "public": false,
+          "usedInTests": true,
+          "files": [
+            "lib/auth/codex-local-cli.test.ts",
+            "lib/auth/codex-local-cli.ts"
+          ],
+          "category": "codex"
+        },
+        {
+          "name": "CODEX_LOCAL_CLI_RETRY_ATTEMPTS",
+          "public": false,
+          "usedInTests": true,
+          "files": [
+            "lib/auth/codex-local-cli.test.ts",
+            "lib/auth/codex-local-cli.ts"
+          ],
+          "category": "codex"
+        },
+        {
+          "name": "CODEX_LOCAL_IMAGE_BATCH_CONCURRENCY",
+          "public": false,
+          "usedInTests": true,
+          "files": [
+            "lib/studio/codex-local-image-generator.test.ts",
+            "lib/studio/codex-local-image-generator.ts"
+          ],
+          "category": "codex"
+        },
+        {
+          "name": "CODEX_LOCAL_OAUTH_CLIENT_ID",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/auth/codex.ts"
+          ],
+          "category": "codex"
+        },
+        {
+          "name": "CODEX_LOCAL_OAUTH_TOKEN_URL",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/auth/codex.ts"
+          ],
+          "category": "codex"
+        },
+        {
+          "name": "CODEX_MODEL",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/publish/analytics-codex-strategy.ts",
+            "lib/studio/codex-script-transport.ts",
+            "lib/studio/image-query-planner.ts"
+          ],
+          "category": "codex"
+        },
+        {
+          "name": "CODEX_OAUTH_AUTH_URL",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/auth/codex.ts"
+          ],
+          "category": "codex"
+        },
+        {
+          "name": "CODEX_OAUTH_CLIENT_ID",
+          "public": false,
+          "usedInTests": true,
+          "files": [
+            "app/api/auth/codex/callback/route.test.ts",
+            "lib/auth/codex.ts"
+          ],
+          "category": "codex"
+        },
+        {
+          "name": "CODEX_OAUTH_CLIENT_SECRET",
+          "public": false,
+          "usedInTests": true,
+          "files": [
+            "app/api/auth/codex/callback/route.test.ts",
+            "lib/auth/codex.ts"
+          ],
+          "category": "codex"
+        },
+        {
+          "name": "CODEX_OAUTH_REDIRECT_URI",
+          "public": false,
+          "usedInTests": true,
+          "files": [
+            "app/api/auth/codex/callback/route.test.ts",
+            "lib/auth/codex.ts"
+          ],
+          "category": "codex"
+        },
+        {
+          "name": "CODEX_OAUTH_SCOPE",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/auth/codex.ts"
+          ],
+          "category": "codex"
+        },
+        {
+          "name": "CODEX_OAUTH_TOKEN_URL",
+          "public": false,
+          "usedInTests": true,
+          "files": [
+            "app/api/auth/codex/callback/route.test.ts",
+            "lib/auth/codex.ts"
+          ],
+          "category": "codex"
+        },
+        {
+          "name": "XDG_CONFIG_HOME",
+          "public": false,
+          "usedInTests": true,
+          "files": [
+            "lib/auth/codex-local.test.ts",
+            "lib/auth/codex-local.ts"
+          ],
+          "category": "codex"
+        }
+      ]
+    },
+    {
+      "id": "supabase",
+      "description": "Supabase URLs, keys, buckets, and media library storage settings.",
+      "relatedDocs": [
+        "README.md",
+        "docs/OPERATIONS.md"
+      ],
+      "variables": [
+        {
+          "name": "SUPABASE_ENABLE_IN_TESTS",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/supabase/server.ts"
+          ],
+          "category": "supabase"
+        },
+        {
+          "name": "SUPABASE_MEDIA_LIBRARY_BUCKET",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "app/api/studio/meme-library/import-supabase/route.ts"
+          ],
+          "category": "supabase"
+        },
+        {
+          "name": "SUPABASE_MEDIA_LIBRARY_PREFIX",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "app/api/studio/meme-library/import-supabase/route.ts"
+          ],
+          "category": "supabase"
+        },
+        {
+          "name": "SUPABASE_MEDIA_LIBRARY_SIGNED_URL_TTL_SEC",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/studio/meme-library.ts"
+          ],
+          "category": "supabase"
+        },
+        {
+          "name": "SUPABASE_SERVICE_ROLE_KEY",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/supabase/server.ts"
+          ],
+          "category": "supabase"
+        },
+        {
+          "name": "SUPABASE_URL",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/supabase/server.ts",
+            "lib/supabase/storage.ts"
+          ],
+          "category": "supabase"
+        },
+        {
+          "name": "SUPABASE_VIDEO_ASSETS_BUCKET",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/supabase/storage.ts"
+          ],
+          "category": "supabase"
+        }
+      ]
+    },
+    {
+      "id": "google-youtube",
+      "description": "Google sign-in and YouTube upload OAuth configuration.",
+      "relatedDocs": [
+        "docs/OPERATIONS.md"
+      ],
+      "variables": [
+        {
+          "name": "GOOGLE_CLIENT_ID",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/auth/google.ts",
+            "lib/publish/youtube.ts"
+          ],
+          "category": "google-youtube"
+        },
+        {
+          "name": "GOOGLE_CLIENT_SECRET",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/auth/google.ts",
+            "lib/publish/youtube.ts"
+          ],
+          "category": "google-youtube"
+        },
+        {
+          "name": "GOOGLE_REDIRECT_URI",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/publish/youtube.ts"
+          ],
+          "category": "google-youtube"
+        }
+      ]
+    },
+    {
+      "id": "publish-scheduler",
+      "description": "Publish execution auth and QStash scheduling settings.",
+      "relatedDocs": [
+        "docs/OPERATIONS.md"
+      ],
+      "variables": [
+        {
+          "name": "PUBLISH_EXECUTE_SECRET",
+          "public": false,
+          "usedInTests": true,
+          "files": [
+            "app/api/publish/execute/route.test.ts",
+            "app/api/publish/execute/route.ts",
+            "lib/publish/scheduler.ts"
+          ],
+          "category": "publish-scheduler"
+        },
+        {
+          "name": "QSTASH_TOKEN",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/publish/scheduler.ts"
+          ],
+          "category": "publish-scheduler"
+        },
+        {
+          "name": "QSTASH_URL",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/publish/scheduler.ts"
+          ],
+          "category": "publish-scheduler"
+        }
+      ]
+    },
+    {
+      "id": "studio-tts",
+      "description": "Typecast TTS, preview voices, voice assets, and synthesis tuning.",
+      "relatedDocs": [
+        "docs/OPERATIONS.md"
+      ],
+      "variables": [
+        {
+          "name": "TYPECAST_API_KEY",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/studio/tts-config.ts"
+          ],
+          "category": "studio-tts"
+        },
+        {
+          "name": "TYPECAST_DEFAULT_LANGUAGE",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/studio/tts-config.ts"
+          ],
+          "category": "studio-tts"
+        },
+        {
+          "name": "TYPECAST_DEFAULT_VOICE_ID",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/studio/codex-script-to-json-dialogue.ts",
+            "lib/studio/render-dialogue.ts",
+            "lib/studio/tts-config.ts"
+          ],
+          "category": "studio-tts"
+        },
+        {
+          "name": "TYPECAST_MODEL_ID",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/studio/tts-config.ts"
+          ],
+          "category": "studio-tts"
+        },
+        {
+          "name": "TYPECAST_RATE_LIMIT_BASE_DELAY_MS",
+          "public": false,
+          "usedInTests": true,
+          "files": [
+            "lib/studio/tts-typecast.test.ts",
+            "lib/studio/tts-typecast.ts"
+          ],
+          "category": "studio-tts"
+        },
+        {
+          "name": "TYPECAST_RATE_LIMIT_RETRIES",
+          "public": false,
+          "usedInTests": true,
+          "files": [
+            "lib/studio/tts-typecast.test.ts",
+            "lib/studio/tts-typecast.ts"
+          ],
+          "category": "studio-tts"
+        },
+        {
+          "name": "TYPECAST_REQUEST_CONCURRENCY",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/studio/tts-typecast.ts"
+          ],
+          "category": "studio-tts"
+        },
+        {
+          "name": "TYPECAST_SEGMENT_CONCURRENCY",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/studio/render-dialogue.ts",
+            "lib/studio/tts-typecast.ts"
+          ],
+          "category": "studio-tts"
+        },
+        {
+          "name": "TYPECAST_SPEED",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/studio/tts-config.ts"
+          ],
+          "category": "studio-tts"
+        },
+        {
+          "name": "TYPECAST_VOICE_ID",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/studio/codex-script-to-json-dialogue.ts",
+            "lib/studio/render-dialogue.ts",
+            "lib/studio/tts-config.ts"
+          ],
+          "category": "studio-tts"
+        },
+        {
+          "name": "TYPECAST_VOICE_OPTIONS",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/studio/tts-config.ts"
+          ],
+          "category": "studio-tts"
+        }
+      ]
+    },
+    {
+      "id": "studio-media",
+      "description": "Image providers, meme library, search integrations, and media discovery settings.",
+      "relatedDocs": [
+        "docs/CODEX_GUIDE.md",
+        "docs/OPERATIONS.md"
+      ],
+      "variables": [
+        {
+          "name": "GIPHY_API_KEY",
+          "public": false,
+          "usedInTests": true,
+          "files": [
+            "lib/studio/image-provider-giphy.test.ts",
+            "lib/studio/image-provider-giphy.ts",
+            "lib/studio/image-provider-resolver.test.ts",
+            "lib/studio/policy.ts"
+          ],
+          "category": "studio-media"
+        },
+        {
+          "name": "MEME_LIBRARY_MAX_ITEMS",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/studio/meme-library.ts"
+          ],
+          "category": "studio-media"
+        },
+        {
+          "name": "MEME_LIBRARY_SCAN_LIMIT",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/studio/meme-library.ts"
+          ],
+          "category": "studio-media"
+        },
+        {
+          "name": "MEME_LIBRARY_TTL_SEC",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/studio/meme-library.ts"
+          ],
+          "category": "studio-media"
+        },
+        {
+          "name": "NAVER_SEARCH_CLIENT_ID",
+          "public": false,
+          "usedInTests": true,
+          "files": [
+            "lib/studio/image-resolver.test.ts",
+            "lib/studio/image-resolver.ts",
+            "lib/studio/policy.ts"
+          ],
+          "category": "studio-media"
+        },
+        {
+          "name": "NAVER_SEARCH_CLIENT_SECRET",
+          "public": false,
+          "usedInTests": true,
+          "files": [
+            "lib/studio/image-resolver.test.ts",
+            "lib/studio/image-resolver.ts",
+            "lib/studio/policy.ts"
+          ],
+          "category": "studio-media"
+        },
+        {
+          "name": "PEXELS_API_KEY",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/studio/image-provider-resolver-search-adapters.ts",
+            "lib/studio/policy.ts"
+          ],
+          "category": "studio-media"
+        },
+        {
+          "name": "PIXABAY_API_KEY",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/studio/image-provider-resolver-search-adapters.ts",
+            "lib/studio/policy.ts"
+          ],
+          "category": "studio-media"
+        }
+      ]
+    },
+    {
+      "id": "studio-render",
+      "description": "Studio render, dialogue/audio defaults, memory thresholds, and renderer toggles.",
+      "relatedDocs": [
+        "docs/CODEX_GUIDE.md",
+        "docs/OPERATIONS.md"
+      ],
+      "variables": [
+        {
+          "name": "STUDIO_DIALOGUE_NARRATION_VOICE",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/studio/codex-script-to-json-dialogue.ts"
+          ],
+          "category": "studio-render"
+        },
+        {
+          "name": "STUDIO_DIALOGUE_NARRATION_VOICE_ID",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/studio/codex-script-to-json-dialogue.ts"
+          ],
+          "category": "studio-render"
+        },
+        {
+          "name": "STUDIO_DIALOGUE_QUOTE_VOICE",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/studio/codex-script-to-json-dialogue.ts"
+          ],
+          "category": "studio-render"
+        },
+        {
+          "name": "STUDIO_DIALOGUE_QUOTE_VOICE_ID",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/studio/codex-script-to-json-dialogue.ts"
+          ],
+          "category": "studio-render"
+        },
+        {
+          "name": "STUDIO_DIALOGUE_QUOTE_VOICE_IDS",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/studio/codex-script-to-json-dialogue.ts",
+            "lib/studio/render-dialogue.ts"
+          ],
+          "category": "studio-render"
+        },
+        {
+          "name": "STUDIO_DIALOGUE_SPEAKER_VOICE_IDS",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/studio/codex-script-to-json-dialogue.ts",
+            "lib/studio/render-dialogue.ts"
+          ],
+          "category": "studio-render"
+        },
+        {
+          "name": "STUDIO_DIALOGUE_SPEAKER_VOICES",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/studio/codex-script-to-json-dialogue.ts",
+            "lib/studio/render-dialogue.ts"
+          ],
+          "category": "studio-render"
+        },
+        {
+          "name": "STUDIO_IMAGE_POLICY_VARIANT",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/studio/images/policy-registry.ts"
+          ],
+          "category": "studio-render"
+        },
+        {
+          "name": "STUDIO_IMAGE_QUERY_PLANNER_BATCH_SIZE",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/studio/image-query-planner.ts"
+          ],
+          "category": "studio-render"
+        },
+        {
+          "name": "STUDIO_IMAGE_QUERY_PLANNER_CODEX_MODEL",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/studio/image-query-planner.ts"
+          ],
+          "category": "studio-render"
+        },
+        {
+          "name": "STUDIO_IMAGE_QUERY_PLANNER_PARTIAL_RETRY_ATTEMPTS",
+          "public": false,
+          "usedInTests": true,
+          "files": [
+            "lib/studio/image-query-planner.test.ts",
+            "lib/studio/image-query-planner.ts"
+          ],
+          "category": "studio-render"
+        },
+        {
+          "name": "STUDIO_IMAGE_QUERY_PLANNER_TIMEOUT_MS",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/studio/image-query-planner.ts"
+          ],
+          "category": "studio-render"
+        },
+        {
+          "name": "STUDIO_MANUAL_IMAGE_SCENE_PLANNER_BATCH_SIZE",
+          "public": false,
+          "usedInTests": true,
+          "files": [
+            "lib/studio/manual-image-scene-planner.test.ts",
+            "lib/studio/manual-image-scene-planner.ts"
+          ],
+          "category": "studio-render"
+        },
+        {
+          "name": "STUDIO_MANUAL_IMAGE_SCENE_PLANNER_CODEX_MODEL",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/studio/manual-image-scene-planner.ts"
+          ],
+          "category": "studio-render"
+        },
+        {
+          "name": "STUDIO_MANUAL_IMAGE_SCENE_PLANNER_PARTIAL_RETRY_ATTEMPTS",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/studio/manual-image-scene-planner.ts"
+          ],
+          "category": "studio-render"
+        },
+        {
+          "name": "STUDIO_MANUAL_IMAGE_SCENE_PLANNER_TIMEOUT_MS",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/studio/manual-image-scene-planner.ts"
+          ],
+          "category": "studio-render"
+        },
+        {
+          "name": "STUDIO_NARRATION_VOICE_ID",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/studio/codex-script-to-json-dialogue.ts"
+          ],
+          "category": "studio-render"
+        },
+        {
+          "name": "STUDIO_QUOTE_VOICE_ID",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/studio/codex-script-to-json-dialogue.ts"
+          ],
+          "category": "studio-render"
+        },
+        {
+          "name": "STUDIO_SERVER_RENDERER_ENABLED",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "app/api/studio/render-jobs/route.ts",
+            "app/api/studio/render-native/route.ts"
+          ],
+          "category": "studio-render"
+        },
+        {
+          "name": "STUDIO_SFX_PLANNER_CODEX_MODEL",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/studio/sfx-query-planner.ts"
+          ],
+          "category": "studio-render"
+        },
+        {
+          "name": "STUDIO_TTS_DEFAULT_VOICE",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/studio/codex-script-to-json-dialogue.ts"
+          ],
+          "category": "studio-render"
+        },
+        {
+          "name": "STUDIO_TTS_DEFAULT_VOICE_ID",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/studio/codex-script-to-json-dialogue.ts",
+            "lib/studio/tts-config.ts"
+          ],
+          "category": "studio-render"
+        },
+        {
+          "name": "STUDIO_TTS_PREVIEW_TEXT",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/studio/tts-config.ts"
+          ],
+          "category": "studio-render"
+        },
+        {
+          "name": "STUDIO_TTS_SEGMENT_CONCURRENCY",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/studio/render-dialogue.ts"
+          ],
+          "category": "studio-render"
+        }
+      ]
+    },
+    {
+      "id": "cache-storage",
+      "description": "External cache/storage backing services.",
+      "relatedDocs": [
+        "docs/OPERATIONS.md"
+      ],
+      "variables": [
+        {
+          "name": "UPSTASH_REDIS_REST_TOKEN",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/studio/tts-segment-cache.ts"
+          ],
+          "category": "cache-storage"
+        },
+        {
+          "name": "UPSTASH_REDIS_REST_URL",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/studio/tts-segment-cache.ts"
+          ],
+          "category": "cache-storage"
+        }
+      ]
+    },
+    {
+      "id": "misc",
+      "description": "Unclassified environment variables still referenced by the codebase.",
+      "relatedDocs": [],
+      "variables": [
+        {
+          "name": "AI_PROVIDER",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/studio/ai-provider.ts"
+          ],
+          "category": "misc"
+        },
+        {
+          "name": "APP_MODE",
+          "public": false,
+          "usedInTests": true,
+          "files": [
+            "app/api/auth/session/route.test.ts"
+          ],
+          "category": "misc"
+        },
+        {
+          "name": "DATABASE_URL",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/local/postgres.ts"
+          ],
+          "category": "misc"
+        },
+        {
+          "name": "DEEPSEEK_API_KEY",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/studio/ai-provider.ts",
+            "scripts/smoke-deepseek.ts"
+          ],
+          "category": "misc"
+        },
+        {
+          "name": "DEEPSEEK_MODEL",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/studio/ai-provider.ts"
+          ],
+          "category": "misc"
+        },
+        {
+          "name": "DEEPSEEK_SCRIPT_TO_JSON_USE_API",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/studio/ai-provider.ts"
+          ],
+          "category": "misc"
+        },
+        {
+          "name": "HOMEDRIVE",
+          "public": false,
+          "usedInTests": true,
+          "files": [
+            "lib/auth/codex-local.test.ts"
+          ],
+          "category": "misc"
+        },
+        {
+          "name": "HOMEPATH",
+          "public": false,
+          "usedInTests": true,
+          "files": [
+            "lib/auth/codex-local.test.ts"
+          ],
+          "category": "misc"
+        },
+        {
+          "name": "LOCAL_POSTGRES_CONTAINER",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "scripts/setup-local-postgres.mjs"
+          ],
+          "category": "misc"
+        },
+        {
+          "name": "LOCAL_POSTGRES_DATA_DIR",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "scripts/setup-local-postgres.mjs"
+          ],
+          "category": "misc"
+        },
+        {
+          "name": "LOCAL_POSTGRES_DB",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "scripts/setup-local-postgres.mjs"
+          ],
+          "category": "misc"
+        },
+        {
+          "name": "LOCAL_POSTGRES_ENABLE_IN_TESTS",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/local/postgres.ts"
+          ],
+          "category": "misc"
+        },
+        {
+          "name": "LOCAL_POSTGRES_IMAGE",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "scripts/setup-local-postgres.mjs"
+          ],
+          "category": "misc"
+        },
+        {
+          "name": "LOCAL_POSTGRES_PASSWORD",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "scripts/setup-local-postgres.mjs"
+          ],
+          "category": "misc"
+        },
+        {
+          "name": "LOCAL_POSTGRES_PORT",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "scripts/setup-local-postgres.mjs"
+          ],
+          "category": "misc"
+        },
+        {
+          "name": "LOCAL_POSTGRES_URL",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/local/postgres.ts"
+          ],
+          "category": "misc"
+        },
+        {
+          "name": "LOCAL_POSTGRES_USER",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "scripts/setup-local-postgres.mjs"
+          ],
+          "category": "misc"
+        },
+        {
+          "name": "LOCAL_STORAGE_ENABLE_IN_TESTS",
+          "public": false,
+          "usedInTests": true,
+          "files": [
+            "lib/local/storage.ts",
+            "lib/studio/anchor-image-fetcher.test.ts",
+            "lib/studio/render-remotion-server.test.ts"
+          ],
+          "category": "misc"
+        },
+        {
+          "name": "LOCAL_STORAGE_PUBLIC_BASE_URL",
+          "public": false,
+          "usedInTests": true,
+          "files": [
+            "lib/local/storage.ts",
+            "lib/studio/anchor-image-fetcher.test.ts",
+            "lib/studio/anchor-image-fetcher.ts",
+            "lib/studio/render-remotion-server.test.ts"
+          ],
+          "category": "misc"
+        },
+        {
+          "name": "LOCAL_STORAGE_ROOT",
+          "public": false,
+          "usedInTests": true,
+          "files": [
+            "lib/local/storage.ts",
+            "lib/studio/anchor-image-fetcher.test.ts",
+            "lib/studio/render-remotion-server.test.ts",
+            "scripts/setup-local-postgres.mjs"
+          ],
+          "category": "misc"
+        },
+        {
+          "name": "PORT",
+          "public": false,
+          "usedInTests": false,
+          "files": [
+            "lib/local/storage.ts",
+            "lib/studio/anchor-image-fetcher.ts"
+          ],
+          "category": "misc"
+        }
+      ]
+    }
+  ]
+}

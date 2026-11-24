@@ -106,6 +106,13 @@ try {
   Invoke-Step "snaps product shell verifier" "node" @("scripts/verify-snaps-product-shell.mjs")
   Invoke-Step "snaps runtime smoke contract verifier" "node" @("scripts/verify-snaps-runtime-contract.mjs")
   Invoke-Step "snaps DB contract verifier" "node" @("scripts/verify-snaps-db-contract.mjs")
+  # Two offline contract verifiers that nothing ran. Their three siblings
+  # - runtime, DB and platform - were all here; these read the two
+  # external services' own sources and compose file and take no network,
+  # so there was no reason for them to be out. A verifier nobody runs is
+  # a guard that has quietly stopped guarding.
+  Invoke-Step "snaps Pixelle contract verifier" "node" @("scripts/verify-snaps-pixelle-contract.mjs")
+  Invoke-Step "snaps Shorts-Maker contract verifier" "node" @("scripts/verify-snaps-shorts-maker-contract.mjs")
   Invoke-Step "snaps platform contract verifier" "node" @("scripts/verify-snaps-platform-contract.mjs")
   Invoke-Step "snaps provider contract verifier" "node" @("scripts/verify-snaps-provider-contract.mjs")
   Invoke-Step "snaps demo workspace verifier" "node" @("scripts/verify-snaps-demo-workspace.mjs")
@@ -154,6 +161,19 @@ try {
   Invoke-Step "snaps libraries typecheck" "node_modules\.bin\tsc.cmd" @(
     "-p",
     "libraries/nestjs-libraries/tsconfig.json",
+    "--noEmit",
+    "--pretty",
+    "false"
+  )
+  # The suite and the verifier scripts are the only part of the tree the
+  # typechecks above never covered: seven projects are checked and
+  # tsconfig.snaps-spec.json, which owns snaps.core.spec.ts and
+  # scripts/verify-snaps-*.ts, was not one of them. Two type errors in the
+  # controller smoke survived several rounds of preflight because of it - the
+  # thing that guards everything else was the thing nothing guarded.
+  Invoke-Step "snaps spec and verifier typecheck" "node_modules\.bin\tsc.cmd" @(
+    "-p",
+    "tsconfig.snaps-spec.json",
     "--noEmit",
     "--pretty",
     "false"

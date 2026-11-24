@@ -38,6 +38,7 @@
     "docker-build": "docker compose build snaps",
     "docker-create": "docker compose create snaps",
     "verify:snaps": "node scripts/verify-snaps-static.mjs",
+    "verify:snaps:spec-types": "tsc --noEmit -p tsconfig.snaps-spec.json",
     "verify:snaps:env": "node scripts/verify-snaps-env.mjs",
     "verify:snaps:audit": "node scripts/verify-snaps-audit.mjs",
     "verify:snaps:api": "node scripts/verify-snaps-api-contract.mjs",
@@ -45,11 +46,15 @@
     "verify:snaps:product-shell": "node scripts/verify-snaps-product-shell.mjs",
     "verify:snaps:runtime-contract": "node scripts/verify-snaps-runtime-contract.mjs",
     "verify:snaps:db": "node scripts/verify-snaps-db-contract.mjs",
+    "verify:snaps:pixelle-contract": "node scripts/verify-snaps-pixelle-contract.mjs",
+    "verify:snaps:shorts-maker-contract": "node scripts/verify-snaps-shorts-maker-contract.mjs",
     "verify:snaps:platforms": "node scripts/verify-snaps-platform-contract.mjs",
     "verify:snaps:providers": "node scripts/verify-snaps-provider-contract.mjs",
     "verify:snaps:demo": "node scripts/verify-snaps-demo-workspace.mjs",
     "verify:snaps:naver-cafe": "ts-node --transpile-only -r tsconfig-paths/register --project tsconfig.base.json --compiler-options \"{\\\"module\\\":\\\"commonjs\\\"}\" scripts/verify-snaps-naver-cafe.ts",
     "verify:snaps:pixelle": "ts-node --transpile-only -r tsconfig-paths/register --project tsconfig.base.json --compiler-options \"{\\\"module\\\":\\\"commonjs\\\"}\" scripts/verify-snaps-pixelle.ts",
+    "verify:snaps:cardnews-deepseek": "ts-node --transpile-only -r tsconfig-paths/register --project tsconfig.base.json --compiler-options \"{\\\"module\\\":\\\"commonjs\\\"}\" scripts/verify-snaps-cardnews-deepseek.ts",
+    "verify:snaps:core-deepseek": "ts-node --transpile-only -r tsconfig-paths/register --project tsconfig.base.json --compiler-options \"{\\\"module\\\":\\\"commonjs\\\"}\" scripts/verify-snaps-core-deepseek.ts",
     "verify:snaps:controller": "ts-node --transpile-only -r tsconfig-paths/register --project tsconfig.base.json --compiler-options \"{\\\"module\\\":\\\"commonjs\\\"}\" scripts/verify-snaps-controller.ts",
     "verify:snaps:services": "ts-node --transpile-only -r tsconfig-paths/register --project tsconfig.base.json --compiler-options \"{\\\"module\\\":\\\"commonjs\\\"}\" scripts/verify-snaps-services.ts",
     "verify:snaps:preflight": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe -ExecutionPolicy Bypass -File scripts/verify-snaps-preflight.ps1",
@@ -63,7 +68,7 @@
     "verify:snaps:runtime": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe -ExecutionPolicy Bypass -File scripts/verify-snaps-runtime.ps1",
     "verify:snaps:final": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe -ExecutionPolicy Bypass -File scripts/verify-snaps-final.ps1",
     "postinstall": "npm run prisma-generate",
-    "test": "jest --coverage --detectOpenHandles --reporters=default --reporters=jest-junit"
+    "test": "cross-env NODE_OPTIONS=--max-old-space-size=2048 jest --coverage --detectOpenHandles --reporters=default --reporters=jest-junit"
   },
   "dependencies": {
     "@ag-ui/mastra": "^1.0.1",

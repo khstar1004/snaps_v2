@@ -1,0 +1,1488 @@
+{
+  "schemaVersion": 1,
+  "generatedBy": {
+    "command": "npm run docs:refresh",
+    "script": "scripts/generate-developer-docs.mjs"
+  },
+  "project": {
+    "name": "json-shorts-studio",
+    "version": "0.1.0",
+    "private": true,
+    "packageType": "module",
+    "framework": "Next.js App Router",
+    "uiRuntime": "React 19",
+    "language": "TypeScript"
+  },
+  "summary": {
+    "topLevelDirectories": 8,
+    "pageRouteCount": 19,
+    "apiRouteCount": 69,
+    "docFileCount": 13,
+    "testFileCount": 156
+  },
+  "commands": [
+    {
+      "name": "dev",
+      "command": "next dev -p 4100"
+    },
+    {
+      "name": "build",
+      "command": "next build"
+    },
+    {
+      "name": "start",
+      "command": "next start"
+    },
+    {
+      "name": "clean",
+      "command": "node ./scripts/clean-local-artifacts.mjs"
+    },
+    {
+      "name": "lint",
+      "command": "npx tsc --noEmit"
+    },
+    {
+      "name": "lint:types",
+      "command": "npx tsc --noEmit"
+    },
+    {
+      "name": "test",
+      "command": "node ./scripts/run-node-tests.mjs"
+    },
+    {
+      "name": "docs:refresh",
+      "command": "node ./scripts/generate-developer-docs.mjs"
+    },
+    {
+      "name": "docs:check",
+      "command": "node ./scripts/check-generated-docs.mjs"
+    },
+    {
+      "name": "local:postgres:setup",
+      "command": "node ./scripts/setup-local-postgres.mjs"
+    },
+    {
+      "name": "local:postgres:sync",
+      "command": "node ./scripts/sync-supabase-to-local.mjs"
+    },
+    {
+      "name": "auth:bootstrap-admin",
+      "command": "node --experimental-strip-types --loader ./scripts/ts-paths-loader.mjs ./scripts/bootstrap-auth-admin.ts"
+    },
+    {
+      "name": "render:smoke",
+      "command": "node --experimental-strip-types --loader ./scripts/ts-paths-loader.mjs ./scripts/render-native-smoke.ts"
+    },
+    {
+      "name": "test:codex-local",
+      "command": "node --experimental-strip-types --test --loader ./scripts/ts-paths-loader.mjs ./scripts/test-codex-local-paths.ts"
+    },
+    {
+      "name": "smoke:deepseek",
+      "command": "node --experimental-strip-types --loader ./scripts/ts-paths-loader.mjs ./scripts/smoke-deepseek.ts"
+    }
+  ],
+  "directories": [
+    {
+      "path": "app",
+      "purpose": "App Router pages, route handlers, and route-local helpers/tests"
+    },
+    {
+      "path": "components",
+      "purpose": "Shared UI blocks reused across pages"
+    },
+    {
+      "path": "lib",
+      "purpose": "Domain logic, server helpers, API clients, and orchestration"
+    },
+    {
+      "path": "scripts",
+      "purpose": "Developer tooling, smoke tests, and doc refresh utilities"
+    },
+    {
+      "path": "docs",
+      "purpose": "Living guides, generated maps, and reference data"
+    },
+    {
+      "path": "types",
+      "purpose": "Cross-domain shared TypeScript types"
+    },
+    {
+      "path": "remotion",
+      "purpose": "Remotion composition entrypoints"
+    },
+    {
+      "path": "public",
+      "purpose": "Bundled media assets used by studio/render smoke flows"
+    }
+  ],
+  "routes": {
+    "pages": [
+      {
+        "route": "/",
+        "file": "app/page.tsx",
+        "group": "root"
+      },
+      {
+        "route": "/admin",
+        "file": "app/admin/page.tsx",
+        "group": "admin"
+      },
+      {
+        "route": "/admin/overview",
+        "file": "app/admin/overview/page.tsx",
+        "group": "admin"
+      },
+      {
+        "route": "/admin/users",
+        "file": "app/admin/users/page.tsx",
+        "group": "admin"
+      },
+      {
+        "route": "/assets",
+        "file": "app/assets/page.tsx",
+        "group": "assets"
+      },
+      {
+        "route": "/channel-categories",
+        "file": "app/channel-categories/page.tsx",
+        "group": "channel-categories"
+      },
+      {
+        "route": "/home",
+        "file": "app/home/page.tsx",
+        "group": "home"
+      },
+      {
+        "route": "/layout-studio",
+        "file": "app/layout-studio/page.tsx",
+        "group": "layout-studio"
+      },
+      {
+        "route": "/login",
+        "file": "app/login/page.tsx",
+        "group": "login"
+      },
+      {
+        "route": "/projects",
+        "file": "app/projects/page.tsx",
+        "group": "projects"
+      },
+      {
+        "route": "/projects/new",
+        "file": "app/projects/new/page.tsx",
+        "group": "projects"
+      },
+      {
+        "route": "/publish",
+        "file": "app/publish/page.tsx",
+        "group": "publish"
+      },
+      {
+        "route": "/quick-studio",
+        "file": "app/quick-studio/page.tsx",
+        "group": "quick-studio"
+      },
+      {
+        "route": "/settings",
+        "file": "app/settings/page.tsx",
+        "group": "settings"
+      },
+      {
+        "route": "/settings/history",
+        "file": "app/settings/history/page.tsx",
+        "group": "settings"
+      },
+      {
+        "route": "/shorts-json-studio",
+        "file": "app/shorts-json-studio/page.tsx",
+        "group": "shorts-json-studio"
+      },
+      {
+        "route": "/shorts-json-studio/rendering-guide",
+        "file": "app/shorts-json-studio/rendering-guide/page.tsx",
+        "group": "shorts-json-studio"
+      },
+      {
+        "route": "/shorts-json-studio/template-manager",
+        "file": "app/shorts-json-studio/template-manager/page.tsx",
+        "group": "shorts-json-studio"
+      },
+      {
+        "route": "/trash",
+        "file": "app/trash/page.tsx",
+        "group": "trash"
+      }
+    ],
+    "pageGroups": [
+      {
+        "group": "admin",
+        "count": 3,
+        "routes": [
+          {
+            "route": "/admin",
+            "file": "app/admin/page.tsx",
+            "group": "admin"
+          },
+          {
+            "route": "/admin/overview",
+            "file": "app/admin/overview/page.tsx",
+            "group": "admin"
+          },
+          {
+            "route": "/admin/users",
+            "file": "app/admin/users/page.tsx",
+            "group": "admin"
+          }
+        ]
+      },
+      {
+        "group": "assets",
+        "count": 1,
+        "routes": [
+          {
+            "route": "/assets",
+            "file": "app/assets/page.tsx",
+            "group": "assets"
+          }
+        ]
+      },
+      {
+        "group": "channel-categories",
+        "count": 1,
+        "routes": [
+          {
+            "route": "/channel-categories",
+            "file": "app/channel-categories/page.tsx",
+            "group": "channel-categories"
+          }
+        ]
+      },
+      {
+        "group": "home",
+        "count": 1,
+        "routes": [
+          {
+            "route": "/home",
+            "file": "app/home/page.tsx",
+            "group": "home"
+          }
+        ]
+      },
+      {
+        "group": "layout-studio",
+        "count": 1,
+        "routes": [
+          {
+            "route": "/layout-studio",
+            "file": "app/layout-studio/page.tsx",
+            "group": "layout-studio"
+          }
+        ]
+      },
+      {
+        "group": "login",
+        "count": 1,
+        "routes": [
+          {
+            "route": "/login",
+            "file": "app/login/page.tsx",
+            "group": "login"
+          }
+        ]
+      },
+      {
+        "group": "projects",
+        "count": 2,
+        "routes": [
+          {
+            "route": "/projects",
+            "file": "app/projects/page.tsx",
+            "group": "projects"
+          },
+          {
+            "route": "/projects/new",
+            "file": "app/projects/new/page.tsx",
+            "group": "projects"
+          }
+        ]
+      },
+      {
+        "group": "publish",
+        "count": 1,
+        "routes": [
+          {
+            "route": "/publish",
+            "file": "app/publish/page.tsx",
+            "group": "publish"
+          }
+        ]
+      },
+      {
+        "group": "quick-studio",
+        "count": 1,
+        "routes": [
+          {
+            "route": "/quick-studio",
+            "file": "app/quick-studio/page.tsx",
+            "group": "quick-studio"
+          }
+        ]
+      },
+      {
+        "group": "root",
+        "count": 1,
+        "routes": [
+          {
+            "route": "/",
+            "file": "app/page.tsx",
+            "group": "root"
+          }
+        ]
+      },
+      {
+        "group": "settings",
+        "count": 2,
+        "routes": [
+          {
+            "route": "/settings",
+            "file": "app/settings/page.tsx",
+            "group": "settings"
+          },
+          {
+            "route": "/settings/history",
+            "file": "app/settings/history/page.tsx",
+            "group": "settings"
+          }
+        ]
+      },
+      {
+        "group": "shorts-json-studio",
+        "count": 3,
+        "routes": [
+          {
+            "route": "/shorts-json-studio",
+            "file": "app/shorts-json-studio/page.tsx",
+            "group": "shorts-json-studio"
+          },
+          {
+            "route": "/shorts-json-studio/rendering-guide",
+            "file": "app/shorts-json-studio/rendering-guide/page.tsx",
+            "group": "shorts-json-studio"
+          },
+          {
+            "route": "/shorts-json-studio/template-manager",
+            "file": "app/shorts-json-studio/template-manager/page.tsx",
+            "group": "shorts-json-studio"
+          }
+        ]
+      },
+      {
+        "group": "trash",
+        "count": 1,
+        "routes": [
+          {
+            "route": "/trash",
+            "file": "app/trash/page.tsx",
+            "group": "trash"
+          }
+        ]
+      }
+    ],
+    "api": [
+      {
+        "route": "/api/admin/overview",
+        "file": "app/api/admin/overview/route.ts",
+        "group": "admin"
+      },
+      {
+        "route": "/api/admin/users",
+        "file": "app/api/admin/users/route.ts",
+        "group": "admin"
+      },
+      {
+        "route": "/api/admin/users/[userId]/category-permissions",
+        "file": "app/api/admin/users/[userId]/category-permissions/route.ts",
+        "group": "admin"
+      },
+      {
+        "route": "/api/admin/workspace",
+        "file": "app/api/admin/workspace/route.ts",
+        "group": "admin"
+      },
+      {
+        "route": "/api/assets/audio-library",
+        "file": "app/api/assets/audio-library/route.ts",
+        "group": "assets"
+      },
+      {
+        "route": "/api/assets/delete",
+        "file": "app/api/assets/delete/route.ts",
+        "group": "assets"
+      },
+      {
+        "route": "/api/assets/download",
+        "file": "app/api/assets/download/route.ts",
+        "group": "assets"
+      },
+      {
+        "route": "/api/assets/latest",
+        "file": "app/api/assets/latest/route.ts",
+        "group": "assets"
+      },
+      {
+        "route": "/api/assets/snapshot",
+        "file": "app/api/assets/snapshot/route.ts",
+        "group": "assets"
+      },
+      {
+        "route": "/api/assets/upload",
+        "file": "app/api/assets/upload/route.ts",
+        "group": "assets"
+      },
+      {
+        "route": "/api/auth/codex/callback",
+        "file": "app/api/auth/codex/callback/route.ts",
+        "group": "auth"
+      },
+      {
+        "route": "/api/auth/codex/disconnect",
+        "file": "app/api/auth/codex/disconnect/route.ts",
+        "group": "auth"
+      },
+      {
+        "route": "/api/auth/codex/start",
+        "file": "app/api/auth/codex/start/route.ts",
+        "group": "auth"
+      },
+      {
+        "route": "/api/auth/codex/status",
+        "file": "app/api/auth/codex/status/route.ts",
+        "group": "auth"
+      },
+      {
+        "route": "/api/auth/google/callback",
+        "file": "app/api/auth/google/callback/route.ts",
+        "group": "auth"
+      },
+      {
+        "route": "/api/auth/google/start",
+        "file": "app/api/auth/google/start/route.ts",
+        "group": "auth"
+      },
+      {
+        "route": "/api/auth/login",
+        "file": "app/api/auth/login/route.ts",
+        "group": "auth"
+      },
+      {
+        "route": "/api/auth/logout",
+        "file": "app/api/auth/logout/route.ts",
+        "group": "auth"
+      },
+      {
+        "route": "/api/auth/register",
+        "file": "app/api/auth/register/route.ts",
+        "group": "auth"
+      },
+      {
+        "route": "/api/auth/session",
+        "file": "app/api/auth/session/route.ts",
+        "group": "auth"
+      },
+      {
+        "route": "/api/auth/youtube/callback",
+        "file": "app/api/auth/youtube/callback/route.ts",
+        "group": "auth"
+      },
+      {
+        "route": "/api/auth/youtube/start",
+        "file": "app/api/auth/youtube/start/route.ts",
+        "group": "auth"
+      },
+      {
+        "route": "/api/local-storage/[bucket]/[...path]",
+        "file": "app/api/local-storage/[bucket]/[...path]/route.ts",
+        "group": "local-storage"
+      },
+      {
+        "route": "/api/publish/analytics/insights",
+        "file": "app/api/publish/analytics/insights/route.ts",
+        "group": "publish"
+      },
+      {
+        "route": "/api/publish/analytics/strategy",
+        "file": "app/api/publish/analytics/strategy/route.ts",
+        "group": "publish"
+      },
+      {
+        "route": "/api/publish/cancel",
+        "file": "app/api/publish/cancel/route.ts",
+        "group": "publish"
+      },
+      {
+        "route": "/api/publish/categories",
+        "file": "app/api/publish/categories/route.ts",
+        "group": "publish"
+      },
+      {
+        "route": "/api/publish/category-branding",
+        "file": "app/api/publish/category-branding/route.ts",
+        "group": "publish"
+      },
+      {
+        "route": "/api/publish/category-channels",
+        "file": "app/api/publish/category-channels/route.ts",
+        "group": "publish"
+      },
+      {
+        "route": "/api/publish/category-history",
+        "file": "app/api/publish/category-history/route.ts",
+        "group": "publish"
+      },
+      {
+        "route": "/api/publish/category-metadata",
+        "file": "app/api/publish/category-metadata/route.ts",
+        "group": "publish"
+      },
+      {
+        "route": "/api/publish/delete",
+        "file": "app/api/publish/delete/route.ts",
+        "group": "publish"
+      },
+      {
+        "route": "/api/publish/execute",
+        "file": "app/api/publish/execute/route.ts",
+        "group": "publish"
+      },
+      {
+        "route": "/api/publish/jobs",
+        "file": "app/api/publish/jobs/route.ts",
+        "group": "publish"
+      },
+      {
+        "route": "/api/publish/repair-categories",
+        "file": "app/api/publish/repair-categories/route.ts",
+        "group": "publish"
+      },
+      {
+        "route": "/api/publish/run-now",
+        "file": "app/api/publish/run-now/route.ts",
+        "group": "publish"
+      },
+      {
+        "route": "/api/publish/schedule",
+        "file": "app/api/publish/schedule/route.ts",
+        "group": "publish"
+      },
+      {
+        "route": "/api/publish/trash",
+        "file": "app/api/publish/trash/route.ts",
+        "group": "publish"
+      },
+      {
+        "route": "/api/publish/youtube",
+        "file": "app/api/publish/youtube/route.ts",
+        "group": "publish"
+      },
+      {
+        "route": "/api/studio/bootstrap",
+        "file": "app/api/studio/bootstrap/route.ts",
+        "group": "studio"
+      },
+      {
+        "route": "/api/studio/codex-models",
+        "file": "app/api/studio/codex-models/route.ts",
+        "group": "studio"
+      },
+      {
+        "route": "/api/studio/dialogue-speaker-plan",
+        "file": "app/api/studio/dialogue-speaker-plan/route.ts",
+        "group": "studio"
+      },
+      {
+        "route": "/api/studio/email",
+        "file": "app/api/studio/email/route.ts",
+        "group": "studio"
+      },
+      {
+        "route": "/api/studio/email-address-book",
+        "file": "app/api/studio/email-address-book/route.ts",
+        "group": "studio"
+      },
+      {
+        "route": "/api/studio/image-proxy",
+        "file": "app/api/studio/image-proxy/route.ts",
+        "group": "studio"
+      },
+      {
+        "route": "/api/studio/manual-image-generate",
+        "file": "app/api/studio/manual-image-generate/route.ts",
+        "group": "studio"
+      },
+      {
+        "route": "/api/studio/media-assets",
+        "file": "app/api/studio/media-assets/route.ts",
+        "group": "studio"
+      },
+      {
+        "route": "/api/studio/media-assets/folders",
+        "file": "app/api/studio/media-assets/folders/route.ts",
+        "group": "studio"
+      },
+      {
+        "route": "/api/studio/media-assets/upload",
+        "file": "app/api/studio/media-assets/upload/route.ts",
+        "group": "studio"
+      },
+      {
+        "route": "/api/studio/meme-library",
+        "file": "app/api/studio/meme-library/route.ts",
+        "group": "studio"
+      },
+      {
+        "route": "/api/studio/meme-library/import-supabase",
+        "file": "app/api/studio/meme-library/import-supabase/route.ts",
+        "group": "studio"
+      },
+      {
+        "route": "/api/studio/meme-library/seed",
+        "file": "app/api/studio/meme-library/seed/route.ts",
+        "group": "studio"
+      },
+      {
+        "route": "/api/studio/prepare",
+        "file": "app/api/studio/prepare/route.ts",
+        "group": "studio"
+      },
+      {
+        "route": "/api/studio/render",
+        "file": "app/api/studio/render/route.ts",
+        "group": "studio"
+      },
+      {
+        "route": "/api/studio/render-jobs",
+        "file": "app/api/studio/render-jobs/route.ts",
+        "group": "studio"
+      },
+      {
+        "route": "/api/studio/render-native",
+        "file": "app/api/studio/render-native/route.ts",
+        "group": "studio"
+      },
+      {
+        "route": "/api/studio/script-to-json",
+        "file": "app/api/studio/script-to-json/route.ts",
+        "group": "studio"
+      },
+      {
+        "route": "/api/studio/sfx-catalog",
+        "file": "app/api/studio/sfx-catalog/route.ts",
+        "group": "studio"
+      },
+      {
+        "route": "/api/studio/sfx-plan",
+        "file": "app/api/studio/sfx-plan/route.ts",
+        "group": "studio"
+      },
+      {
+        "route": "/api/studio/topic-to-script",
+        "file": "app/api/studio/topic-to-script/route.ts",
+        "group": "studio"
+      },
+      {
+        "route": "/api/studio/tts/settings",
+        "file": "app/api/studio/tts/settings/route.ts",
+        "group": "studio"
+      },
+      {
+        "route": "/api/studio/tts/voices",
+        "file": "app/api/studio/tts/voices/route.ts",
+        "group": "studio"
+      },
+      {
+        "route": "/api/studio/tts/voices/clone-prompt",
+        "file": "app/api/studio/tts/voices/clone-prompt/route.ts",
+        "group": "studio"
+      },
+      {
+        "route": "/api/studio/tts/voices/upload-reference",
+        "file": "app/api/studio/tts/voices/upload-reference/route.ts",
+        "group": "studio"
+      },
+      {
+        "route": "/api/studio/voice-preview",
+        "file": "app/api/studio/voice-preview/route.ts",
+        "group": "studio"
+      },
+      {
+        "route": "/api/studio/voices",
+        "file": "app/api/studio/voices/route.ts",
+        "group": "studio"
+      },
+      {
+        "route": "/api/telemetry/alignment-summary",
+        "file": "app/api/telemetry/alignment-summary/route.ts",
+        "group": "telemetry"
+      },
+      {
+        "route": "/api/telemetry/event",
+        "file": "app/api/telemetry/event/route.ts",
+        "group": "telemetry"
+      },
+      {
+        "route": "/api/telemetry/hybrid-renderer-summary",
+        "file": "app/api/telemetry/hybrid-renderer-summary/route.ts",
+        "group": "telemetry"
+      }
+    ],
+    "apiGroups": [
+      {
+        "group": "admin",
+        "count": 4,
+        "routes": [
+          {
+            "route": "/api/admin/overview",
+            "file": "app/api/admin/overview/route.ts",
+            "group": "admin"
+          },
+          {
+            "route": "/api/admin/users",
+            "file": "app/api/admin/users/route.ts",
+            "group": "admin"
+          },
+          {
+            "route": "/api/admin/users/[userId]/category-permissions",
+            "file": "app/api/admin/users/[userId]/category-permissions/route.ts",
+            "group": "admin"
+          },
+          {
+            "route": "/api/admin/workspace",
+            "file": "app/api/admin/workspace/route.ts",
+            "group": "admin"
+          }
+        ]
+      },
+      {
+        "group": "assets",
+        "count": 6,
+        "routes": [
+          {
+            "route": "/api/assets/audio-library",
+            "file": "app/api/assets/audio-library/route.ts",
+            "group": "assets"
+          },
+          {
+            "route": "/api/assets/delete",
+            "file": "app/api/assets/delete/route.ts",
+            "group": "assets"
+          },
+          {
+            "route": "/api/assets/download",
+            "file": "app/api/assets/download/route.ts",
+            "group": "assets"
+          },
+          {
+            "route": "/api/assets/latest",
+            "file": "app/api/assets/latest/route.ts",
+            "group": "assets"
+          },
+          {
+            "route": "/api/assets/snapshot",
+            "file": "app/api/assets/snapshot/route.ts",
+            "group": "assets"
+          },
+          {
+            "route": "/api/assets/upload",
+            "file": "app/api/assets/upload/route.ts",
+            "group": "assets"
+          }
+        ]
+      },
+      {
+        "group": "auth",
+        "count": 12,
+        "routes": [
+          {
+            "route": "/api/auth/codex/callback",
+            "file": "app/api/auth/codex/callback/route.ts",
+            "group": "auth"
+          },
+          {
+            "route": "/api/auth/codex/disconnect",
+            "file": "app/api/auth/codex/disconnect/route.ts",
+            "group": "auth"
+          },
+          {
+            "route": "/api/auth/codex/start",
+            "file": "app/api/auth/codex/start/route.ts",
+            "group": "auth"
+          },
+          {
+            "route": "/api/auth/codex/status",
+            "file": "app/api/auth/codex/status/route.ts",
+            "group": "auth"
+          },
+          {
+            "route": "/api/auth/google/callback",
+            "file": "app/api/auth/google/callback/route.ts",
+            "group": "auth"
+          },
+          {
+            "route": "/api/auth/google/start",
+            "file": "app/api/auth/google/start/route.ts",
+            "group": "auth"
+          },
+          {
+            "route": "/api/auth/login",
+            "file": "app/api/auth/login/route.ts",
+            "group": "auth"
+          },
+          {
+            "route": "/api/auth/logout",
+            "file": "app/api/auth/logout/route.ts",
+            "group": "auth"
+          },
+          {
+            "route": "/api/auth/register",
+            "file": "app/api/auth/register/route.ts",
+            "group": "auth"
+          },
+          {
+            "route": "/api/auth/session",
+            "file": "app/api/auth/session/route.ts",
+            "group": "auth"
+          },
+          {
+            "route": "/api/auth/youtube/callback",
+            "file": "app/api/auth/youtube/callback/route.ts",
+            "group": "auth"
+          },
+          {
+            "route": "/api/auth/youtube/start",
+            "file": "app/api/auth/youtube/start/route.ts",
+            "group": "auth"
+          }
+        ]
+      },
+      {
+        "group": "local-storage",
+        "count": 1,
+        "routes": [
+          {
+            "route": "/api/local-storage/[bucket]/[...path]",
+            "file": "app/api/local-storage/[bucket]/[...path]/route.ts",
+            "group": "local-storage"
+          }
+        ]
+      },
+      {
+        "group": "publish",
+        "count": 16,
+        "routes": [
+          {
+            "route": "/api/publish/analytics/insights",
+            "file": "app/api/publish/analytics/insights/route.ts",
+            "group": "publish"
+          },
+          {
+            "route": "/api/publish/analytics/strategy",
+            "file": "app/api/publish/analytics/strategy/route.ts",
+            "group": "publish"
+          },
+          {
+            "route": "/api/publish/cancel",
+            "file": "app/api/publish/cancel/route.ts",
+            "group": "publish"
+          },
+          {
+            "route": "/api/publish/categories",
+            "file": "app/api/publish/categories/route.ts",
+            "group": "publish"
+          },
+          {
+            "route": "/api/publish/category-branding",
+            "file": "app/api/publish/category-branding/route.ts",
+            "group": "publish"
+          },
+          {
+            "route": "/api/publish/category-channels",
+            "file": "app/api/publish/category-channels/route.ts",
+            "group": "publish"
+          },
+          {
+            "route": "/api/publish/category-history",
+            "file": "app/api/publish/category-history/route.ts",
+            "group": "publish"
+          },
+          {
+            "route": "/api/publish/category-metadata",
+            "file": "app/api/publish/category-metadata/route.ts",
+            "group": "publish"
+          },
+          {
+            "route": "/api/publish/delete",
+            "file": "app/api/publish/delete/route.ts",
+            "group": "publish"
+          },
+          {
+            "route": "/api/publish/execute",
+            "file": "app/api/publish/execute/route.ts",
+            "group": "publish"
+          },
+          {
+            "route": "/api/publish/jobs",
+            "file": "app/api/publish/jobs/route.ts",
+            "group": "publish"
+          },
+          {
+            "route": "/api/publish/repair-categories",
+            "file": "app/api/publish/repair-categories/route.ts",
+            "group": "publish"
+          },
+          {
+            "route": "/api/publish/run-now",
+            "file": "app/api/publish/run-now/route.ts",
+            "group": "publish"
+          },
+          {
+            "route": "/api/publish/schedule",
+            "file": "app/api/publish/schedule/route.ts",
+            "group": "publish"
+          },
+          {
+            "route": "/api/publish/trash",
+            "file": "app/api/publish/trash/route.ts",
+            "group": "publish"
+          },
+          {
+            "route": "/api/publish/youtube",
+            "file": "app/api/publish/youtube/route.ts",
+            "group": "publish"
+          }
+        ]
+      },
+      {
+        "group": "studio",
+        "count": 27,
+        "routes": [
+          {
+            "route": "/api/studio/bootstrap",
+            "file": "app/api/studio/bootstrap/route.ts",
+            "group": "studio"
+          },
+          {
+            "route": "/api/studio/codex-models",
+            "file": "app/api/studio/codex-models/route.ts",
+            "group": "studio"
+          },
+          {
+            "route": "/api/studio/dialogue-speaker-plan",
+            "file": "app/api/studio/dialogue-speaker-plan/route.ts",
+            "group": "studio"
+          },
+          {
+            "route": "/api/studio/email",
+            "file": "app/api/studio/email/route.ts",
+            "group": "studio"
+          },
+          {
+            "route": "/api/studio/email-address-book",
+            "file": "app/api/studio/email-address-book/route.ts",
+            "group": "studio"
+          },
+          {
+            "route": "/api/studio/image-proxy",
+            "file": "app/api/studio/image-proxy/route.ts",
+            "group": "studio"
+          },
+          {
+            "route": "/api/studio/manual-image-generate",
+            "file": "app/api/studio/manual-image-generate/route.ts",
+            "group": "studio"
+          },
+          {
+            "route": "/api/studio/media-assets",
+            "file": "app/api/studio/media-assets/route.ts",
+            "group": "studio"
+          },
+          {
+            "route": "/api/studio/media-assets/folders",
+            "file": "app/api/studio/media-assets/folders/route.ts",
+            "group": "studio"
+          },
+          {
+            "route": "/api/studio/media-assets/upload",
+            "file": "app/api/studio/media-assets/upload/route.ts",
+            "group": "studio"
+          },
+          {
+            "route": "/api/studio/meme-library",
+            "file": "app/api/studio/meme-library/route.ts",
+            "group": "studio"
+          },
+          {
+            "route": "/api/studio/meme-library/import-supabase",
+            "file": "app/api/studio/meme-library/import-supabase/route.ts",
+            "group": "studio"
+          },
+          {
+            "route": "/api/studio/meme-library/seed",
+            "file": "app/api/studio/meme-library/seed/route.ts",
+            "group": "studio"
+          },
+          {
+            "route": "/api/studio/prepare",
+            "file": "app/api/studio/prepare/route.ts",
+            "group": "studio"
+          },
+          {
+            "route": "/api/studio/render",
+            "file": "app/api/studio/render/route.ts",
+            "group": "studio"
+          },
+          {
+            "route": "/api/studio/render-jobs",
+            "file": "app/api/studio/render-jobs/route.ts",
+            "group": "studio"
+          },
+          {
+            "route": "/api/studio/render-native",
+            "file": "app/api/studio/render-native/route.ts",
+            "group": "studio"
+          },
+          {
+            "route": "/api/studio/script-to-json",
+            "file": "app/api/studio/script-to-json/route.ts",
+            "group": "studio"
+          },
+          {
+            "route": "/api/studio/sfx-catalog",
+            "file": "app/api/studio/sfx-catalog/route.ts",
+            "group": "studio"
+          },
+          {
+            "route": "/api/studio/sfx-plan",
+            "file": "app/api/studio/sfx-plan/route.ts",
+            "group": "studio"
+          },
+          {
+            "route": "/api/studio/topic-to-script",
+            "file": "app/api/studio/topic-to-script/route.ts",
+            "group": "studio"
+          },
+          {
+            "route": "/api/studio/tts/settings",
+            "file": "app/api/studio/tts/settings/route.ts",
+            "group": "studio"
+          },
+          {
+            "route": "/api/studio/tts/voices",
+            "file": "app/api/studio/tts/voices/route.ts",
+            "group": "studio"
+          },
+          {
+            "route": "/api/studio/tts/voices/clone-prompt",
+            "file": "app/api/studio/tts/voices/clone-prompt/route.ts",
+            "group": "studio"
+          },
+          {
+            "route": "/api/studio/tts/voices/upload-reference",
+            "file": "app/api/studio/tts/voices/upload-reference/route.ts",
+            "group": "studio"
+          },
+          {
+            "route": "/api/studio/voice-preview",
+            "file": "app/api/studio/voice-preview/route.ts",
+            "group": "studio"
+          },
+          {
+            "route": "/api/studio/voices",
+            "file": "app/api/studio/voices/route.ts",
+            "group": "studio"
+          }
+        ]
+      },
+      {
+        "group": "telemetry",
+        "count": 3,
+        "routes": [
+          {
+            "route": "/api/telemetry/alignment-summary",
+            "file": "app/api/telemetry/alignment-summary/route.ts",
+            "group": "telemetry"
+          },
+          {
+            "route": "/api/telemetry/event",
+            "file": "app/api/telemetry/event/route.ts",
+            "group": "telemetry"
+          },
+          {
+            "route": "/api/telemetry/hybrid-renderer-summary",
+            "file": "app/api/telemetry/hybrid-renderer-summary/route.ts",
+            "group": "telemetry"
+          }
+        ]
+      }
+    ]
+  },
+  "domains": [
+    {
+      "id": "auth",
+      "description": "Login, session cookies, bootstrap admin provisioning, workspace switching, and OAuth bridges.",
+      "paths": [
+        "app/login",
+        "app/api/auth",
+        "lib/auth"
+      ],
+      "entryFiles": [
+        "app/api/auth/login/route.ts",
+        "lib/auth/bootstrap.ts",
+        "lib/auth/session.ts",
+        "app/login/page.tsx"
+      ],
+      "relatedDocs": [
+        "docs/CODEX_GUIDE.md",
+        "docs/OPERATIONS.md"
+      ]
+    },
+    {
+      "id": "studio",
+      "description": "Main creation flow: topic/script generation, script-to-json, slide prep, media selection, render, and publish handoff.",
+      "paths": [
+        "app/shorts-json-studio",
+        "app/api/studio",
+        "lib/studio"
+      ],
+      "entryFiles": [
+        "app/shorts-json-studio/page.tsx",
+        "app/api/studio/bootstrap/route.ts",
+        "app/api/studio/prepare/route.ts",
+        "app/api/studio/render-native/route.ts",
+        "lib/studio/codex-script.ts"
+      ],
+      "relatedDocs": [
+        "docs/CODEX_GUIDE.md",
+        "docs/OPERATIONS.md"
+      ]
+    },
+    {
+      "id": "layout-studio",
+      "description": "Advanced template/layout editor for slot geometry, inspector panels, presets, and workbench interactions.",
+      "paths": [
+        "app/layout-studio"
+      ],
+      "entryFiles": [
+        "app/layout-studio/page.tsx",
+        "app/layout-studio/layout-studio-helpers.ts",
+        "app/layout-studio/layout-studio-inspector.ts",
+        "app/layout-studio/layout-studio-workbench.ts"
+      ],
+      "relatedDocs": [
+        "docs/CODEX_GUIDE.md"
+      ]
+    },
+    {
+      "id": "publish",
+      "description": "Category metadata, channel mapping, publish jobs, scheduling, analytics, and YouTube upload flows.",
+      "paths": [
+        "app/publish",
+        "app/api/publish",
+        "lib/publish"
+      ],
+      "entryFiles": [
+        "app/publish/page.tsx",
+        "app/api/publish/execute/route.ts",
+        "lib/publish/publish-store.ts",
+        "lib/publish/scheduler.ts",
+        "lib/publish/submit-flow.ts"
+      ],
+      "relatedDocs": [
+        "docs/CODEX_GUIDE.md",
+        "docs/OPERATIONS.md"
+      ]
+    },
+    {
+      "id": "assets",
+      "description": "Asset browsing, deletion/download, library snapshots, local audio, and studio resume entrypoints.",
+      "paths": [
+        "app/assets",
+        "app/api/assets",
+        "lib/assets"
+      ],
+      "entryFiles": [
+        "app/assets/page.tsx",
+        "app/api/assets/latest/route.ts",
+        "components/assets-explorer-panel.tsx",
+        "lib/assets/use-assets-browser-state.ts"
+      ],
+      "relatedDocs": [
+        "docs/CODEX_GUIDE.md",
+        "docs/OPERATIONS.md"
+      ]
+    },
+    {
+      "id": "settings-admin",
+      "description": "Workspace settings, TTS configuration, category/channel management, history restore, and admin operations.",
+      "paths": [
+        "app/settings",
+        "app/channel-categories",
+        "app/admin",
+        "app/api/admin"
+      ],
+      "entryFiles": [
+        "app/settings/page.tsx",
+        "app/settings/history/page.tsx",
+        "app/admin/overview/page.tsx",
+        "app/admin/users/page.tsx",
+        "app/api/admin/users/route.ts"
+      ],
+      "relatedDocs": [
+        "docs/CODEX_GUIDE.md",
+        "docs/OPERATIONS.md"
+      ]
+    },
+    {
+      "id": "telemetry",
+      "description": "Client/server workflow telemetry, alignment summaries, hybrid renderer summaries, and rollout monitoring.",
+      "paths": [
+        "app/api/telemetry",
+        "lib/telemetry"
+      ],
+      "entryFiles": [
+        "app/api/telemetry/event/route.ts",
+        "lib/telemetry/client.ts",
+        "lib/telemetry/schema.ts",
+        "lib/telemetry/use-preflight-tracking.ts"
+      ],
+      "relatedDocs": [
+        "docs/OPERATIONS.md"
+      ]
+    }
+  ],
+  "hotspots": [
+    {
+      "path": "app/layout-studio/page.tsx",
+      "reason": "Still the main advanced layout editor entrypoint even after helper/module extraction."
+    },
+    {
+      "path": "lib/studio/image-provider-resolver.ts",
+      "reason": "Image provider orchestration remains a large decision-heavy module."
+    },
+    {
+      "path": "lib/studio/codex-script-core.ts",
+      "reason": "Core transport/retry orchestration for Codex-powered studio flows."
+    },
+    {
+      "path": "lib/studio/codex-script-to-json.ts",
+      "reason": "Prompting, parsing, validation, and repair logic for script-to-json."
+    },
+    {
+      "path": "lib/publish/publish-store.ts",
+      "reason": "Publish domain entrypoint that still re-exports/orchestrates multiple services."
+    }
+  ],
+  "tests": {
+    "runner": "npm run test",
+    "entryScript": "scripts/run-node-tests.mjs",
+    "files": [
+      "app/api/assets/download/route.test.ts",
+      "app/api/assets/latest/route.test.ts",
+      "app/api/assets/snapshot/route.test.ts",
+      "app/api/auth/codex/callback/route.test.ts",
+      "app/api/auth/codex/start/route.test.ts",
+      "app/api/auth/login/route.test.ts",
+      "app/api/auth/session/route.test.ts",
+      "app/api/publish/category-metadata/route.test.ts",
+      "app/api/publish/execute/route.test.ts",
+      "app/api/studio/bootstrap/route.test.ts",
+      "app/api/studio/image-proxy/route.test.ts",
+      "app/api/studio/manual-image-generate/route.test.ts",
+      "app/api/studio/prepare/route.test.ts",
+      "app/api/studio/render-native/route.test.ts",
+      "app/api/studio/script-to-json/route.test.ts",
+      "app/api/studio/topic-to-script/route.test.ts",
+      "app/assets/personal-library-ui-contract.test.ts",
+      "app/layout-studio/layout-studio-commands.test.ts",
+      "app/layout-studio/layout-studio-helpers.test.ts",
+      "app/layout-studio/layout-studio-history.test.ts",
+      "app/layout-studio/layout-studio-inspector.test.ts",
+      "app/layout-studio/layout-studio-interactions.test.ts",
+      "app/layout-studio/layout-studio-storage.test.ts",
+      "app/layout-studio/layout-studio-workbench.test.ts",
+      "app/projects/new/profile-summary.test.ts",
+      "app/projects/new/project-context-storage.test.ts",
+      "app/settings/content-profile-ui-copy.test.ts",
+      "app/settings/settings-information-architecture.test.ts",
+      "app/shorts-json-studio/components/studio-project-settings-drawer.test.ts",
+      "app/shorts-json-studio/storage-draft-updated-at.test.ts",
+      "app/shorts-json-studio/studio-asset-snapshot.test.ts",
+      "app/shorts-json-studio/studio-autosave-status.test.ts",
+      "app/shorts-json-studio/studio-category-preset-storage.test.ts",
+      "app/shorts-json-studio/studio-change-impact.test.ts",
+      "app/shorts-json-studio/studio-character-profile-helpers.test.ts",
+      "app/shorts-json-studio/studio-final-asset-gate.test.ts",
+      "app/shorts-json-studio/studio-guided-flow.test.ts",
+      "app/shorts-json-studio/studio-guided-stage-presentation.test.ts",
+      "app/shorts-json-studio/studio-history-restore-draft-action.test.ts",
+      "app/shorts-json-studio/studio-image-settings-visibility.test.ts",
+      "app/shorts-json-studio/studio-manual-voice-options.test.ts",
+      "app/shorts-json-studio/studio-operation-recovery.test.ts",
+      "app/shorts-json-studio/studio-page-helpers.test.ts",
+      "app/shorts-json-studio/studio-prepared-slide-indexing.test.ts",
+      "app/shorts-json-studio/studio-preview-panel-helpers.test.ts",
+      "app/shorts-json-studio/studio-profile-lock-contract.test.ts",
+      "app/shorts-json-studio/studio-project-context-summary.test.ts",
+      "app/shorts-json-studio/studio-project-profile-settings.test.ts",
+      "app/shorts-json-studio/studio-remotion-preview-utils.test.ts",
+      "app/shorts-json-studio/studio-render-fingerprint.test.ts",
+      "app/shorts-json-studio/studio-render-preflight-navigation.test.ts",
+      "app/shorts-json-studio/studio-render-preflight.test.ts",
+      "app/shorts-json-studio/studio-render-result-preservation-contract.test.ts",
+      "app/shorts-json-studio/studio-render-reuse-key.test.ts",
+      "app/shorts-json-studio/studio-scene-structure-editor.test.ts",
+      "app/shorts-json-studio/studio-script-json-panel-scopes.test.ts",
+      "app/shorts-json-studio/studio-sfx-preview-helpers.test.ts",
+      "app/shorts-json-studio/studio-voice-config-helpers.test.ts",
+      "app/shorts-json-studio/studio-workspace-navigation.test.ts",
+      "app/shorts-json-studio/use-studio-category-preset-state.test.ts",
+      "app/shorts-json-studio/use-studio-history-panel-state.test.ts",
+      "app/shorts-json-studio/use-studio-input-actions.test.ts",
+      "app/shorts-json-studio/use-studio-local-storage-sync-profile-hydration.test.ts",
+      "app/shorts-json-studio/use-studio-prepare-flow.test.ts",
+      "app/shorts-json-studio/use-studio-preselected-media-actions.test.ts",
+      "app/shorts-json-studio/use-studio-render-publish-view-model.test.ts",
+      "app/shorts-json-studio/use-studio-render-workflow-controller.test.ts",
+      "app/shorts-json-studio/use-studio-route-shell-state.test.ts",
+      "app/shorts-json-studio/use-studio-script-generation-actions.test.ts",
+      "app/shorts-json-studio/use-studio-slide-edit-actions.test.ts",
+      "app/shorts-json-studio/use-studio-voice-preview.test.ts",
+      "app/shorts-json-studio/use-studio-workflow-actions.test.ts",
+      "lib/api/publish-settings-client.test.ts",
+      "lib/api/studio-client.test.ts",
+      "lib/auth/codex-local-cli.test.ts",
+      "lib/auth/codex-local.test.ts",
+      "lib/auth/login-rate-limit.test.ts",
+      "lib/auth/personal-mode.test.ts",
+      "lib/auth/request-headers.test.ts",
+      "lib/auth/safe-redirect.test.ts",
+      "lib/local/asset-url-origin.test.ts",
+      "lib/local/byte-range.test.ts",
+      "lib/network/request-guard.test.ts",
+      "lib/personal-v1/completed-video-revision.test.ts",
+      "lib/personal-v1/library-navigation.test.ts",
+      "lib/personal-v1/studio-dashboard-helpers.test.ts",
+      "lib/personal-v1/studio-project-index.test.ts",
+      "lib/publish/preflight.test.ts",
+      "lib/publish/publish-store-assets.test.ts",
+      "lib/publish/publish-store-cache.test.ts",
+      "lib/publish/publish-store-category-cache.test.ts",
+      "lib/publish/publish-store-category-settings-helpers.test.ts",
+      "lib/publish/publish-store-category-settings.test.ts",
+      "lib/publish/publish-store-jobs.test.ts",
+      "lib/publish/publish-store-oauth.test.ts",
+      "lib/publish/publish-store-owners.test.ts",
+      "lib/publish/publish-store-telemetry.test.ts",
+      "lib/studio/anchor-image-fetcher.test.ts",
+      "lib/studio/asset-snapshot.test.ts",
+      "lib/studio/audio-mix-presets.test.ts",
+      "lib/studio/audio-options.test.ts",
+      "lib/studio/bootstrap-voice-options.test.ts",
+      "lib/studio/caption-cue-timing.test.ts",
+      "lib/studio/caption-layout.test.ts",
+      "lib/studio/character-profiles.test.ts",
+      "lib/studio/codex-local-image-generator.test.ts",
+      "lib/studio/codex-planner-retry.test.ts",
+      "lib/studio/codex-script-core-errors.test.ts",
+      "lib/studio/codex-script-core.test.ts",
+      "lib/studio/codex-script-to-json-slides-helpers.test.ts",
+      "lib/studio/codex-script-to-json.test.ts",
+      "lib/studio/codex-script-transport.test.ts",
+      "lib/studio/codex-topic-script.test.ts",
+      "lib/studio/dialogue-speaker-planner.test.ts",
+      "lib/studio/durable-snapshot-media.test.ts",
+      "lib/studio/frames.test.ts",
+      "lib/studio/giphy-query-utils.test.ts",
+      "lib/studio/image-candidate-approval.test.ts",
+      "lib/studio/image-provider-giphy.test.ts",
+      "lib/studio/image-provider-resolver-search.test.ts",
+      "lib/studio/image-provider-resolver.test.ts",
+      "lib/studio/image-proxy-shared.test.ts",
+      "lib/studio/image-query-planner.test.ts",
+      "lib/studio/image-resolver.test.ts",
+      "lib/studio/image-selection-policy.test.ts",
+      "lib/studio/manual-image-prompt.test.ts",
+      "lib/studio/manual-image-scene-planner.test.ts",
+      "lib/studio/media-reservation.test.ts",
+      "lib/studio/media-url-utils.test.ts",
+      "lib/studio/playback-rate.test.ts",
+      "lib/studio/policy-cache-key.test.ts",
+      "lib/studio/policy-fallback.test.ts",
+      "lib/studio/policy-provider-order.test.ts",
+      "lib/studio/policy-reservation.test.ts",
+      "lib/studio/policy.test.ts",
+      "lib/studio/project-profile-snapshot.test.ts",
+      "lib/studio/prompt-templates.test.ts",
+      "lib/studio/remotion-media-sequences.test.ts",
+      "lib/studio/render-dialogue.test.ts",
+      "lib/studio/render-jobs.test.ts",
+      "lib/studio/render-memory-budget.test.ts",
+      "lib/studio/render-narration-segment-filter.test.ts",
+      "lib/studio/render-native-server.test.ts",
+      "lib/studio/render-plan.test.ts",
+      "lib/studio/render-remotion-server.test.ts",
+      "lib/studio/render-sfx-cues.test.ts",
+      "lib/studio/required-sfx-asset.test.ts",
+      "lib/studio/sfx-query-planner.test.ts",
+      "lib/studio/tts-config.test.ts",
+      "lib/studio/tts-service.test.ts",
+      "lib/studio/tts-typecast.test.ts",
+      "lib/studio/validation.test.ts",
+      "lib/studio/voice-picker-helpers.test.ts",
+      "lib/studio/wav-audio.test.ts",
+      "lib/ui/api-client.test.ts",
+      "lib/ui/publish-errors.test.ts"
+    ]
+  },
+  "docs": {
+    "primary": [
+      {
+        "path": "README.md",
+        "role": "repo entrypoint"
+      },
+      {
+        "path": "docs/CODEX_GUIDE.md",
+        "role": "codex-first repo map and task routing"
+      },
+      {
+        "path": "docs/OPERATIONS.md",
+        "role": "runtime, env, release, QA, and telemetry guide"
+      },
+      {
+        "path": "docs/developer-map.json",
+        "role": "machine-readable codebase map"
+      },
+      {
+        "path": "docs/environment-map.json",
+        "role": "machine-readable environment inventory"
+      },
+      {
+        "path": "docs/README.md",
+        "role": "docs taxonomy and navigation"
+      }
+    ],
+    "living": [
+      {
+        "path": "docs/BGM_SETUP.md",
+        "role": "fixed BGM asset placement note"
+      }
+    ],
+    "dataFiles": [
+      {
+        "path": "docs/revenue-ratecard.yaml",
+        "role": "pricing and billing reference data"
+      }
+    ],
+    "historical": []
+  }
+}

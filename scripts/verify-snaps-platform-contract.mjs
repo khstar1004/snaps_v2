@@ -27,7 +27,12 @@ function sameSet(left, right, label) {
 }
 
 function arrayLiteral(content, constName) {
-  const match = content.match(new RegExp(`const ${constName} = \\[([\\s\\S]*?)\\] as const`));
+  // Accept an exported declaration too. The video and card news platform lists
+  // are exported now so the controller can name the supported set when it
+  // rejects a request, and this matcher silently stopped finding them.
+  const match = content.match(
+    new RegExp(`(?:export )?const ${constName} = \\[([\\s\\S]*?)\\] as const`)
+  );
   if (!match) {
     fail(`Could not find const ${constName}`);
   }
@@ -92,7 +97,7 @@ const rulePlatforms = platformRuleKeys(platformRules);
 const defaultPlatforms = frontendDefaultPlatforms(workspace);
 const assistPlatforms = publishModePlatforms(platformRules, 'assist');
 const schedulePlatforms = publishModePlatforms(platformRules, 'schedule');
-const videoPlatforms = stringItems(arrayLiteral(videoBuilder, 'videoPlatforms'));
+const videoPlatforms = stringItems(arrayLiteral(videoBuilder, 'SNAPS_VIDEO_PLATFORMS'));
 
 sameSet(backendPlatforms, frontendPlatforms, 'frontend targetPlatforms vs backend snapsTargetPlatforms');
 sameSet(backendPlatforms, rulePlatforms, 'snapsPlatformRules keys vs snapsTargetPlatforms');
@@ -124,7 +129,11 @@ for (const dto of [
   }
 }
 
-if (!platformRules.includes("return normalized.length ? [...new Set(normalized)]")) {
+// Checked as an invariant, not as one expression: the fallback that used to sit
+// in this line answered a request naming only unsupported platforms with a
+// default pair nobody had asked for, so it had to go. Deduping is the part that
+// must survive.
+if (!platformRules.includes('[...new Set(normalized)]')) {
   fail('normalizeTargetPlatforms must dedupe requested platforms');
 }
 if (!workspace.includes("type TargetPlatform = (typeof targetPlatforms)[number]['id'];")) {

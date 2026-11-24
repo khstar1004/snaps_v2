@@ -1,0 +1,49 @@
+version: 1
+effective_date: "2026-02-22"
+status: "provisional_public_rate"
+currency:
+  internal_cost: "USD"
+  customer_billing: "KRW"
+policy:
+  fx_base_krw_per_usd: 1350
+  fx_buffer_percent: 10
+  gross_margin_target_percent: 70
+  display_credit_krw: 10
+  internal_mcredit_per_credit: 1000
+  repricing_cadence: "monthly_plus_event_driven"
+providers:
+  grok:
+    provider_name: "xAI"
+    model: "grok-3-fast"
+    rates:
+      input_tokens:
+        unit: "per_1m_tokens"
+        usd: 0.20
+      output_tokens:
+        unit: "per_1m_tokens"
+        usd: 0.50
+    billing_units:
+      input_step: "token_in"
+      output_step: "token_out"
+render_compute:
+  enabled: false
+  note: "초기에는 별도 고정 원가 미반영. 추후 활성화."
+formulas:
+  fx_effective: "fx_base * (1 + fx_buffer)"
+  billing_multiplier: "1 / (1 - gross_margin_target)"
+  billed_krw: "usd_unit * fx_effective * billing_multiplier"
+  mcredit: "ceil((billed_krw / display_credit_krw) * internal_mcredit_per_credit)"
+sample_outputs:
+  grok_input_1000_tokens:
+    usd_cost: 0.0002
+    billed_krw: 0.99
+    mcredit: 99
+    credit: 0.099
+  grok_output_1000_tokens:
+    usd_cost: 0.0005
+    billed_krw: 2.475
+    mcredit: 248
+    credit: 0.248
+sources:
+  - provider: "xAI"
+    url: "https://x.ai/api"

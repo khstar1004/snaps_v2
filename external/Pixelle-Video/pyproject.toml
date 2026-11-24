@@ -1,6 +1,6 @@
 [project]
 name = "pixelle-video"
-version = "0.1.15"
+version = "0.2.0"
 description = "AI-powered video creation platform - Part of Pixelle ecosystem"
 authors = [
     {name = "Pixelle.AI"}
@@ -27,6 +27,10 @@ dependencies = [
     "beautifulsoup4>=4.14.2",
     "moviepy==1.0.3",
     "playwright>=1.58.0",
+    "dashscope>=1.23.0",
+    "requests>=2.32.0",
+    "pyjwt>=2.10.0",
+    "numpy>=1.26.0",
 ]
 
 [project.optional-dependencies]

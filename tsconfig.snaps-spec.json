@@ -1,0 +1,24 @@
+// The jest spec files are transpiled, never typechecked: ts-jest runs with
+// isolatedModules semantics, so a duplicate import or a wrong argument type in
+// a test compiles and "passes". That happened - snaps.core.spec.ts carried the
+// same import twice and the whole suite stayed green.
+//
+// `pnpm verify:snaps:spec-types` typechecks the snaps test sources against the
+// same paths and libs the app code uses.
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    // Test doubles are deliberately loose - a stub that returns [] does not
+    // need a return-type annotation. Turning noImplicitAny off keeps this
+    // check pointed at real mistakes (duplicate identifiers, misspelt members,
+    // wrong argument counts) instead of demanding app-level strictness from
+    // fixtures.
+    "noImplicitAny": false,
+    "types": ["jest", "node"]
+  },
+  "include": [
+    "libraries/nestjs-libraries/src/snaps/**/*.spec.ts",
+    "scripts/verify-snaps-*.ts"
+  ]
+}

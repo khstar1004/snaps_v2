@@ -1,4 +1,8 @@
 {
+  "naver_cafe_club_id": "카페 ID",
+  "naver_cafe_menu_id": "메뉴 ID",
+  "naver_cafe_subject": "제목",
+  "naver_cafe_category": "말머리 (선택)",
   "calendar": "캘린더",
   "webhooks": "웹훅",
   "webhooks_are_a_way_to_get_notified_when_something_happens_in_postiz_via_an_http_request": "웹훅은 snaps에서 무언가 발생할 때 HTTP 요청을 통해 알림을 받는 방법입니다.",

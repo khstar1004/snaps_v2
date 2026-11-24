@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { sanitizeSnapsHashtags } from '@gitroom/nestjs-libraries/snaps/transform/hashtags';
 import { OllamaClient } from '@gitroom/nestjs-libraries/snaps/ai/ollama.client';
 import {
   buildSnapsTransformSystemPrompt,
@@ -19,6 +20,21 @@ import {
   snapsPlatformRules,
 } from '@gitroom/nestjs-libraries/snaps/transform/platform-rules';
 import { SnapsRagService } from '@gitroom/nestjs-libraries/snaps/rag/rag.service';
+import { snapsClampText } from '@gitroom/nestjs-libraries/snaps/text/clamp-text';
+import { snapsClampToWeight } from '@gitroom/nestjs-libraries/snaps/text/weighted-length';
+import { snapsCleanBodyText } from '@gitroom/nestjs-libraries/snaps/text/body-text';
+
+/**
+ * UTF-16 units a model-supplied title may use. Unchanged from the 120 the
+ * previous slice allowed.
+ */
+const SNAPS_SUPPLIED_TITLE_MAX_LENGTH = 120;
+
+/**
+ * UTF-16 units a derived title may use. Kept at the 48 the previous slice
+ * used, so no title that fits today gets shorter.
+ */
+const SNAPS_TITLE_MAX_LENGTH = 48;
 
 @Injectable()
 export class SnapsContentTransformService {
@@ -32,10 +48,42 @@ export class SnapsContentTransformService {
     body: SnapsTransformRequestDto
   ): Promise<SnapsTransformResult> {
     const targetPlatforms = normalizeTargetPlatforms(body.targetPlatforms);
-    const ragHits =
-      body.useRag === false
-        ? []
-        : await this.loadRagExamples(organizationId, body.sourceText, targetPlatforms);
+
+    // A caller naming ['instagram', 'facebook'] got Instagram variants and no
+    // mention of facebook: the unsupported half was filtered out in silence.
+    // Computed here, before the try, so the deterministic fallback carries it
+    // too - putting it on the model path alone would lose it exactly when the
+    // run is already degraded.
+    const unsupported = (body.targetPlatforms || []).filter(
+      (platform) => !targetPlatforms.includes(platform)
+    );
+    const platformWarnings = unsupported.length
+      ? [`${unsupported.join(', ')}은(는) snaps가 지원하지 않는 채널이라 제외했습니다.`]
+      : [];
+    // Style examples are an enhancement, not a requirement, and this sat
+    // outside the try below - so an example store that could not be read threw
+    // straight out of transform() as a plain Error, which Nest turns into a
+    // 500 whose body says only "Internal server error". Measured side by side:
+    // a total model outage came back as rule output with a warning naming the
+    // cause, while an unreadable example file cost the whole request. The
+    // asymmetry was backwards - the optional half was the fatal one.
+    let ragHits: Awaited<ReturnType<typeof this.loadRagExamples>> = [];
+    const ragWarnings: string[] = [];
+    if (body.useRag !== false) {
+      try {
+        ragHits = await this.loadRagExamples(
+          organizationId,
+          body.sourceText,
+          targetPlatforms
+        );
+      } catch (error) {
+        ragWarnings.push(
+          `저장된 스타일 예시를 읽지 못해 예시 없이 변환했습니다: ${
+            error instanceof Error ? error.message : String(error)
+          }`
+        );
+      }
+    }
 
     try {
       const payload = await this.ollama.chatJson<SnapsOllamaTransformPayload>([
@@ -63,10 +111,12 @@ export class SnapsContentTransformService {
       }
 
       return {
-        provider: 'ollama',
+        // The engine that actually answered. Was the literal 'ollama',
+        // so every DeepSeek run reported Ollama.
+        provider: this.ollama.provider(),
         model: this.ollama.model,
         variants,
-        warnings,
+        warnings: [...platformWarnings, ...ragWarnings, ...warnings],
         ragExamplesUsed: ragHits.map((hit) => ({
           id: hit.id,
           platform: hit.platform,
@@ -75,6 +125,9 @@ export class SnapsContentTransformService {
         })),
       };
     } catch (error) {
+      if (process.env.SNAPS_DEBUG_TRANSFORM === '1') {
+        console.error('[snaps-debug] content transform failed:', error);
+      }
       const fallbackAllowed = process.env.SNAPS_ALLOW_RULE_FALLBACK !== 'false';
       if (!fallbackAllowed) {
         throw error;
@@ -87,7 +140,9 @@ export class SnapsContentTransformService {
           this.ruleFallbackVariant(platform, body)
         ),
         warnings: [
-          `Ollama transform failed, rule fallback was used: ${
+          ...platformWarnings,
+          ...ragWarnings,
+          `모델 변환에 실패해 기본 규칙으로 대체했습니다: ${
             error instanceof Error ? error.message : String(error)
           }`,
         ],
@@ -154,20 +209,55 @@ export class SnapsContentTransformService {
 
       if (!content) {
         warnings.push(
-          `Ollama omitted ${platform}; deterministic snaps fallback filled this variant.`
+          `모델이 ${platform} 변형을 제공하지 않아 기본 규칙으로 채웠습니다.`
         );
         return this.ruleFallbackVariant(platform, body);
+      }
+
+      // `found?.hashtags || rule.defaultHashtags` never reached the defaults
+      // when the model returned an empty array, because [] is truthy - and
+      // measured against the live DeepSeek API it does return [] for some
+      // platforms on every run. Cleaning first also covers an array that holds
+      // only junk the sanitiser strips. The deterministic fallback variant has
+      // always applied defaultHashtags; this makes the model path agree.
+      const modelHashtags = this.cleanHashtags(found?.hashtags, rule.hashtagLimit);
+      const hashtags = modelHashtags.length
+        ? modelHashtags
+        : this.cleanHashtags(rule.defaultHashtags, rule.hashtagLimit);
+
+      // The publishing builder warns when it clamps a caption, but by then this
+      // has already cut the model's answer down to the platform limit, so the
+      // builder has nothing left to clamp and says nothing. The operator saw a
+      // sentence stop mid-word with no explanation of why.
+      // X counts units, not characters - Hangul weighs two - so clamping a
+      // Korean post to 280 characters produced 479 units and X refused it at
+      // publish. Where a rule declares a weighted limit, that is the one that
+      // decides; everywhere else a character is a character.
+      const clampedContent = rule.weightedLimit
+        ? snapsClampToWeight(content, rule.weightedLimit)
+        : snapsClampText(content, rule.maxLength);
+      if (clampedContent.length < content.length) {
+        warnings.push(
+          rule.weightedLimit
+            ? `${rule.label}은(는) 본문을 ${rule.weightedLimit}자 분량까지만 받고 ` +
+              `한글은 두 자로 셉니다. 모델이 쓴 ${content.length}자 중 ` +
+              `${content.length - clampedContent.length}자를 잘랐습니다.`
+            : `${rule.label}은(는) 본문을 최대 ${rule.maxLength}자까지만 받아, ` +
+              `모델이 쓴 ${content.length}자 중 ${content.length - clampedContent.length}자를 잘랐습니다.`
+        );
       }
 
       return {
         platform,
         label: rule.label,
-        title: this.cleanTitle(found?.title),
-        content: content.slice(0, rule.maxLength),
-        hashtags: this.cleanHashtags(
-          found?.hashtags || rule.defaultHashtags,
-          rule.hashtagLimit
-        ),
+        // The model is asked for a title but does not always send one. On a
+        // platform that publishes the title separately, leaving it undefined
+        // pushes the publishing builder into deriving one from the body.
+        title:
+          this.cleanTitle(found?.title) ||
+          (rule.requiresTitle ? this.makeTitle(content) : undefined),
+        content: clampedContent,
+        hashtags,
         settings: buildDefaultSettings(platform),
         publishMode: rule.publishMode,
         notes: this.cleanNotes(found?.notes),
@@ -185,19 +275,23 @@ export class SnapsContentTransformService {
     body: SnapsTransformRequestDto
   ): SnapsVariant {
     const rule = snapsPlatformRules[platform];
-    const normalized = body.sourceText.trim().replace(/\s+/g, ' ');
+    const normalized = snapsCleanBodyText(body.sourceText, rule.maxLength);
     const hashtags = this.cleanHashtags(rule.defaultHashtags, rule.hashtagLimit);
     const prefix = this.fallbackPrefix(platform);
     const suffix = hashtags.length ? `\n\n${hashtags.join(' ')}` : '';
-    const content = `${prefix}${normalized}${suffix}`.slice(0, rule.maxLength);
+    // The deterministic fallback answers to the same limit as the model path.
+    const content = rule.weightedLimit
+      ? snapsClampToWeight(`${prefix}${normalized}${suffix}`, rule.weightedLimit)
+      : snapsClampText(`${prefix}${normalized}${suffix}`, rule.maxLength);
 
     return {
       platform,
       label: rule.label,
-      title:
-        platform.includes('naver') || platform === 'xiaohongshu'
-          ? this.makeTitle(normalized)
-          : undefined,
+      // Was a hardcoded platform-name test that happened to omit youtube, so
+      // the YouTube fallback carried no title and the publishing builder
+      // derived one from the content - which began with the literal words
+      // "Title:" and "Description:".
+      title: rule.requiresTitle ? this.makeTitle(normalized) : undefined,
       content,
       hashtags,
       settings: buildDefaultSettings(platform),
@@ -214,7 +308,9 @@ export class SnapsContentTransformService {
       return '오늘 저장해둘 인사이트.\n\n';
     }
     if (platform === 'youtube') {
-      return 'Title: 핵심 요약 Shorts\n\nDescription:\n';
+      // The title travels in the variant's title field now, so it must not be
+      // repeated as a "Title:" line inside the description body.
+      return '';
     }
     if (platform === 'tiktok') {
       return '요즘 이 이슈가 중요한 이유는?\n\n';
@@ -231,41 +327,82 @@ export class SnapsContentTransformService {
     if (platform === 'linkedin') {
       return 'A practical takeaway:\n\n';
     }
+    if (platform === 'kakao-talk') {
+      // Its own rule asks for a Korean messenger tone, concise and warm,
+      // where the recipient sees the value immediately. Without a lead-in
+      // the fallback handed KakaoTalk the bare source - byte-identical to
+      // the X variant, on a channel whose convention is a short greeting,
+      // while every other Korean channel here opens with one.
+      return '공유해요. 바로 도움 되는 내용만 정리했습니다.\n\n';
+    }
+    // X is deliberately bare: its rule is "sharp, compressed, one point
+    // only", and so is YouTube's above, whose title travels in its own field.
     return '';
   }
 
+  /**
+   * Derives the title a platform publishes separately from the body.
+   *
+   * Was `content.slice(0, 48)`, which had three measured faults. The model is
+   * asked for a title, a description and tags in one block, so the slice ran
+   * past the end of the first line and carried its newlines into a field that
+   * is single-line on every platform that has one. It counted UTF-16 units, so
+   * a cut landing inside an emoji left a dangling high surrogate - measured at
+   * one boundary position in seven - or tore a ZWJ family sequence into
+   * different people. And it discarded the headline the model had already
+   * written on line one, in favour of that line plus the start of the body.
+   */
   private makeTitle(content: string) {
-    return content.slice(0, 48).replace(/[.!?。！？]$/, '');
+    const text = String(content ?? '');
+    const flatten = (value: string) => value.trim().replace(/\s+/g, ' ');
+    const [firstLine = ''] = text.split(/\r?\n/);
+    const headline = flatten(firstLine);
+    const flat = flatten(text);
+
+    // A first line that already fits the budget is the title the model wrote.
+    // Below four characters it is a label or a stray bullet, not a headline.
+    const source =
+      headline.length >= 4 && headline.length <= SNAPS_TITLE_MAX_LENGTH
+        ? headline
+        : flat;
+
+    const clamped = snapsClampText(source, SNAPS_TITLE_MAX_LENGTH);
+    // Only when the clamp actually cut: back up to the last word boundary so
+    // the title does not end mid-word, but never give up more than a quarter
+    // of the budget to do it.
+    const trimmedToWord = clamped.replace(/\s+\S*$/, '');
+    const cut =
+      clamped.length < source.length &&
+      trimmedToWord.length >= SNAPS_TITLE_MAX_LENGTH * 0.75
+        ? trimmedToWord
+        : clamped;
+
+    return cut.replace(/[.!?。！？]$/, '').trim();
   }
 
+  // Moved to snaps/transform/hashtags.ts so the publishing builder - the choke
+  // point every flow crosses, including a direct /snaps/schedule-variants call -
+  // sanitises the same way instead of publishing a bare word or a lone '#'.
   private cleanHashtags(hashtags?: unknown, limit = 20) {
-    const rawValues = Array.isArray(hashtags)
-      ? hashtags
-      : typeof hashtags === 'string'
-      ? [hashtags]
-      : [];
-
-    const values = rawValues.flatMap((value) =>
-      String(value || '')
-        .split(/[\s,]+/)
-        .map((tag) => tag.trim())
-        .filter(Boolean)
-    );
-
-    return [...new Set(
-      values
-        .map((tag) => String(tag).trim())
-        .filter(Boolean)
-        .map((tag) => tag.replace(/^#+/, ''))
-        .map((tag) => tag.replace(/[^\p{L}\p{N}_-]/gu, ''))
-        .filter(Boolean)
-        .map((tag) => `#${tag}`)
-    )].slice(0, Math.max(0, limit));
+    return sanitizeSnapsHashtags(hashtags, limit);
   }
 
+  /**
+   * The title the model supplied - the path taken whenever it sends one, so
+   * the common case, not the fallback.
+   *
+   * `trim()` only strips the ends, so a model that answered with a title and a
+   * subtitle on two lines put a newline into a field every platform publishes
+   * on one line. And `slice(0, 120)` counted UTF-16 units: across thirteen
+   * boundary positions it left four dangling high surrogates and tore two ZWJ
+   * sequences. Same faults as makeTitle had, on the path that runs more often.
+   */
   private cleanTitle(title: unknown) {
-    const normalized = typeof title === 'string' ? title.trim() : '';
-    return normalized ? normalized.slice(0, 120) : undefined;
+    const normalized =
+      typeof title === 'string' ? title.replace(/\s+/g, ' ').trim() : '';
+    return normalized
+      ? snapsClampText(normalized, SNAPS_SUPPLIED_TITLE_MAX_LENGTH)
+      : undefined;
   }
 
   private cleanNotes(notes: unknown) {

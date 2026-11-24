@@ -1,0 +1,35 @@
+export const CONTENT_PROFILE_TERM = "콘텐츠 프로필";
+
+export const CONTENT_PROFILE_COPY = {
+  pageTitle: "콘텐츠 프로필 기본값",
+  pageDescription:
+    "영상 제작 전에 사용할 기본 채널, 음성, BGM, 템플릿, 프롬프트 기준을 프로필별로 정리합니다.",
+  profileCountLabel: "콘텐츠 프로필",
+  readOnlyMessage: "현재 환경에서는 읽기 전용입니다.",
+  selectedReadOnlyMessage: "선택한 콘텐츠 프로필은 현재 환경에서 읽기 전용입니다.",
+  addPlaceholder: "새 콘텐츠 프로필 이름",
+  addButton: "콘텐츠 프로필 추가",
+  selectLabel: "관리할 콘텐츠 프로필 선택",
+  renamePlaceholder: "선택한 콘텐츠 프로필 새 이름",
+  renameButton: "이름 변경",
+  repairButton: "기존 작업 기준 정리",
+  deleteButton: "콘텐츠 프로필 휴지통 이동",
+  deleteDefaultTitle: "기본 콘텐츠 프로필은 삭제할 수 없습니다.",
+  deleteTitle: "콘텐츠 프로필 휴지통 이동",
+  defaultProfileNote: "기본 콘텐츠 프로필은 시스템 필수 항목이라 삭제할 수 없습니다.",
+  channelColorsSummary: "고급 설정: 채널 색상",
+  noConnectedChannels: "연결된 채널이 없습니다. 외부 연결에서 채널을 먼저 연결해 주세요.",
+  mappingTitle: "콘텐츠 프로필 기본 채널",
+  mappingSummary: "현재 연결 대상 매핑 편집",
+  mappingSaveButton: "기본 채널 저장",
+  presetSummary: "고급 설정: 콘텐츠 프로필 프리셋(설명/태그/음성/BGM/믹스/템플릿 메모/프롬프트)",
+  selectedProfilePresetLabel: "편집 중인 콘텐츠 프로필",
+  promptTemplateHelp: "현재 콘텐츠 프로필에서 선택한 템플릿의 대본 프롬프트를 편집합니다.",
+  bgmEnabledLabel: "이 콘텐츠 프로필은 BGM 사용",
+  sfxEnabledLabel: "이 콘텐츠 프로필은 SFX 사용",
+  templateNotesHelp:
+    "콘텐츠 프로필별 템플릿 메모입니다. 채널 톤, 자주 쓰는 멘트, 금지 표현 같은 운영 메모를 저장해 둘 수 있습니다.",
+  connectYoutubeButton: "YouTube 연결",
+  externalConnectionTitle: "외부 연결",
+  externalConnectionDescription: "현재 프로필의 기본 채널로 사용할 외부 채널 연결을 보조 설정에서 관리합니다.",
+} as const;

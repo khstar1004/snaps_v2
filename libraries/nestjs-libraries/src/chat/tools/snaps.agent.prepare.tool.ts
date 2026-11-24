@@ -29,6 +29,7 @@ Use this tool first for high-level publishing commands such as:
 
 It converts the natural-language command into a safe operator plan, platform-specific drafts, optional short-form video script/job, and an AiToEarn-inspired Monetize/Publish/Engage/Create operating map.
 It never publishes or schedules by itself. After this tool returns, show the preview and ask for explicit confirmation before using schedulePostTool or manualPosting.
+Times in the plan are resolved in the timezone named by plan.publishTimezoneOffsetMinutes. This tool has no browser context, so that is the Korean default (-540) unless the caller supplies one - the workspace sends the operator's own offset and can therefore differ by hours for the same command. Show plan.publishDateLocal together with that offset so the operator can see which clock the plan was built against.
 `,
       inputSchema: z.object({
         command: z.string().min(5),

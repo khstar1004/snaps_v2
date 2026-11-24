@@ -23,7 +23,11 @@ The product keeps the proven social account, OAuth, media upload, calendar, and 
 ## snaps Environment
 
 ```env
+AI_PROVIDER=ollama
 SNAPS_LLM_PROVIDER=ollama
+# DEEPSEEK_API_KEY=
+DEEPSEEK_BASE_URL=https://api.deepseek.com
+DEEPSEEK_CHAT_MODEL=deepseek-v4-flash
 OLLAMA_BASE_URL=http://localhost:11434
 OLLAMA_CHAT_MODEL=qwen3.5:9b
 OLLAMA_EMBED_MODEL=nomic-embed-text:latest
@@ -86,11 +90,25 @@ The backend accepts both `/snaps/*` and `/api/snaps/*` for snaps routes. The fro
 - `POST /snaps/video/generate-short`
 - `GET /snaps/video/status/:jobId`
 - `POST /snaps/video/attach-to-draft`
+- `POST /snaps/card-news/script`
+- `POST /snaps/card-news/generate`
+- `POST /snaps/card-news/attach-to-draft`
+- `POST /snaps/shorts-maker/topic-to-script`
+- `POST /snaps/shorts-maker/render-jobs`
+- `GET /snaps/shorts-maker/render-jobs/:jobId`
+- `POST /snaps/agent/prepare`
+- `GET /snaps/agent/tasks`
+- `GET /snaps/agent/tasks/:taskId`
+- `POST /snaps/agent/tasks/:taskId/favorite`
+- `DELETE /snaps/agent/tasks/:taskId/favorite`
+- `POST /snaps/agent/tasks/:taskId/rating`
+- `DELETE /snaps/agent/tasks/:taskId`
 
 ## Verification
 
 ```bash
 npm run verify:snaps
+npm run verify:snaps:spec-types
 npm run verify:snaps:env
 npm run verify:snaps:audit
 npm run verify:snaps:api
@@ -99,6 +117,8 @@ npm run verify:snaps:product-shell
 npm run verify:snaps:runtime-contract
 npm run verify:snaps:db
 npm run verify:snaps:platforms
+npm run verify:snaps:pixelle-contract
+npm run verify:snaps:shorts-maker-contract
 npm run verify:snaps:providers
 npm run verify:snaps:demo
 npm run verify:snaps:naver-cafe -- --dry-run
@@ -113,11 +133,17 @@ npm run verify:snaps:readiness:json
 npm run verify:snaps:readiness:strict
 npm run verify:snaps:dev-images
 npm run verify:snaps:handoff
+AI_PROVIDER=deepseek DEEPSEEK_API_KEY=<key> SNAPS_DEEPSEEK_CONFIRM=live npm run verify:snaps:core-deepseek
+AI_PROVIDER=deepseek DEEPSEEK_API_KEY=<key> SNAPS_DEEPSEEK_CONFIRM=live npm run verify:snaps:cardnews-deepseek
 npm run verify:snaps:runtime -- -Auth <token> -ShowOrg <organizationId> -FrontendUrl http://localhost:4200
 $env:SNAPS_OLLAMA_RAG_CONFIRM = "embed"
 $env:SNAPS_RUNTIME_CONFIRM = "smoke"
 npm run verify:snaps:final -- -Auth <token> -ShowOrg <organizationId> -IncludeOllama -FrontendUrl http://localhost:4200
 ```
+
+`verify:snaps:core-deepseek` and `verify:snaps:cardnews-deepseek` are the only checks that call a real LLM; everything else above runs offline. They need `AI_PROVIDER=deepseek`, a working `DEEPSEEK_API_KEY`, and `SNAPS_DEEPSEEK_CONFIRM=live`, and they bill against that key on every run. The confirmation variable is deliberate: like `SNAPS_RUNTIME_CONFIRM` and `SNAPS_NAVER_CAFE_CONFIRM`, it stops a smoke with a real-world cost from starting just because a key happens to be present in `.env`. `verify:snaps:final-guards` checks that both scripts still refuse to run without it. `core-deepseek` exercises content transform, analytics report, shorts script, feedback summary, the agent command planner (including card news routing), and a RAG-enabled transform. `cardnews-deepseek` runs script → PNG render → publish-variant build for all three templates and writes the images to `tmp/cardnews-deepseek-smoke/`.
+
+Both deliberately fail rather than pass when the model is unreachable or keeps returning unusable output. snaps degrades to deterministic fallbacks by design, so "it returned something" is not evidence the LLM worked: each script retries a few times and then asserts the result did not come from the fallback path.
 
 `verify:snaps:services` runs the snaps service layer without a live server. It covers Ollama client JSON parsing/request shape, partial successful Ollama transform normalization including string hashtag cleanup, analytics metric mapping from existing provider output, malformed and non-array report metric handling, local JSON store recovery for malformed/non-array source, RAG, report, inbox, and activity files, activity record/import/list, activity import normalization without object-string leakage, source/RAG/report import-delete flows, source import/report export normalization without object-string leakage, RAG rebuild, RAG save/search, finite-only embedding normalization, malformed RAG import rejection, malformed `topK` clamping, transform fallback including Naver Blog, KakaoTalk, and Xiaohongshu assist variants, report export, feedback import/delete/clear/classification, malformed feedback input handling, malformed shorts LLM script normalization, short-form video fallback, Pixelle generate/status request normalization including nested job/status/video URL fields with a stubbed endpoint, Naver Cafe schedule settings validation including partial-warning behavior, and Naver Cafe OAuth/refresh/post payload/error normalization against an isolated `tmp/snaps-service-smoke-*` data directory, then removes that temporary smoke directory.
 
@@ -131,9 +157,15 @@ The same service smoke also verifies the pure publishing payload builder used by
 
 `verify:snaps:product-shell` checks the surrounding product shell: `/snaps` route registration, main menu entry, calendar shortcut, local font usage, snaps branding, privacy/terms baseline pages, browser extension metadata, SDK packaging/docs/default API URL, and Naver Cafe icon rendering.
 
+`verify:snaps:spec-types` typechecks the snaps jest specs and `verify-snaps-*.ts` scripts. ts-jest transpiles tests without typechecking them, so a duplicate import or a stub that returns the wrong shape compiles and the suite stays green; this catches both.
+
 `verify:snaps:runtime-contract` checks that every snaps controller route is exercised by `verify-snaps-runtime.ps1`; dangerous routes such as whole-inbox deletion stay behind explicit confirmation flags.
 
 `verify:snaps:db` checks that the snaps Prisma models and `scripts/snaps-postgres-migration.sql` agree on tables, columns, indexes, foreign keys, and `updatedAt` triggers.
+
+`verify:snaps:shorts-maker-contract` checks the contract with the bundled Shorts-Maker service: the two studio routes and their verbs on both sides, the `id=` status query parameter, and the auth arrangement the integration depends on. Every `/api/studio/*` route requires a session and the snaps client sends no credentials, so the compose service deliberately runs with `AUTH_LOCAL_BYPASS=true` and a non-production `NODE_ENV`. That is only safe because the service publishes no host port, so the verifier fails if one is added.
+
+`verify:snaps:pixelle-contract` checks the contract with the bundled Pixelle-Video service: that the health and snaps routers are still mounted without an API prefix, that Pixelle still serves the four routes the snaps backend calls and that the backend still calls them, and that every Python file under `external/Pixelle-Video` compiles. `external/` is excluded from jest and from every tsconfig, so nothing else looks at that code.
 
 `verify:snaps:platforms` checks that backend platform rules, DTO validation, frontend platform tabs, default selections, assist-only channels, and video-capable channels stay in sync.
 
@@ -161,7 +193,7 @@ The same service smoke also verifies the pure publishing payload builder used by
 
 Use `-IncludeMutating` on the runtime verifier only against a disposable workspace and only with `SNAPS_MUTATING_CONFIRM=mutate` because it creates source, report, and inbox smoke records.
 
-After installation and server startup, `verify:snaps:final` is the end-to-end gate. It runs the install-ready preflight, regenerates Prisma Client through `node_modules/.bin/prisma.cmd`, optionally applies `prisma db push` with `-ApplyDbPush`, runs the production build unless `-SkipBuild` is set, reports the Docker dev image cache, then runs `verify:snaps:readiness -- -RequireRuntime -RequireNoWarnings` before the authenticated runtime smoke. By default the final/runtime/readiness scripts read `FRONTEND_URL` and `NEXT_PUBLIC_BACKEND_URL` from `.env`; pass explicit `-BaseUrl` or `-FrontendUrl` only when overriding that local configuration. The authenticated runtime smoke requires `SNAPS_RUNTIME_CONFIRM=smoke` because normal transform and video-script checks record snaps activity entries. Add `-IncludeOllama` only with `SNAPS_OLLAMA_RAG_CONFIRM=embed`; it requires both configured Ollama models through the live snaps server health aliases and creates/searches/deletes a temporary RAG example to exercise the embedding path. To verify a real connected channel, pass `-ConnectedIntegrationId <id> -ConnectedPlatform instagram` only with `SNAPS_CONNECTED_DRAFT_CONFIRM=draft` because it creates a real connected draft; add `-IncludeConnectedSchedule` only when you intentionally want the smoke to create a real scheduled post, and the final gate will fail fast unless both the connected integration id and `SNAPS_CONNECTED_SCHEDULE_CONFIRM=schedule` are supplied. Add `-IncludeNaverCafeLive` only when the Naver Cafe live-post env vars point at a disposable board; the final gate requires `NAVER_CAFE_ACCESS_TOKEN`, cafe IDs, and `SNAPS_NAVER_CAFE_CONFIRM=post` before it starts. Add `-IncludePixelleDirect` or `-IncludePixelleJob` only when `PIXELLE_VIDEO_URL` points at a disposable Pixelle environment and a real job submission/status check is intended; both Pixelle live paths require `SNAPS_PIXELLE_CONFIRM=generate` before they can submit a job. Add `-IncludeInboxClear` only against a disposable organization because it deletes every snaps inbox item and requires `SNAPS_INBOX_CLEAR_CONFIRM=clear`. Pass `-RuntimeSmokeId <id>` when you want every generated smoke title/content/job prompt to carry a searchable identifier. If `pnpm` is not on PATH, it falls back to the repository-local Corepack `pnpm.cjs`. Preflight also runs `verify-snaps-final.ps1 -CheckPrerequisitesOnly` so the final gate's tool resolution is checked before an auth cookie is available.
+After installation and server startup, `verify:snaps:final` is the end-to-end gate. It runs the install-ready preflight, regenerates Prisma Client through `node_modules/.bin/prisma.cmd`, optionally applies `prisma db push` with `-ApplyDbPush` — which changes the database schema and therefore requires `SNAPS_DB_PUSH_CONFIRM=push` — runs the production build unless `-SkipBuild` is set, reports the Docker dev image cache, then runs `verify:snaps:readiness -- -RequireRuntime -RequireNoWarnings` before the authenticated runtime smoke. By default the final/runtime/readiness scripts read `FRONTEND_URL` and `NEXT_PUBLIC_BACKEND_URL` from `.env`; pass explicit `-BaseUrl` or `-FrontendUrl` only when overriding that local configuration. The authenticated runtime smoke requires `SNAPS_RUNTIME_CONFIRM=smoke` because normal transform and video-script checks record snaps activity entries. Add `-IncludeOllama` only with `SNAPS_OLLAMA_RAG_CONFIRM=embed`; it requires both configured Ollama models through the live snaps server health aliases and creates/searches/deletes a temporary RAG example to exercise the embedding path. To verify a real connected channel, pass `-ConnectedIntegrationId <id> -ConnectedPlatform instagram` only with `SNAPS_CONNECTED_DRAFT_CONFIRM=draft` because it creates a real connected draft; with `-ConnectedPlatform naver-cafe` you must also pass `-ConnectedNaverCafeClubId <id> -ConnectedNaverCafeMenuId <id>`, since a Naver Cafe post cannot be addressed without them and the smoke refuses to start otherwise; add `-IncludeConnectedSchedule` only when you intentionally want the smoke to create a real scheduled post, and the final gate will fail fast unless both the connected integration id and `SNAPS_CONNECTED_SCHEDULE_CONFIRM=schedule` are supplied. Add `-IncludeNaverCafeLive` only when the Naver Cafe live-post env vars point at a disposable board; the final gate requires `NAVER_CAFE_ACCESS_TOKEN`, cafe IDs, and `SNAPS_NAVER_CAFE_CONFIRM=post` before it starts. Add `-IncludePixelleDirect` or `-IncludePixelleJob` only when `PIXELLE_VIDEO_URL` points at a disposable Pixelle environment and a real job submission/status check is intended; both Pixelle live paths require `SNAPS_PIXELLE_CONFIRM=generate` before they can submit a job. Add `-IncludeInboxClear` only against a disposable organization because it deletes every snaps inbox item and requires `SNAPS_INBOX_CLEAR_CONFIRM=clear`. Pass `-RuntimeSmokeId <id>` when you want every generated smoke title/content/job prompt to carry a searchable identifier. If `pnpm` is not on PATH, it falls back to the repository-local Corepack `pnpm.cjs`. Preflight also runs `verify-snaps-final.ps1 -CheckPrerequisitesOnly` so the final gate's tool resolution is checked before an auth cookie is available.
 
 The frontend uses a local system font stack through `snapsLocalFont`; it does not use `next/font/google`, so production builds do not depend on Google Fonts access.
 

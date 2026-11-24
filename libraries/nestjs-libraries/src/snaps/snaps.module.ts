@@ -10,6 +10,10 @@ import { SnapsSourceLibraryService } from '@gitroom/nestjs-libraries/snaps/libra
 import { SnapsActivityLogService } from '@gitroom/nestjs-libraries/snaps/activity/activity-log.service';
 import { SnapsCommandPlannerService } from '@gitroom/nestjs-libraries/snaps/agent/command-planner.service';
 import { SnapsAgentTaskService } from '@gitroom/nestjs-libraries/snaps/agent/agent-task.service';
+import { SnapsCardNewsService } from '@gitroom/nestjs-libraries/snaps/cardnews/card-news.service';
+import { SnapsCardNewsRendererService } from '@gitroom/nestjs-libraries/snaps/cardnews/card-news-renderer.service';
+import { SnapsRenderJobOwnershipService } from '@gitroom/nestjs-libraries/snaps/video/render-job-ownership.service';
+import { ShortsMakerClientService } from '@gitroom/nestjs-libraries/snaps/shorts-maker/shorts-maker-client.service';
 
 @Module({
   providers: [
@@ -24,6 +28,10 @@ import { SnapsAgentTaskService } from '@gitroom/nestjs-libraries/snaps/agent/age
     SnapsActivityLogService,
     SnapsCommandPlannerService,
     SnapsAgentTaskService,
+    SnapsCardNewsService,
+    SnapsCardNewsRendererService,
+    ShortsMakerClientService,
+    SnapsRenderJobOwnershipService,
   ],
   exports: [
     OllamaClient,
@@ -37,6 +45,10 @@ import { SnapsAgentTaskService } from '@gitroom/nestjs-libraries/snaps/agent/age
     SnapsActivityLogService,
     SnapsCommandPlannerService,
     SnapsAgentTaskService,
+    SnapsCardNewsService,
+    SnapsCardNewsRendererService,
+    ShortsMakerClientService,
+    SnapsRenderJobOwnershipService,
   ],
 })
 export class SnapsModule {}

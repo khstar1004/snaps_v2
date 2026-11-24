@@ -1,4 +1,5 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 function read(path) {
   return readFileSync(path, 'utf8');
@@ -159,7 +160,9 @@ const brandChecks = [
   ['apps/backend/src/api/routes/copilot.controller.ts', "mastra.getAgent('snaps')", 'Copilot memory agent lookup'],
   ['apps/frontend/src/components/agents/agent.chat.tsx', 'agent="snaps"', 'Copilot frontend agent id'],
   ['apps/frontend/src/components/snaps/snaps-workspace.tsx', '연결된 게시물 ID', 'connected post import placeholder'],
-  ['apps/frontend/src/components/snaps/snaps-workspace.tsx', '미디어 라이브러리에 영상 URL 저장', 'media library copy'],
+  // The shorts flow (and its media-library save toggle) was split out of
+  // snaps-workspace.tsx into its own workspace component.
+  ['apps/frontend/src/components/snaps/snaps-shorts-workspace.tsx', '미디어 라이브러리에 저장', 'media library copy'],
 ];
 
 const policyChecks = [
@@ -256,6 +259,61 @@ for (const path of [
   expectNotContains(path, 'nevo@postiz.com', 'legacy review inbox');
 }
 
+// Every string the UI shows through the translation layer has to exist in the
+// Korean locale, or a Korean operator reads the English fallback. The Naver
+// Cafe settings shipped that way - the one provider this fork added for a
+// Korean service was also the one component not going through `t()` at all -
+// and a check on four specific keys would only have covered that one screen.
+// Measured across the whole frontend: 669 keys in use, all translated.
+const koTranslations = JSON.parse(
+  read('libraries/react-shared-libraries/src/translation/locales/ko/translation.json')
+);
+
+function collectTranslationKeys(dir) {
+  const keys = new Map();
+  const walk = (current) => {
+    for (const entry of readdirSync(current, { withFileTypes: true })) {
+      if (entry.name === 'node_modules' || entry.name === '.next') {
+        continue;
+      }
+      const full = join(current, entry.name);
+      if (entry.isDirectory()) {
+        walk(full);
+        continue;
+      }
+      if (!entry.name.endsWith('.tsx') && !entry.name.endsWith('.ts')) {
+        continue;
+      }
+      const source = readFileSync(full, 'utf8');
+      for (const match of source.matchAll(/\bt\(\s*'([a-z0-9_]+)'\s*,/g)) {
+        if (!keys.has(match[1])) {
+          keys.set(match[1], full.replace(/\\/g, '/'));
+        }
+      }
+    }
+  };
+  walk(dir);
+  return keys;
+}
+
+const translationKeys = collectTranslationKeys('apps/frontend/src');
+if (translationKeys.size < 100) {
+  throw new Error(
+    `only ${translationKeys.size} translation keys were found in the frontend; ` +
+      'the pattern this check reads them with has probably stopped matching'
+  );
+}
+const untranslated = [...translationKeys.entries()].filter(
+  ([key]) => !koTranslations[key]
+);
+if (untranslated.length) {
+  const [key, file] = untranslated[0];
+  throw new Error(
+    `${untranslated.length} translation key(s) have no Korean entry, so a Korean ` +
+      `operator reads the English fallback - first is "${key}" in ${file}`
+  );
+}
+
 console.log(
-  `verify-snaps-product-shell-ok files=${requiredFiles.length} route=${routeChecks.length} navigation=${navigationChecks.length} brand=${brandChecks.length} policy=${policyChecks.length} korean=${koreanChannelChecks.length}`
+  `verify-snaps-product-shell-ok files=${requiredFiles.length} route=${routeChecks.length} navigation=${navigationChecks.length} brand=${brandChecks.length} policy=${policyChecks.length} korean=${koreanChannelChecks.length} translated=${translationKeys.size}`
 );

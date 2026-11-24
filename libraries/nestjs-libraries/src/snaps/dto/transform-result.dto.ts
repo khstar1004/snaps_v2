@@ -1,6 +1,10 @@
 import { SnapsTargetPlatform } from '@gitroom/nestjs-libraries/snaps/transform/platform-rules';
 
-export type SnapsSourceProvider = 'ollama' | 'rule-fallback';
+// 'ollama' and 'deepseek' both mean the model answered; 'rule-fallback'
+// means it did not and the deterministic path produced this. Readers that
+// only care whether a model was involved must test for 'rule-fallback',
+// not for 'ollama' - the latter was the spelling, not the invariant.
+export type SnapsSourceProvider = 'ollama' | 'deepseek' | 'rule-fallback';
 
 export type SnapsVariant = {
   platform: SnapsTargetPlatform;

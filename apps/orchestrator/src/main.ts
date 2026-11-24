@@ -7,6 +7,10 @@ dayjs.extend(utc);
 
 import { NestFactory } from '@nestjs/core';
 import { Connection } from '@temporalio/client';
+import {
+  temporalTimeoutMs,
+  withTemporalTimeout,
+} from './temporal-timeout';
 import * as dns from 'node:dns';
 dns.setDefaultResultOrder('ipv4first');
 
@@ -17,21 +21,22 @@ type TemporalProbeResult = {
   error?: string;
 };
 
-const temporalTimeoutMs = Number(
-  process.env.TEMPORAL_BOOTSTRAP_TIMEOUT_MS || 5000
+/**
+ * Bootstrap gives up sooner than the health probe on purpose - a worker that
+ * cannot reach Temporal should fail fast rather than hold a deploy - but the
+ * parsing has to be the same. This was `Number(process.env.X || 5000)`, which
+ * turns a typo into an immediate timeout: measured, `abc` and `10s` both give
+ * NaN and `0` gives 0, and setTimeout treats all three as fire-now. The
+ * message then read `timed out after NaNms`. Five of eight inputs behaved
+ * that way; the shared parser fell back correctly on every one of them.
+ */
+const bootstrapTimeoutMs = temporalTimeoutMs(
+  process.env.TEMPORAL_BOOTSTRAP_TIMEOUT_MS,
+  5000
 );
 
 function withTimeout<T>(promise: Promise<T>, message: string) {
-  let timeout: NodeJS.Timeout | undefined;
-  const timeoutPromise = new Promise<never>((_, reject) => {
-    timeout = setTimeout(() => reject(new Error(message)), temporalTimeoutMs);
-  });
-
-  return Promise.race([promise, timeoutPromise]).finally(() => {
-    if (timeout) {
-      clearTimeout(timeout);
-    }
-  });
+  return withTemporalTimeout(promise, message, bootstrapTimeoutMs);
 }
 
 async function probeTemporalNamespace(): Promise<TemporalProbeResult> {
@@ -48,12 +53,12 @@ async function probeTemporalNamespace(): Promise<TemporalProbeResult> {
           ? { apiKey: process.env.TEMPORAL_API_KEY }
           : {}),
       }),
-      `Temporal connection timed out after ${temporalTimeoutMs}ms`
+      `Temporal connection timed out after ${bootstrapTimeoutMs}ms`
     );
 
     await withTimeout(
       connection.workflowService.describeNamespace({ namespace }),
-      `Temporal namespace check timed out after ${temporalTimeoutMs}ms`
+      `Temporal namespace check timed out after ${bootstrapTimeoutMs}ms`
     );
 
     return { ok: true, address, namespace };

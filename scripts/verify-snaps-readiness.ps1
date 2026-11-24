@@ -35,6 +35,25 @@ function Add-ReadinessCheck {
   [void]$Checks.Add((New-ReadinessCheck -Name $Name -Status $Status -Detail $Detail))
 }
 
+function Add-MissingReadinessCheck {
+  # The TCP probes are only reachable when their URL parses, but
+  # verify-snaps-preflight.ps1 requires database-tcp, redis-tcp and
+  # temporal-tcp to be present in the readiness JSON. Without this the
+  # documented "Postgres not running yet" gate surfaced as "readiness JSON is
+  # missing check: database-tcp", i.e. a broken harness rather than a blocked
+  # environment, and preflight stopped before its remaining offline checks.
+  param(
+    [System.Collections.ArrayList]$Checks,
+    [string]$Name,
+    [string]$Detail
+  )
+
+  $existing = @($Checks | Where-Object { $_.name -eq $Name })
+  if ($existing.Count -eq 0) {
+    Add-ReadinessCheck $Checks $Name "blocked" $Detail
+  }
+}
+
 function Test-CommandOutput {
   param(
     [string]$Command,
@@ -207,6 +226,17 @@ function Get-SnapsBackendUrl {
     return "http://localhost:$port"
   }
 
+  # Without a local .env this used to answer a hardcoded port. It happened to
+  # match .env.example today, but nothing kept the two together: change the
+  # example and every readiness run on a fresh checkout would quietly probe the
+  # wrong port and report the backend blocked. Read the shipped example instead.
+  foreach ($name in @("NEXT_PUBLIC_BACKEND_URL", "BACKEND_INTERNAL_URL")) {
+    $fromExample = Get-DotEnvValue -Path ".env.example" -Name $name
+    if ($fromExample) {
+      return $fromExample.Trim().TrimEnd("/")
+    }
+  }
+
   return "http://localhost:3000"
 }
 
@@ -223,6 +253,12 @@ function Get-SnapsFrontendUrl {
   }
   if ($frontend) {
     return $frontend.TrimEnd("/")
+  }
+
+  # Same reason as the backend fallback above.
+  $fromExample = Get-DotEnvValue -Path ".env.example" -Name "FRONTEND_URL"
+  if ($fromExample) {
+    return $fromExample.Trim().TrimEnd("/")
   }
 
   return "http://localhost:4200"
@@ -350,6 +386,7 @@ try {
       Add-ReadinessCheck $checks "database-url" "blocked" "DATABASE_URL parse failed: $($_.Exception.Message)"
     }
   }
+  Add-MissingReadinessCheck $checks "database-tcp" "not probed: DATABASE_URL is missing or unusable"
 
   $redisUrl = Get-SnapsRedisUrl
   if (-not $redisUrl) {
@@ -375,6 +412,7 @@ try {
       Add-ReadinessCheck $checks "redis-url" "blocked" "REDIS_URL parse failed: $($_.Exception.Message)"
     }
   }
+  Add-MissingReadinessCheck $checks "redis-tcp" "not probed: REDIS_URL is missing or unusable"
 
   $temporalAddress = Get-SnapsTemporalAddress
   if (-not $temporalAddress) {
@@ -393,6 +431,7 @@ try {
       Add-ReadinessCheck $checks "temporal-address" "blocked" "TEMPORAL_ADDRESS parse failed: $($_.Exception.Message)"
     }
   }
+  Add-MissingReadinessCheck $checks "temporal-tcp" "not probed: TEMPORAL_ADDRESS is missing or unusable"
 
   $ollama = Test-HttpJson -Method "GET" -Url "http://localhost:11434/api/tags"
   if ($ollama.ok) {

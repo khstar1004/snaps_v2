@@ -10,6 +10,9 @@ type PixelleResult = {
 };
 
 class DryRunOllama extends OllamaClient {
+  provider(): 'ollama' | 'deepseek' {
+    return 'ollama';
+  }
   async chatJson<T>(): Promise<T> {
     throw new Error('Pixelle verifier uses deterministic fallback script generation.');
   }
@@ -40,6 +43,9 @@ function pixelleVideoUrl(result: PixelleResult) {
   return stringValue(result.videoUrl) || stringValue(result.url);
 }
 
+let completed = false;
+let failed = false;
+
 async function main() {
   const service = new SnapsShortVideoService(new DryRunOllama());
   const sourceText =
@@ -64,6 +70,10 @@ async function main() {
   }
 
   if (dryRun) {
+    // The dry run is a finish, not a hang. Without this the sentinel below
+    // fired on every offline run: the script printed its own -dry-run-ok
+    // line and still exited 1, which took the whole preflight down with it.
+    completed = true;
     console.log(
       `verify-snaps-pixelle-dry-run-ok smokeId=${smokeId} duration=${script.durationSeconds} scenes=${script.storyboard.length}`
     );
@@ -97,12 +107,46 @@ async function main() {
     statusVideoUrl = pixelleVideoUrl(statusResult) || statusVideoUrl;
   }
 
+  completed = true;
+  process.exitCode = 0;
   console.log(
     `verify-snaps-pixelle-ok smokeId=${smokeId} jobId=${jobId || '-'} status=${status} videoUrl=${statusVideoUrl || '-'}`
   );
 }
 
+// Failing by default, cleared only when main() reaches its end.
+//
+// A promise that never settles does not hold the Node event loop open, so an
+// await that hangs does not fail this script - it ends it, with every check
+// after that point skipped and an exit code of 0. Measured on the controller
+// smoke: deleting the analytics timeout stopped the run at that check and it
+// still reported success.
+process.exitCode = 1;
+
 void main().catch((error) => {
+  failed = true;
   console.error(error instanceof Error ? error.message : String(error));
   process.exit(1);
+});
+
+process.on('exit', () => {
+  if (failed) {
+    return;
+  }
+  if (completed) {
+    // `completed` is the invariant; the exit code is only a copy of it.
+    // Two dry-run paths set the flag and returned without clearing the
+    // fail-by-default code above, so they printed their own -ok line and
+    // still exited 1 - which took the whole preflight down with them.
+    process.exitCode = 0;
+    return;
+  }
+  // Reported rather than just failed: without this line the run above
+  // produced no output at all, only a non-zero code, and the check it
+  // stopped on was invisible.
+  console.error(
+    'verify-snaps-pixelle did not finish: a check stopped without',
+    'settling, so everything after it was skipped'
+  );
+  process.exitCode = 1;
 });

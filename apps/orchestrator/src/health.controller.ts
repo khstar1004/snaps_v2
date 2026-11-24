@@ -1,6 +1,7 @@
 import { Controller, Get, Res } from '@nestjs/common';
 import { Response } from 'express';
 import { Connection } from '@temporalio/client';
+import { temporalTimeoutMs, withTemporalTimeout } from './temporal-timeout';
 
 @Controller('health')
 export class HealthController {
@@ -20,13 +21,11 @@ export class HealthController {
           : {}),
       });
 
-      const namespace = process.env.TEMPORAL_NAMESPACE || 'default';
-      await Promise.race([
+      await withTemporalTimeout(
         connection.workflowService.describeNamespace({ namespace }),
-        new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('timeout')), 10000)
-        ),
-      ]);
+        'timeout',
+        temporalTimeoutMs(process.env.TEMPORAL_BOOTSTRAP_TIMEOUT_MS, 10000)
+      );
       return res.status(200).json({
         status: 'ok',
         workerMode: workersEnabled ? 'workers' : 'health-only',

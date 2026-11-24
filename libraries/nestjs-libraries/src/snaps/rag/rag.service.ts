@@ -9,6 +9,14 @@ import {
   SnapsTargetPlatform,
   snapsTargetPlatforms,
 } from '@gitroom/nestjs-libraries/snaps/transform/platform-rules';
+import { snapsCleanBodyText } from '@gitroom/nestjs-libraries/snaps/text/body-text';
+import { snapsClampText } from '@gitroom/nestjs-libraries/snaps/text/clamp-text';
+
+/**
+ * How many embed calls the rebuild keeps in flight. Small on purpose: the
+ * embed model is a local Ollama, not a service that scales with load.
+ */
+const SNAPS_REBUILD_CONCURRENCY = 4;
 
 @Injectable()
 export class SnapsRagService {
@@ -65,26 +73,53 @@ export class SnapsRagService {
     return this.vectorStore.importExamples(organizationId, examples);
   }
 
+  /**
+   * Re-embeds every stored style example.
+   *
+   * One embed call per example, and they used to run one after another:
+   * measured over 100 examples with a 20ms stub, 3,020ms, which is the shape of
+   * a loop that waits. A real embed round trip is more like 30-150ms and the
+   * store holds up to 200 examples, so the operator pressing "RAG 재임베딩" was
+   * waiting somewhere between six and thirty seconds.
+   *
+   * Bounded rather than all at once: firing 200 concurrent requests at a local
+   * Ollama is a good way to make it slower or make it fail, and the failure
+   * would land as a silent token-fallback downgrade on every example.
+   */
   async rebuildEmbeddings(organizationId: string) {
     const examples = await this.vectorStore.listExamples(organizationId);
     let rebuilt = 0;
-    const next = [];
+    // Written by index so the stored order survives the concurrency.
+    const next: typeof examples = new Array(examples.length);
+    let cursor = 0;
 
-    for (const example of examples) {
-      try {
-        const embedding = this.normalizeEmbedding(
-          (await this.ollama.embed(example.content))[0]
-        );
-        if (embedding?.length) {
-          rebuilt += 1;
-          next.push({ ...example, embedding });
-          continue;
+    const worker = async () => {
+      for (;;) {
+        const index = cursor;
+        cursor += 1;
+        if (index >= examples.length) {
+          return;
         }
-      } catch {
-        // Keep the existing example usable through token fallback.
+        const example = examples[index];
+        try {
+          const embedding = this.normalizeEmbedding(
+            (await this.ollama.embed(example.content))[0]
+          );
+          if (embedding?.length) {
+            rebuilt += 1;
+            next[index] = { ...example, embedding };
+            continue;
+          }
+        } catch {
+          // Keep the existing example usable through token fallback.
+        }
+        next[index] = { ...example, embedding: undefined };
       }
-      next.push({ ...example, embedding: undefined });
-    }
+    };
+
+    await Promise.all(
+      Array.from({ length: Math.min(SNAPS_REBUILD_CONCURRENCY, examples.length) }, worker)
+    );
 
     await this.vectorStore.replaceExamples(organizationId, next);
     return {
@@ -108,13 +143,15 @@ export class SnapsRagService {
       ? (body as Partial<SnapsStyleExampleDto>)
       : {};
     const platform = this.cleanString(request.platform, 60);
-    const content = this.cleanString(request.content, 50000);
+    // The style is the line breaks as much as the words; cleanString
+    // flattened them and the example taught a style with none.
+    const content = snapsCleanBodyText(request.content, 50000);
 
     if (!(snapsTargetPlatforms as readonly string[]).includes(platform)) {
-      throw new BadRequestException('platform is required.');
+      throw new BadRequestException('platform은 필수입니다.');
     }
     if (content.length < 5) {
-      throw new BadRequestException('content must be at least 5 characters.');
+      throw new BadRequestException('content는 최소 5자 이상이어야 합니다.');
     }
 
     return {
@@ -133,7 +170,7 @@ export class SnapsRagService {
 
   private cleanString(value: unknown, maxLength: number) {
     return typeof value === 'string'
-      ? value.trim().replace(/\s+/g, ' ').slice(0, maxLength)
+      ? snapsClampText(value.trim().replace(/\s+/g, ' '), maxLength)
       : '';
   }
 }

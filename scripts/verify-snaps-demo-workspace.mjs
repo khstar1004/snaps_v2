@@ -48,7 +48,17 @@ assert(demo.product === 'snaps', 'demo workspace product must be snaps');
 assert(demo.kind === 'workspace-demo', 'demo workspace kind must be workspace-demo');
 assert(typeof demo.exportedAt === 'string', 'demo workspace exportedAt is required');
 
-for (const name of ['sources', 'styleExamples', 'reports', 'inboxItems', 'activity']) {
+// agentTasks is the sixth store the export writes. It was missing from the
+// sample and from this list, so this verifier reported the sample healthy
+// while importing it left the operator's agent history at zero.
+for (const name of [
+  'sources',
+  'styleExamples',
+  'reports',
+  'agentTasks',
+  'inboxItems',
+  'activity',
+]) {
   assertArray(name);
 }
 
@@ -95,6 +105,39 @@ for (const item of demo.inboxItems) {
   );
 }
 
+// What the import normaliser requires of a stored task, and what the agent
+// panel reads off it. A record missing either is dropped on import, which
+// leaves the store at zero with the array still full.
+for (const task of demo.agentTasks) {
+  assert(typeof task.id === 'string' && task.id, 'agent task id is required');
+  assert(
+    typeof task.command === 'string' && task.command.trim().length >= 5,
+    `agent task ${task.id} needs a command`
+  );
+  const result = task.result || {};
+  assert(!!result.plan, `agent task ${task.id} needs result.plan`);
+  assert(!!result.transform, `agent task ${task.id} needs result.transform`);
+  assert(!!result.operation, `agent task ${task.id} needs result.operation`);
+  assert(
+    Array.isArray(result.plan.targetPlatforms) &&
+      result.plan.targetPlatforms.every((platform) =>
+        validPlatforms.has(platform)
+      ),
+    `agent task ${task.id} needs a valid plan.targetPlatforms array`
+  );
+  assert(
+    Array.isArray(result.transform.variants),
+    `agent task ${task.id} needs a transform.variants array`
+  );
+  for (const field of ['progressSteps', 'nextActions', 'platformReadiness']) {
+    assert(
+      Array.isArray(result.operation[field]),
+      `agent task ${task.id} needs operation.${field} as an array; the ` +
+        'panel maps over it'
+    );
+  }
+}
+
 for (const entry of demo.activity) {
   assert(typeof entry.id === 'string' && entry.id, 'activity id is required');
   assert(validActivityTypes.has(entry.type), `activity ${entry.id} has invalid type`);
@@ -102,5 +145,5 @@ for (const entry of demo.activity) {
 }
 
 console.log(
-  `verify-snaps-demo-ok sources=${demo.sources.length} styleExamples=${demo.styleExamples.length} reports=${demo.reports.length} inbox=${demo.inboxItems.length} activity=${demo.activity.length}`
+  `verify-snaps-demo-ok sources=${demo.sources.length} styleExamples=${demo.styleExamples.length} reports=${demo.reports.length} agentTasks=${demo.agentTasks.length} inbox=${demo.inboxItems.length} activity=${demo.activity.length}`
 );

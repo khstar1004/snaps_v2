@@ -10,6 +10,7 @@ import dayjs from 'dayjs';
 import { NaverCafeDto } from '@gitroom/nestjs-libraries/dtos/posts/providers-settings/naver-cafe.dto';
 import striptags from 'striptags';
 import { Integration } from '@prisma/client';
+import { snapsClampText } from '@gitroom/nestjs-libraries/snaps/text/clamp-text';
 
 type NaverTokenResponse = {
   access_token?: string;
@@ -51,6 +52,9 @@ type NaverCafePostResponse = {
     msg?: string;
   };
 };
+
+/** UTF-16 units a cafe post title may use. Unchanged from the previous slice. */
+const SNAPS_CAFE_SUBJECT_MAX_LENGTH = 80;
 
 export class NaverCafeProvider extends SocialAbstract implements SocialProvider {
   override maxConcurrentJob = 1;
@@ -148,7 +152,10 @@ export class NaverCafeProvider extends SocialAbstract implements SocialProvider 
 
     for (const post of postDetails) {
       const settings = post.settings;
-      const subject = settings.subject || this.makeSubject(post.message);
+      // A supplied subject used to be forwarded raw while a derived one was
+      // stripped, so a variant title carrying markup became the cafe post title
+      // as-is. Both go through the same cleaner now.
+      const subject = this.makeSubject(settings.subject || post.message);
       const content = this.toCafeContent(post.message);
       const apiUrl = `https://openapi.naver.com/v1/cafe/${encodeURIComponent(
         settings.clubId
@@ -247,14 +254,69 @@ export class NaverCafeProvider extends SocialAbstract implements SocialProvider 
     };
   }
 
+  /**
+   * The title the cafe post is published under.
+   *
+   * The clamp was a plain `.slice(0, 80)`, which counts UTF-16 units and
+   * cuts between them: measured across twenty-two boundary positions it
+   * left three dangling high surrogates and tore two ZWJ sequences. This
+   * string is sent to Naver's API, so a broken pair arrives there as a
+   * replacement character in the title of the post.
+   *
+   * The same fault was fixed across the snaps tree earlier, but the guard
+   * written for it only walked libraries/nestjs-libraries/src/snaps and
+   * this provider lives beside the upstream ones - so it was missed. The
+   * guard covers snaps-owned providers now too.
+   */
   private makeSubject(message: string) {
-    return striptags(message).replace(/\s+/g, ' ').trim().slice(0, 80) || 'snaps 게시글';
+    return (
+      snapsClampText(
+        striptags(message).replace(/\s+/g, ' ').trim(),
+        SNAPS_CAFE_SUBJECT_MAX_LENGTH
+      ) || 'snaps 게시글'
+    );
   }
 
   private toCafeContent(message: string) {
-    return striptags(message, ['p', 'br', 'strong', 'b', 'em', 'u', 'a'])
+    const allowed = striptags(message, ['p', 'br', 'strong', 'b', 'em', 'u', 'a'])
       .replace(/<strong>/g, '<b>')
       .replace(/<\/strong>/g, '</b>');
+
+    // striptags removes tags outside the allowlist but keeps the attributes of
+    // the ones it keeps, so `<a href="javascript:alert(1)">` and
+    // `<p onclick="alert(1)">` went through to the cafe untouched. Sanitising is
+    // the whole reason this function exists, and it is the last point snaps
+    // controls before the post leaves.
+    const sanitised = allowed
+      .replace(/\son[a-zA-Z]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/g, '')
+      .replace(
+        /((?:href|src)\s*=\s*["']?)\s*(?:javascript|vbscript|data)\s*:/gi,
+        '$1#'
+      );
+
+    // A cafe body is HTML, so a newline in it is whitespace. Everything snaps
+    // sends is plain text - the publish payload carries the variant's content,
+    // which the model writes with line breaks - and it arrived as one run-on
+    // paragraph. Measured before this: a six-line reply posted as a single
+    // block.
+    //
+    // Only when nothing survived the allowlist. A message that still carries a
+    // tag is HTML, and its newlines are the formatting between tags rather
+    // than the writer's: adding breaks there would put a stray `<br>` between
+    // every pair. Keying this on `<p>` and `<br>` alone was wrong - it called
+    // an inline-only `<b>굵게</b>` plain text and wrapped it, which the
+    // sanitiser tests caught.
+    if (/<[a-z]/i.test(sanitised)) {
+      return sanitised;
+    }
+
+    const text = sanitised.replace(/\r\n?/g, '\n').trim();
+    if (!text) {
+      return text;
+    }
+    return `<p>${text
+      .replace(/\n{2,}/g, '</p><p>')
+      .replace(/\n/g, '<br />')}</p>`;
   }
 
   private naverErrorMessage(body: string) {
@@ -275,7 +337,7 @@ export class NaverCafeProvider extends SocialAbstract implements SocialProvider 
         ''
       );
     } catch {
-      return body.includes('error') ? body.slice(0, 500) : '';
+      return body.includes('error') ? snapsClampText(body, 500) : '';
     }
   }
 
@@ -300,7 +362,9 @@ export class NaverCafeProvider extends SocialAbstract implements SocialProvider 
       }
       return parsed;
     } catch {
-      return this.naverFailure(text.startsWith('<') ? failure : text.slice(0, 500)) as T;
+      return this.naverFailure(
+      text.startsWith('<') ? failure : snapsClampText(text, 500)
+    ) as T;
     }
   }
 

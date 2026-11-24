@@ -11,44 +11,44 @@ import {
 } from '@gitroom/nestjs-libraries/snaps/transform/platform-rules';
 
 export class SnapsSourceLibraryInputDto {
-  @IsString()
-  @MinLength(5)
+  @IsString({ message: '$property은(는) 문자열이어야 합니다.' })
+  @MinLength(5, { message: '$property은(는) 최소 $constraint1자 이상이어야 합니다.' })
   sourceText: string;
 
   @IsOptional()
-  @IsString()
+  @IsString({ message: '$property은(는) 문자열이어야 합니다.' })
   title?: string;
 
   @IsOptional()
-  @IsString()
+  @IsString({ message: '$property은(는) 문자열이어야 합니다.' })
   sourcePlatform?: string;
 
   @IsOptional()
-  @IsString()
+  @IsString({ message: '$property은(는) 문자열이어야 합니다.' })
   topic?: string;
 
   @IsOptional()
-  @IsString()
+  @IsString({ message: '$property은(는) 문자열이어야 합니다.' })
   tone?: string;
 
   @IsOptional()
-  @IsArray()
+  @IsArray({ message: '$property은(는) 배열이어야 합니다.' })
   tags?: string[];
 }
 
 export class SnapsPromoteSourceToRagDto {
-  @IsIn(snapsTargetPlatforms)
+  @IsIn(snapsTargetPlatforms, { message: '$property에 지원하지 않는 값이 있습니다. 가능한 값: $constraint1' })
   platform: SnapsTargetPlatform;
 
   @IsOptional()
-  @IsString()
+  @IsString({ message: '$property은(는) 문자열이어야 합니다.' })
   authorType?: string;
 
   @IsOptional()
-  @IsString()
+  @IsString({ message: '$property은(는) 문자열이어야 합니다.' })
   topic?: string;
 
   @IsOptional()
-  @IsString()
+  @IsString({ message: '$property은(는) 문자열이어야 합니다.' })
   tone?: string;
 }

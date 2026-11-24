@@ -2,6 +2,7 @@
 
 import { MediaBox } from '@gitroom/frontend/components/media/media.component';
 import { SnapsShortsWorkspace } from '@gitroom/frontend/components/snaps/snaps-shorts-workspace';
+import { SnapsCardNewsWorkspace } from '@gitroom/frontend/components/snaps/snaps-card-news-workspace';
 
 export const MediaLayoutComponent = () => {
   return (
@@ -25,6 +26,7 @@ export const MediaLayoutComponent = () => {
         </div>
       </div>
       <SnapsShortsWorkspace />
+      <SnapsCardNewsWorkspace />
       <section className="bg-newBgColorInner border border-newBorder rounded-[8px] overflow-hidden flex flex-1 min-h-[520px] flex-col text-newTextColor">
         <div className="border-b border-newBorder bg-newBgLineColor/45 px-[18px] py-[14px]">
           <div className="text-[20px] font-[700]">미디어 라이브러리</div>

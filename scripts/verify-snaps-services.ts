@@ -1,5 +1,5 @@
 import path from 'path';
-import { promises as fs } from 'fs';
+import { promises as fs, readFileSync } from 'fs';
 import { OllamaClient } from '@gitroom/nestjs-libraries/snaps/ai/ollama.client';
 import { snapsAnalyticsToMetricInputs } from '@gitroom/nestjs-libraries/snaps/analytics/analytics-metric.mapper';
 import {
@@ -20,6 +20,13 @@ import { NaverCafeProvider } from '@gitroom/nestjs-libraries/integrations/social
 class OfflineOllama {
   get model() {
     return 'offline-service-smoke';
+  }
+
+  // Stands in for OllamaClient, which the services ask which engine answered.
+  // A double without this made that call throw inside the try, so every
+  // result came back labelled as the deterministic fallback.
+  provider(): 'ollama' | 'deepseek' {
+    return 'ollama';
   }
 
   async chatJson<T>(): Promise<T> {
@@ -158,6 +165,9 @@ function assert(condition: unknown, message: string): asserts condition {
     throw new Error(message);
   }
 }
+
+let completed = false;
+let failed = false;
 
 async function main() {
   const dataDir = path.join(
@@ -333,7 +343,7 @@ async function main() {
       throw new Error('RAG addExample accepted an invalid platform');
     } catch (error) {
       assert(
-        String((error as Error).message).includes('platform is required'),
+        String((error as Error).message).includes('platform은 필수입니다'),
         'RAG addExample should reject invalid direct platform input'
       );
     }
@@ -345,7 +355,7 @@ async function main() {
       throw new Error('RAG addExample accepted object content');
     } catch (error) {
       assert(
-        String((error as Error).message).includes('content must be at least 5 characters'),
+        String((error as Error).message).includes('content는 최소 5자 이상'),
         'RAG addExample should reject malformed direct content input'
       );
     }
@@ -389,9 +399,14 @@ async function main() {
       }))
     );
     assert(
-      cappedStyleImport.imported === 500 &&
+      // 505 in, 500 stored, and the response has to say the other five are
+      // gone. `imported` used to be 500 with `dropped: 0`, which told an
+      // operator restoring a backup that nothing had been lost.
+      cappedStyleImport.imported === 505 &&
+        cappedStyleImport.dropped === 5 &&
+        cappedStyleImport.total === 500 &&
         (await vectorStore.listExamples(`${orgId}-style-cap`)).length === 500,
-      'RAG store should cap imported style examples at 500'
+      'RAG store should cap imported style examples at 500 and say so'
     );
 
     const transform = await transformer.transform(orgId, {
@@ -454,7 +469,7 @@ async function main() {
       'partial Ollama transform did not normalize returned variant content and hashtags'
     );
     assert(
-      partialTransform.warnings.some((warning) => warning.includes('Ollama omitted threads')),
+      partialTransform.warnings.some((warning) => warning.includes('threads 변형을 제공하지 않아')),
       'partial Ollama transform did not warn about omitted platforms'
     );
     const malformedTransform = await new SnapsContentTransformService(
@@ -475,7 +490,9 @@ async function main() {
       malformedTransform.provider === 'ollama' &&
         malformedInstagram?.content.includes('비정상 variant') &&
         malformedThreads?.content === '정상 Threads 결과' &&
-        malformedThreads.hashtags.join(' ') === '#threads #update',
+        // Threads sets hashtagLimit: 1 on purpose ("avoid heavy hashtagging"),
+        // so the second tag is trimmed by cleanHashtags rather than kept.
+        malformedThreads.hashtags.join(' ') === '#threads',
       'malformed Ollama variants should fallback per platform without discarding valid variants'
     );
     const schedulePayload = buildSnapsPublishingPayload({
@@ -488,6 +505,9 @@ async function main() {
       ],
       publishDate: '2026-05-05T10:00:00.000Z',
       scheduleType: 'schedule',
+      // Pinned: the builder refuses a publish time behind the clock, and
+      // this date has since gone by.
+      now: Date.parse('2026-05-05T09:00:00.000Z'),
     });
     assert(schedulePayload.payload?.type === 'schedule', 'schedule payload type missing');
     assert(schedulePayload.payload.posts.length === 1, 'schedule payload should include only connected schedulable variants');
@@ -512,7 +532,7 @@ async function main() {
     assert(
       !missingPublishDateSchedule.payload &&
         missingPublishDateSchedule.warnings.some((warning) =>
-          warning.includes('publishDate is required')
+          warning.includes('publishDate가 필요합니다')
         ),
       'schedule payload should require publishDate for real schedules'
     );
@@ -610,7 +630,7 @@ async function main() {
     assert(
       !invalidNaverCafePayload.payload &&
         invalidNaverCafePayload.warnings.some((warning) =>
-          warning.includes('Naver Cafe scheduling requires clubId and menuId')
+          warning.includes('예약에는 clubId와 menuId')
         ),
       'Naver Cafe schedule payload should warn when cafe settings are missing'
     );
@@ -652,7 +672,7 @@ async function main() {
     assert(
       mixedNaverCafePayload.payload?.posts.length === 1 &&
         mixedNaverCafePayload.warnings.some((warning) =>
-          warning.includes('Naver Cafe scheduling requires clubId and menuId')
+          warning.includes('예약에는 clubId와 menuId')
         ),
       'Mixed schedule payload should keep valid posts and warn about invalid Naver Cafe settings'
     );
@@ -806,7 +826,7 @@ async function main() {
     );
     const exportedReport = await sourceLibrary.exportReport(orgId, storedReport.id, 'print-html');
     assert(
-      exportedReport?.content.includes('snaps Analytics Report'),
+      exportedReport?.content.includes('snaps 분석 보고서'),
       'print HTML report export missing'
     );
 
@@ -920,7 +940,9 @@ async function main() {
       platform: 'youtube',
     });
     assert(script.coreSummary.length > 0, 'shorts core summary missing');
-    assert(script.storyboard.length === 4, 'shorts fallback storyboard missing');
+    // The offline fallback scales scene count with duration (30s -> 4, 45s -> 5,
+    // 90s -> 6), so a 45s request yields 5 scenes rather than a fixed 4.
+    assert(script.storyboard.length === 5, 'shorts fallback storyboard missing');
     assert(script.uploadMetadata.hashtags.includes('#shorts'), 'shorts upload metadata missing');
     const malformedScript = await new SnapsShortVideoService(
       new MalformedShortsOllama() as any
@@ -945,13 +967,30 @@ async function main() {
       targetPlatforms: ['instagram', 'youtube', 'naver-blog'],
     });
     assert(videoVariants.targetPlatforms.length === 2, 'video variant builder should keep only video platforms');
+    // InstagramDto.post_type is @IsIn(['post', 'story']) - there is no 'reel'
+    // value. This assertion required one, so it locked in a setting the
+    // provider would have rejected.
     assert(
-      videoVariants.variants.some((variant) => variant.platform === 'instagram' && (variant.settings as any).post_type === 'reel'),
-      'instagram video variant should be a reel'
+      videoVariants.variants.some(
+        (variant) =>
+          variant.platform === 'instagram' &&
+          ['post', 'story'].includes(String((variant.settings as any).post_type))
+      ),
+      'instagram video variant should carry a post_type the provider accepts'
     );
+    // YoutubeSettingsDto.type is the privacy status the provider forwards as
+    // privacyStatus, not the video format. This assertion used to require
+    // 'short', which is not one of the accepted values - the test encoded the
+    // same misunderstanding the rule did.
     assert(
-      videoVariants.variants.some((variant) => variant.platform === 'youtube' && (variant.settings as any).type === 'short'),
-      'youtube video variant should be a short'
+      videoVariants.variants.some(
+        (variant) =>
+          variant.platform === 'youtube' &&
+          ['public', 'private', 'unlisted'].includes(
+            String((variant.settings as any).type)
+          )
+      ),
+      'youtube video variant should carry a privacy status the provider accepts'
     );
     assert(
       videoVariants.media[0].thumbnail === 'https://cdn.example.com/snaps-short.jpg',
@@ -980,9 +1019,17 @@ async function main() {
     const deletedReport = await sourceLibrary.deleteReport(orgId, storedReport.id);
     assert(deletedReport.deleted, 'report delete failed');
 
-    console.log(
-      `verify-snaps-services-ok variants=${transform.variants.length} reportActions=${report.actionItems.length} ragRebuilt=${rebuilt.rebuilt} activity=${activityList.length}`
-    );
+    const smokeSummary = `verify-snaps-services-ok variants=${transform.variants.length} reportActions=${report.actionItems.length} ragRebuilt=${rebuilt.rebuilt} activity=${activityList.length}`;
+    // The completion audit quotes this line as its evidence. Every quoted
+    // summary that was not checked had drifted - the API contract one still
+    // said controller=37 for a controller with 50 routes - so this verifier
+    // confirms the document matches what it just measured. Checked here
+    // rather than from the audit script because running this one costs
+    // seconds and the audit is meant to stay fast.
+    assertAuditQuotes(smokeSummary);
+    completed = true;
+    process.exitCode = 0;
+    console.log(smokeSummary);
   } finally {
     await removeSmokeDir(dataDir);
   }
@@ -1620,13 +1667,29 @@ function verifyAnalyticsMetricMapper() {
   ]);
 
   assert(mapped.length === 2, 'analytics metric mapper should ignore empty data rows');
+  // As the provider wrote it. This asserted `=== 7` while the mapper ran
+  // Number() first, which is the coercion that made the report's unreadable
+  // count blind on this path - the report converts, and it has to see the
+  // original to know which values it could not read.
   assert(
-    mapped[0].metricKey === 'follower_count' && mapped[0].metricValue === 7,
-    'analytics metric mapper did not normalize total values'
+    mapped[0].metricKey === 'follower_count' && mapped[0].metricValue === '7',
+    'analytics metric mapper should hand over the provider value unchanged'
   );
   assert(
     mapped[1].metricKey === 'video_views' && mapped[1].metricValue === 12,
     'analytics metric mapper did not normalize value fields'
+  );
+  const formatted = snapsAnalyticsToMetricInputs('instagram-integration', [
+    {
+      label: 'Likes',
+      data: [{ total: '1,200', date: '2026-05-04T00:00:00.000Z' }],
+      percentageChange: 0,
+    },
+  ]);
+  assert(
+    formatted[0].metricValue === '1,200',
+    'a formatted provider number must reach the report as it was written, or ' +
+      'the report cannot tell it from a real zero'
   );
   assert(
     snapsAnalyticsToMetricInputs('empty', null).length === 0,
@@ -1748,9 +1811,11 @@ async function verifyPixelleVideoClient(
       failureMessage = error instanceof Error ? error.message : String(error);
     }
     assert(
-      failureMessage.includes('Pixelle request failed: 502 Bad Gateway') &&
+      failureMessage.includes('502') &&
+        failureMessage.includes('Bad Gateway') &&
         !failureMessage.includes('<html>'),
-      'Pixelle HTML failures should be compacted before surfacing'
+      'Pixelle HTML failures should be compacted, with the status kept: ' +
+        failureMessage
     );
   } finally {
     globalThis.fetch = originalFetch;
@@ -1773,7 +1838,53 @@ async function removeSmokeDir(dataDir: string) {
   }
 }
 
+/**
+ * Fails when docs/snaps-completion-audit.md quotes a different summary than the
+ * one this run produced.
+ */
+function assertAuditQuotes(summary: string) {
+  const auditPath = 'docs/snaps-completion-audit.md';
+  const audit = readFileSync(auditPath, 'utf8');
+  if (!audit.includes(summary)) {
+    throw new Error(
+      `${auditPath} quotes a stale summary for this verifier; it now prints: ${summary}`
+    );
+  }
+}
+
+// Failing by default, cleared only when main() reaches its end.
+//
+// A promise that never settles does not hold the Node event loop open, so an
+// await that hangs does not fail this script - it ends it, with every check
+// after that point skipped and an exit code of 0. Measured on the controller
+// smoke: deleting the analytics timeout stopped the run at that check and it
+// still reported success.
+process.exitCode = 1;
+
 main().catch((error) => {
+  failed = true;
   console.error(error);
   process.exit(1);
+});
+
+process.on('exit', () => {
+  if (failed) {
+    return;
+  }
+  if (completed) {
+    // `completed` is the invariant; the exit code is only a copy of it.
+    // Two dry-run paths set the flag and returned without clearing the
+    // fail-by-default code above, so they printed their own -ok line and
+    // still exited 1 - which took the whole preflight down with them.
+    process.exitCode = 0;
+    return;
+  }
+  // Reported rather than just failed: without this line the run above
+  // produced no output at all, only a non-zero code, and the check it
+  // stopped on was invisible.
+  console.error(
+    'verify-snaps-services did not finish: a check stopped without',
+    'settling, so everything after it was skipped'
+  );
+  process.exitCode = 1;
 });

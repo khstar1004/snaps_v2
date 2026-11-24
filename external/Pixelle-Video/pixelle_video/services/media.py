@@ -106,6 +106,14 @@ class MediaService(ComfyBaseService):
         
         # Sort by key (source/name)
         return sorted(workflows, key=lambda w: w["key"])
+
+    def list_workflows(self) -> list[dict]:
+        """List Comfy/RunningHub/Selfhost workflows only.
+
+        Direct provider models are exposed through core.api_media.list_workflows()
+        so UI code can keep local workflows and API models in separate selectors.
+        """
+        return super().list_workflows()
     
     async def __call__(
         self,
@@ -120,6 +128,8 @@ class MediaService(ComfyBaseService):
         width: Optional[int] = None,
         height: Optional[int] = None,
         duration: Optional[float] = None,  # Video duration in seconds (for video workflows)
+        output_path: Optional[str] = None,
+        image_path: Optional[str] = None,
         negative_prompt: Optional[str] = None,
         steps: Optional[int] = None,
         seed: Optional[int] = None,
@@ -194,6 +204,27 @@ class MediaService(ComfyBaseService):
                 comfyui_url="http://192.168.1.100:8188"
             )
         """
+        selected_workflow = workflow or self.config.get("default_workflow")
+        if selected_workflow and selected_workflow.startswith("api/"):
+            if not self.core or not getattr(self.core, "api_media", None):
+                raise RuntimeError("API media service is not initialized")
+            return await self.core.api_media(
+                prompt=prompt,
+                workflow=selected_workflow,
+                media_type=media_type,
+                width=width,
+                height=height,
+                duration=duration,
+                output_path=output_path,
+                image_path=image_path,
+                negative_prompt=negative_prompt,
+                steps=steps,
+                seed=seed,
+                cfg=cfg,
+                sampler=sampler,
+                **params
+            )
+
         # 1. Resolve workflow (returns structured info)
         workflow_info = self._resolve_workflow(workflow=workflow)
         

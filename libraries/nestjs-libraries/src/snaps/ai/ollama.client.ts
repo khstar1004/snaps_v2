@@ -1,22 +1,47 @@
 import { Injectable } from '@nestjs/common';
+import { DeepseekClient } from '@gitroom/nestjs-libraries/snaps/ai/deepseek.client';
+import { snapsClampText } from '@gitroom/nestjs-libraries/snaps/text/clamp-text';
+import { snapsExtractJson } from '@gitroom/nestjs-libraries/snaps/ai/extract-json';
+import {
+  snapsFetchWithTimeout,
+  snapsTimeoutMs,
+  snapsWasTimeout,
+} from '@gitroom/nestjs-libraries/snaps/http/fetch-with-timeout';
 
 export type OllamaMessage = {
   role: 'system' | 'user' | 'assistant';
   content: string;
 };
 
+export type SnapsAiProvider = 'ollama' | 'deepseek';
+
 export type OllamaHealth = {
   ok: boolean;
+  provider: SnapsAiProvider;
   baseUrl: string;
+  chatBaseUrl: string;
   chatModel: string;
   embedModel: string;
   chatModelAvailable: boolean;
   embedModelAvailable: boolean;
   missingModels: string[];
+  /**
+   * DeepSeek only. Absent under Ollama, which needs no key - so `false`
+   * means a key is genuinely missing, not that the question is moot.
+   */
+  chatKeyConfigured?: boolean;
+  /** The status the chat provider answered with, when it answered. */
+  chatStatus?: number;
   models: string[];
   error?: string;
 };
 
+/**
+ * Chat generation is provider-switched via AI_PROVIDER (falls back to the
+ * legacy SNAPS_LLM_PROVIDER var). DeepSeek has no embeddings endpoint, so
+ * embed() always calls the local Ollama embedding model regardless of the
+ * active chat provider.
+ */
 @Injectable()
 export class OllamaClient {
   private readonly baseUrl =
@@ -24,12 +49,87 @@ export class OllamaClient {
   private readonly chatModel = process.env.OLLAMA_CHAT_MODEL || 'qwen3.5:9b';
   private readonly embedModel =
     process.env.OLLAMA_EMBED_MODEL || 'nomic-embed-text:latest';
+  private readonly deepseek = new DeepseekClient();
 
   get model() {
-    return this.chatModel;
+    return this.provider() === 'deepseek' ? this.deepseek.model : this.chatModel;
+  }
+
+  // Public because every service that reports which engine produced a
+  // result needs the same answer. They each hardcoded 'ollama', so a
+  // DeepSeek run was labelled Ollama in the workspace beside a health
+  // card that said DeepSeek.
+  provider(): SnapsAiProvider {
+    const raw = (
+      process.env.AI_PROVIDER ||
+      process.env.SNAPS_LLM_PROVIDER ||
+      'ollama'
+    ).toLowerCase();
+    return raw === 'deepseek' ? 'deepseek' : 'ollama';
   }
 
   async health(): Promise<OllamaHealth> {
+    if (this.provider() === 'deepseek') {
+      // The two probes hit unrelated hosts, so run them together. Awaiting the
+      // Ollama tags probe first cost the DeepSeek probe the full local timeout
+      // before it even started - and fetchWithTimeout retries once on the IPv4
+      // fallback, so a DeepSeek-only host with no Ollama paid ~30s per health
+      // call.
+      const [embed, chat] = await Promise.all([
+        this.embedHealth(),
+        this.deepseek.health(),
+      ]);
+      return {
+        ok: chat.ok && embed.embedModelAvailable,
+        provider: 'deepseek',
+        baseUrl: this.baseUrl,
+        chatBaseUrl: chat.baseUrl,
+        chatModel: chat.chatModel,
+        embedModel: this.embedModel,
+        chatModelAvailable: chat.modelAvailable,
+        chatKeyConfigured: chat.keyConfigured,
+        ...(chat.status === undefined ? {} : { chatStatus: chat.status }),
+        embedModelAvailable: embed.embedModelAvailable,
+        missingModels: embed.embedModelAvailable ? [] : [this.embedModel],
+        models: chat.models,
+        ...(chat.error || embed.error
+          ? { error: [chat.error, embed.error].filter(Boolean).join('; ') }
+          : {}),
+      };
+    }
+
+    const embed = await this.embedHealth();
+    const missingModels = Array.from(
+      new Set([
+        ...(embed.chatModelAvailable ? [] : [this.chatModel]),
+        ...(embed.embedModelAvailable ? [] : [this.embedModel]),
+      ])
+    );
+    return {
+      ok: missingModels.length === 0 && !embed.error,
+      provider: 'ollama',
+      baseUrl: this.baseUrl,
+      chatBaseUrl: this.baseUrl,
+      chatModel: this.chatModel,
+      embedModel: this.embedModel,
+      chatModelAvailable: embed.chatModelAvailable,
+      embedModelAvailable: embed.embedModelAvailable,
+      missingModels,
+      models: embed.models,
+      ...(embed.error
+        ? { error: embed.error }
+        : missingModels.length
+        ? { error: `Missing Ollama models: ${missingModels.join(', ')}` }
+        : {}),
+    };
+  }
+
+  private async embedHealth(): Promise<{
+    chatModelAvailable: boolean;
+    embedModelAvailable: boolean;
+    models: string[];
+    error?: string;
+  }> {
     try {
       const response = await this.fetchWithTimeout(`${this.baseUrl}/api/tags`, {
         method: 'GET',
@@ -37,13 +137,8 @@ export class OllamaClient {
 
       if (!response.ok) {
         return {
-          ok: false,
-          baseUrl: this.baseUrl,
-          chatModel: this.chatModel,
-          embedModel: this.embedModel,
           chatModelAvailable: false,
           embedModelAvailable: false,
-          missingModels: this.requiredModels(),
           models: [],
           error: `${response.status} ${await this.readResponseSnippet(response)}`,
         };
@@ -55,33 +150,15 @@ export class OllamaClient {
       const models = (data.models || [])
         .map((model) => model.name || model.model || '')
         .filter(Boolean);
-      const chatModelAvailable = models.includes(this.chatModel);
-      const embedModelAvailable = models.includes(this.embedModel);
-      const missingModels = this.requiredModels().filter(
-        (model) => !models.includes(model)
-      );
       return {
-        ok: missingModels.length === 0,
-        baseUrl: this.baseUrl,
-        chatModel: this.chatModel,
-        embedModel: this.embedModel,
-        chatModelAvailable,
-        embedModelAvailable,
-        missingModels,
+        chatModelAvailable: models.includes(this.chatModel),
+        embedModelAvailable: models.includes(this.embedModel),
         models,
-        ...(missingModels.length
-          ? { error: `Missing Ollama models: ${missingModels.join(', ')}` }
-          : {}),
       };
     } catch (error) {
       return {
-        ok: false,
-        baseUrl: this.baseUrl,
-        chatModel: this.chatModel,
-        embedModel: this.embedModel,
         chatModelAvailable: false,
         embedModelAvailable: false,
-        missingModels: this.requiredModels(),
         models: [],
         error: error instanceof Error ? error.message : String(error),
       };
@@ -89,6 +166,10 @@ export class OllamaClient {
   }
 
   async chatJson<T>(messages: OllamaMessage[]): Promise<T> {
+    if (this.provider() === 'deepseek') {
+      return this.deepseek.chatJson<T>(messages);
+    }
+
     const response = await this.fetchWithTimeout(
       `${this.baseUrl}/api/chat`,
       {
@@ -106,7 +187,7 @@ export class OllamaClient {
           },
         }),
       },
-      Number(process.env.OLLAMA_CHAT_TIMEOUT_MS || 120000)
+      snapsTimeoutMs(process.env.OLLAMA_CHAT_TIMEOUT_MS, 120000)
     );
 
     if (!response.ok) {
@@ -124,7 +205,7 @@ export class OllamaClient {
         'Ollama returned thinking output without final JSON content. Set OLLAMA_DISABLE_THINKING=true or use a non-thinking model.'
       );
     }
-    return JSON.parse(this.extractJson(content)) as T;
+    return JSON.parse(snapsExtractJson(content)) as T;
   }
 
   async embed(input: string | string[]): Promise<number[][]> {
@@ -138,7 +219,7 @@ export class OllamaClient {
           input,
         }),
       },
-      Number(process.env.OLLAMA_EMBED_TIMEOUT_MS || 60000)
+      snapsTimeoutMs(process.env.OLLAMA_EMBED_TIMEOUT_MS, 60000)
     );
 
     if (!response.ok) {
@@ -149,24 +230,6 @@ export class OllamaClient {
 
     const data = (await response.json()) as { embeddings?: unknown };
     return this.normalizeEmbeddings(data.embeddings);
-  }
-
-  private extractJson(content: string) {
-    const trimmed = content.trim();
-    if (trimmed.startsWith('```')) {
-      return trimmed
-        .replace(/^```(?:json)?/i, '')
-        .replace(/```$/i, '')
-        .trim();
-    }
-
-    const firstObject = trimmed.indexOf('{');
-    const lastObject = trimmed.lastIndexOf('}');
-    if (firstObject > -1 && lastObject > firstObject) {
-      return trimmed.slice(firstObject, lastObject + 1);
-    }
-
-    return trimmed;
   }
 
   private withNoThinkingInstruction(messages: OllamaMessage[]) {
@@ -186,10 +249,6 @@ export class OllamaClient {
 
   private disableThinking() {
     return process.env.OLLAMA_DISABLE_THINKING !== 'false';
-  }
-
-  private requiredModels() {
-    return Array.from(new Set([this.chatModel, this.embedModel]));
   }
 
   private normalizeEmbeddings(value: unknown): number[][] {
@@ -217,7 +276,7 @@ export class OllamaClient {
     if (text.startsWith('<')) {
       return response.statusText || 'HTML error response';
     }
-    return text.slice(0, 500);
+    return snapsClampText(text, 500);
   }
 
   private async fetchWithTimeout(
@@ -228,6 +287,14 @@ export class OllamaClient {
     try {
       return await this.fetchOnceWithTimeout(url, options, timeoutMs);
     } catch (error) {
+      // Not after a deadline. The retry is here because Node resolves localhost
+      // to ::1 while Ollama listens on IPv4, which fails to connect at once -
+      // a server that accepted the connection and went quiet is not that, and
+      // trying again meant waiting out the same silence twice. Measured with a
+      // 150ms budget against a socket that never answers: two attempts.
+      if (snapsWasTimeout(error)) {
+        throw error;
+      }
       const fallbackUrl = this.localhostIpv4FallbackUrl(url);
       if (!fallbackUrl) {
         throw error;
@@ -236,21 +303,16 @@ export class OllamaClient {
     }
   }
 
-  private async fetchOnceWithTimeout(
+  private fetchOnceWithTimeout(
     url: string,
     options: RequestInit,
     timeoutMs: number
   ) {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), timeoutMs);
-    try {
-      return await fetch(url, {
-        ...options,
-        signal: controller.signal,
-      });
-    } finally {
-      clearTimeout(timeout);
-    }
+    // The shared helper rather than a third copy of it: it is the one that
+    // names the deadline in the error instead of reporting "the operation was
+    // aborted", and now the one that marks it so this class can tell a timeout
+    // from a connection that was refused.
+    return snapsFetchWithTimeout(url, options, timeoutMs, 'Ollama');
   }
 
   private localhostIpv4FallbackUrl(url: string) {

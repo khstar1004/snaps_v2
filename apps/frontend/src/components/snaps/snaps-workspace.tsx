@@ -5,9 +5,62 @@ import { Button } from '@gitroom/react/form/button';
 import { useToaster } from '@gitroom/react/toaster/toaster';
 import { useIntegrationList } from '@gitroom/frontend/components/launches/helpers/use.integration.list';
 import { useFetch } from '@gitroom/helpers/utils/custom.fetch';
+import {
+  ConnectedIntegration,
+  confirmOperatorAction,
+  defaultPublishDate,
+  describeSnapsAttachResult,
+  describeSnapsSaveOutcome,
+  formatSnapsAgentBrief,
+  summariseSnapsReportOutcome,
+  formatLocalDate,
+  snapsPublishDateProblem,
+  snapsNaverCafePending,
+  snapsShowNaverCafeFields,
+  snapsHealthVerdict,
+  formatSnapsVariantPlainText,
+  formatSnapsVariantMarkdown,
+  formatSnapsVariantHtml,
+  SnapsHealthTone,
+  readSnapsAgentResult,
+  snapsCardNewsHandoffKey,
+  toLocalInputValue,
+  snapsReplyChannels,
+  snapsStepBadge,
+  formatLocalDateTime,
+  summariseSnapsWorkspaceImport,
+} from '@gitroom/frontend/components/snaps/snaps-workspace.shared';
+// One copy of these, not one per workspace: the same three declarations sat
+// byte-identical in all three snaps workspaces.
+import {
+  readSnapsError,
+  withSnapsJsonHeaders,
+} from '@gitroom/frontend/components/snaps/snaps-fetch.helpers';
+// The shorts types and the handoff key live in one place; they drifted when
+// each workspace kept its own copy.
+import {
+  SnapsShortsScript,
+  SnapsStoryboardScene,
+  SnapsVideoResult,
+  snapsShortsHandoffKey,
+} from '@gitroom/frontend/components/snaps/snaps-shorts.shared';
 import { useRouter } from 'next/navigation';
 import clsx from 'clsx';
 import { snapsDemoWorkspace } from './snaps-demo-workspace';
+import { snapsCafeSubject } from '@gitroom/nestjs-libraries/snaps/text/cafe-subject';
+
+/**
+ * The only place a health tone becomes a colour.
+ *
+ * Lives here rather than in the shared module because the shared module
+ * is framework-free; what it must not do is decide severity, which is
+ * how the words and the colour drifted apart in the first place.
+ */
+const SNAPS_HEALTH_TONE_CLASS: Record<SnapsHealthTone, string> = {
+  ok: 'text-emerald-300',
+  warn: 'text-amber-300',
+  bad: 'text-red-300',
+};
 
 const targetPlatforms = [
   { id: 'threads', label: 'Threads' },
@@ -111,7 +164,6 @@ const agentCommandTemplates = [
   },
 ] as const;
 
-const snapsShortsHandoffKey = 'snaps.shorts.handoff.v1';
 
 const feedbackSentimentLabels: Record<string, string> = {
   question: '질문',
@@ -140,19 +192,12 @@ type SnapsVariant = {
 };
 
 type SnapsTransformResult = {
-  provider: 'ollama' | 'rule-fallback';
+  provider: 'ollama' | 'deepseek' | 'rule-fallback';
   model: string;
   variants: SnapsVariant[];
   warnings: string[];
 };
 
-type ConnectedIntegration = {
-  id: string;
-  name?: string;
-  identifier?: string;
-  providerIdentifier?: string;
-  disabled?: boolean;
-};
 
 type ReplyCapability = {
   id: string;
@@ -167,11 +212,35 @@ type SnapsHealth = {
   error?: string;
   ollama?: {
     ok?: boolean;
+    // Which engine answered, as the health route reports it.
+    provider?: string;
     chatModel?: string;
     embedModel?: string;
     chatModelAvailable?: boolean;
     embedModelAvailable?: boolean;
+    // DeepSeek only, and structural on purpose: a key that was never
+    // set and a key the API rejected have different fixes, and the
+    // headline should not have to read the API's prose to tell them
+    // apart. Absent under Ollama, which needs no key.
+    chatKeyConfigured?: boolean;
+    chatStatus?: number;
     missingModels?: string[];
+    // The reason lives here, not at the top level. The card read
+    // `health?.error`, which the route never sends, so the reason it was
+    // added to show was never shown - and the type declared the field it
+    // was reading, which made the wrong level compile.
+    error?: string;
+    // What the probe actually saw. Empty means it could not ask, which is
+    // not the same as a model that is not installed.
+    models?: string[];
+  };
+  storage?: {
+    dataDir?: string;
+    writable?: boolean;
+    error?: string;
+    // A writable directory says nothing about a damaged file inside it;
+    // those show as an empty library, which reads as data loss.
+    unreadable?: Array<{ label?: string; path?: string; reason?: string }>;
   };
   rag?: {
     enabled?: boolean;
@@ -201,6 +270,11 @@ type SnapsStyleExample = {
   platform: TargetPlatform;
   content: string;
   score?: number;
+  // Two different metrics land in the same 0..1 range and mean nothing to each
+  // other: a token score hits exactly 1.00 whenever every query word appears,
+  // which reads as better than an embedding's 0.87 while being the weaker
+  // match. The API says which basis produced the number.
+  matchedBy?: 'embedding' | 'keyword';
 };
 
 type SnapsActivityEntry = {
@@ -234,6 +308,9 @@ type SnapsReportTrend = {
   firstValue?: number;
   lastValue?: number;
   delta?: number;
+  // The growth rate the report has carried since trends existed. Nothing read
+  // it, so every insight said "+600" with no sense of whether that is a lot.
+  deltaRate?: number;
 };
 
 type SnapsReportResult = {
@@ -246,42 +323,17 @@ type SnapsReportResult = {
   trends?: SnapsReportTrend[];
   charts?: SnapsReportChart[];
   metrics?: Record<string, Record<string, number>>;
+  // The window the numbers cover. Echoed back for as long as reports have
+  // existed and shown nowhere, so every report presented its figures
+  // unanchored.
+  periodStart?: string;
+  periodEnd?: string;
 };
 
 type SnapsStoredReport = {
   id: string;
   title: string;
   report: SnapsReportResult;
-};
-
-type SnapsStoryboardScene = {
-  scene: string | number;
-  startSecond?: number;
-  endSecond?: number;
-  visual?: string;
-  overlayText?: string;
-  narration?: string;
-  pixellePrompt?: string;
-};
-
-type SnapsShortsScript = {
-  title?: string;
-  hook?: string;
-  narration?: string;
-  caption?: string;
-  coreSummary?: string;
-  storyboard?: SnapsStoryboardScene[];
-  uploadMetadata?: {
-    title?: string;
-    description?: string;
-    hashtags?: string[];
-  };
-};
-
-type SnapsVideoResult = SnapsShortsScript & {
-  script?: SnapsShortsScript;
-  status?: string;
-  jobId?: string;
 };
 
 type SnapsReplySuggestion = {
@@ -371,6 +423,10 @@ type SnapsAgentOperationPreview = {
 };
 
 type SnapsAgentPlan = {
+  // Which path built the plan: the planner falls back to keyword rules when
+  // the model call fails and answers 200 either way, so the workspace has to
+  // be able to tell the operator which they are looking at.
+  provider?: 'ollama' | 'deepseek' | 'rule-fallback';
   command: string;
   sourceText: string;
   topic?: string;
@@ -397,6 +453,10 @@ type SnapsAgentPreparedPayload = {
   transform: SnapsTransformResult;
   operation: SnapsAgentOperationPreview;
   video?: SnapsVideoResult;
+  // The server has always sent this when the command asked for card news; the
+  // page type never declared it, so the deck was invisible to the UI and the
+  // handoff the card news workspace waits for could not be written.
+  cardNews?: { slides?: Array<Record<string, unknown>>; [key: string]: unknown };
   warnings?: string[];
 };
 
@@ -430,93 +490,7 @@ type SnapsAgentTaskDetail = SnapsAgentTaskListItem & {
   }>;
 };
 
-const defaultPublishDate = () => {
-  const date = new Date(Date.now() + 60 * 60 * 1000);
-  return new Date(date.getTime() - date.getTimezoneOffset() * 60000)
-    .toISOString()
-    .slice(0, 16);
-};
 
-const withSnapsJsonHeaders = (init?: RequestInit): RequestInit => {
-  const headers = new Headers(init?.headers);
-  if (init?.body && !headers.has('Content-Type')) {
-    headers.set('Content-Type', 'application/json');
-  }
-  const normalizedHeaders: Record<string, string> = {};
-  headers.forEach((value, key) => {
-    normalizedHeaders[key.toLowerCase() === 'content-type' ? 'Content-Type' : key] =
-      value;
-  });
-
-  return {
-    ...init,
-    headers: normalizedHeaders,
-  };
-};
-
-const extractSnapsErrorMessage = (value: unknown): string => {
-  if (typeof value === 'string') {
-    return value.trim();
-  }
-  if (!value || typeof value !== 'object') {
-    return '';
-  }
-
-  const record = value as Record<string, unknown>;
-  const candidates = [record.message, record.error, record.detail];
-  for (const candidate of candidates) {
-    if (typeof candidate === 'string' && candidate.trim()) {
-      return candidate.trim();
-    }
-    if (Array.isArray(candidate)) {
-      const messages = candidate
-        .filter((item): item is string => typeof item === 'string' && !!item.trim())
-        .map((item) => item.trim());
-      if (messages.length) {
-        return messages.join('\n');
-      }
-    }
-  }
-
-  return '';
-};
-
-const readSnapsError = async (
-  response: Response,
-  fallback = `snaps 요청 실패 (${response.status})`
-) => {
-  let raw = '';
-  try {
-    raw = await response.text();
-  } catch {
-    return fallback;
-  }
-
-  const trimmed = raw.trim();
-  if (!trimmed) {
-    return fallback;
-  }
-
-  try {
-    const parsed: unknown = JSON.parse(trimmed);
-    const message = extractSnapsErrorMessage(parsed);
-    if (message) {
-      return message;
-    }
-  } catch {
-    // Non-JSON error bodies are handled below.
-  }
-
-  if (trimmed.startsWith('<')) {
-    return `${fallback}: ${response.statusText || '서버가 HTML 오류 응답을 반환했습니다.'}`;
-  }
-
-  return trimmed.slice(0, 500);
-};
-
-const confirmOperatorAction = (message: string) =>
-  typeof window !== 'undefined' && window.confirm(message);
-const confirmDestructive = confirmOperatorAction;
 
 export function SnapsWorkspace() {
   const router = useRouter();
@@ -524,15 +498,72 @@ export function SnapsWorkspace() {
   const apiFetch = useFetch();
   const snapsFetch = (url: string, init?: RequestInit) =>
     apiFetch(url, withSnapsJsonHeaders(init));
+  // The services used to report `provider: 'ollama'` whichever engine
+  // answered, so against DeepSeek the badge read "ollama · deepseek-v4-flash"
+  // beside a health card saying DeepSeek, and this had to take the name from
+  // the health card instead. They report the real engine now; health stays as
+  // the fallback for a result produced before that change.
+  const engineLabel = (provider?: string) => {
+    if (provider === 'rule-fallback') {
+      return '규칙 기반';
+    }
+    if (provider === 'deepseek') {
+      return 'DeepSeek';
+    }
+    return health?.ollama?.provider === 'deepseek' ? 'DeepSeek' : 'Ollama';
+  };
+  // Green means a model produced this, grey or amber means the deterministic
+  // fallback did. It was spelled `=== 'ollama'`, which was the same thing only
+  // while 'ollama' was the sole model value - a DeepSeek result would have been
+  // painted as a fallback.
+  const modelAnswered = (provider?: string) =>
+    !!provider && provider !== 'rule-fallback';
   const { data: integrations = [] } = useIntegrationList();
   const [sourceText, setSourceText] = useState('');
   const [sourceTitle, setSourceTitle] = useState('');
   const [sourceTopic, setSourceTopic] = useState('');
   const [activeSourceId, setActiveSourceId] = useState('');
   const [sourceLibrary, setSourceLibrary] = useState<SnapsStoredSource[]>([]);
+  // What the payload builder reported about the last schedule run. Shown
+  // beneath the schedule controls; a warning nobody reads is not a warning.
+  const [scheduleWarnings, setScheduleWarnings] = useState<string[]>([]);
   const [savingSource, setSavingSource] = useState(false);
   const [health, setHealth] = useState<SnapsHealth | null>(null);
   const [healthLoading, setHealthLoading] = useState(false);
+  // Which lists failed to load, keyed the same way loadList() names them. An
+  // empty list and a list that could not be fetched look identical otherwise.
+  const [loadErrors, setLoadErrors] = useState<Record<string, string>>({});
+  // Why the last health fetch failed. Without it the card cannot tell a
+  // check that failed from one that has not answered yet, and reads 확인중
+  // for as long as the backend stays unreachable.
+  const [healthError, setHealthError] = useState('');
+  // A style example saved while the embedding model is down is stored without
+  // a vector, on purpose - it is still worth keeping, and keyword search will
+  // find it. What was missing is that nobody said so, so a brief Ollama
+  // outage left a library where keyword matches quietly beat every semantic
+  // one until someone happened to run a rebuild.
+  const announceStyleExampleSaved = (
+    saved: { embedded?: boolean; warning?: string } | undefined,
+    savedMessage: string
+  ) => {
+    // Both notices, not one: an example can be stored without an embedding
+    // *and* push the store past its cap, and saying only the first hides that
+    // an older example was deleted to make room.
+    const outcome = describeSnapsSaveOutcome(
+      saved,
+      savedMessage,
+      saved?.embedded === false
+        ? [
+            '임베딩 없이 저장되어 키워드로만 검색됩니다. ' +
+              '임베딩 모델을 복구한 뒤 RAG 재생성을 실행하세요.',
+          ]
+        : []
+    );
+    toast.show(outcome.message, outcome.tone === 'warning' ? 'warning' : undefined);
+  };
+  // One call, so the words and the colour below cannot come from different
+  // readings of the same payload.
+  const healthVerdict = snapsHealthVerdict(health, healthError);
   const [activity, setActivity] = useState<SnapsActivityEntry[]>([]);
   const [workspaceImportText, setWorkspaceImportText] = useState('');
   const [workspaceImporting, setWorkspaceImporting] = useState(false);
@@ -694,21 +725,14 @@ export function SnapsWorkspace() {
     }));
   }, [feedbackView]);
 
-  const replyIntegrationOptions = useMemo(() => {
-    const connected = (integrations as ConnectedIntegration[]).filter(
-      (integration) => !integration.disabled
-    );
-    if (!replyCapabilities) {
-      return connected;
-    }
-
-    const commentable = new Set(
-      replyCapabilities
-        .filter((capability) => capability.commentable && !capability.disabled)
-        .map((capability) => capability.id)
-    );
-    return connected.filter((integration) => commentable.has(integration.id));
-  }, [integrations, replyCapabilities]);
+  const replyIntegrationOptions = useMemo(
+    () =>
+      snapsReplyChannels(
+        integrations as ConnectedIntegration[],
+        replyCapabilities
+      ),
+    [integrations, replyCapabilities]
+  );
 
   const assistChecklist = (variant?: SnapsVariant) => {
     if (!variant || variant.publishMode !== 'assist') {
@@ -742,41 +766,65 @@ export function SnapsWorkspace() {
     return ['복사 후 해당 플랫폼 편집기에서 수동 발행'];
   };
 
-  const loadStyleExamples = async () => {
+  // Six loaders answered a failure the same two wrong ways: `if
+  // (!response.ok) return;` walked away from a 500 or an expired session
+  // without a word, and the catch replaced the list on screen with an empty
+  // one. A refresh that failed therefore wiped the operator's library from the
+  // page and left it reading as an empty workspace - the state that makes
+  // someone re-enter work they still have. loadHealth always did it properly,
+  // which is what makes the rest a slip rather than a decision.
+  const loadList = async (
+    key: string,
+    url: string,
+    apply: (payload: unknown) => void
+  ) => {
     try {
-      const response = await snapsFetch('/snaps/rag/examples');
+      const response = await snapsFetch(url);
       if (!response.ok) {
+        const message = await readSnapsError(response);
+        setLoadErrors((current) => ({ ...current, [key]: message }));
         return;
       }
-      setStyleExamples(await response.json());
-    } catch {
-      setStyleExamples([]);
+      apply(await response.json());
+      setLoadErrors((current) => {
+        if (!current[key]) {
+          return current;
+        }
+        const next = { ...current };
+        delete next[key];
+        return next;
+      });
+    } catch (error) {
+      // The list already on screen is left alone: it is what the server last
+      // said, and it is still there.
+      setLoadErrors((current) => ({
+        ...current,
+        [key]: error instanceof Error ? error.message : String(error),
+      }));
     }
   };
 
-  const loadSourceLibrary = async () => {
-    try {
-      const response = await snapsFetch('/snaps/source-library');
-      if (!response.ok) {
-        return;
-      }
-      setSourceLibrary(await response.json());
-    } catch {
-      setSourceLibrary([]);
-    }
-  };
+  const listLoadError = (key: string) =>
+    loadErrors[key] ? (
+      <div className="rounded-[8px] border border-red-500/30 bg-red-500/10 px-[10px] py-[8px] text-[12px] text-red-200 break-all">
+        목록을 불러오지 못했습니다: {loadErrors[key]}
+      </div>
+    ) : null;
 
-  const loadReportHistory = async () => {
-    try {
-      const response = await snapsFetch('/snaps/report/history');
-      if (!response.ok) {
-        return;
-      }
-      setReportHistory(await response.json());
-    } catch {
-      setReportHistory([]);
-    }
-  };
+  const loadStyleExamples = () =>
+    loadList('styleExamples', '/snaps/rag/examples', (payload) =>
+      setStyleExamples(payload as SnapsStyleExample[])
+    );
+
+  const loadSourceLibrary = () =>
+    loadList('sourceLibrary', '/snaps/source-library', (payload) =>
+      setSourceLibrary(payload as SnapsStoredSource[])
+    );
+
+  const loadReportHistory = () =>
+    loadList('reportHistory', '/snaps/report/history', (payload) =>
+      setReportHistory(payload as SnapsStoredReport[])
+    );
 
   const loadHealth = async () => {
     setHealthLoading(true);
@@ -786,11 +834,11 @@ export function SnapsWorkspace() {
         throw new Error(await readSnapsError(response));
       }
       setHealth(await response.json());
+      setHealthError('');
     } catch (error) {
-      setHealth({
-        ok: false,
-        error: error instanceof Error ? error.message : String(error),
-      });
+      const message = error instanceof Error ? error.message : String(error);
+      setHealthError(message);
+      setHealth({ ok: false, error: message });
     } finally {
       setHealthLoading(false);
     }
@@ -844,8 +892,12 @@ export function SnapsWorkspace() {
         loadAgentTasks(),
         loadActivity(),
       ]);
+      const summary = summariseSnapsWorkspaceImport(payload, imported);
       toast.show(
-        `워크스페이스 가져오기 완료: 원문 ${imported.sources?.imported || 0}개, RAG ${imported.styleExamples?.imported || 0}개`
+        summary.message,
+        ...(summary.tone === 'warning' || summary.dropped
+          ? (['warning'] as const)
+          : [])
       );
     } catch (error) {
       toast.show(
@@ -857,27 +909,42 @@ export function SnapsWorkspace() {
     }
   };
 
-  const loadActivity = async () => {
-    try {
-      const response = await snapsFetch('/snaps/activity');
-      if (!response.ok) {
-        return;
-      }
-      setActivity(await response.json());
-    } catch {
-      setActivity([]);
-    }
-  };
+  const loadActivity = () =>
+    loadList('activity', '/snaps/activity', (payload) =>
+      setActivity(payload as SnapsActivityEntry[])
+    );
 
   const loadReplyCapabilities = async () => {
     try {
       const response = await snapsFetch('/snaps/inbox/reply-capabilities');
       if (!response.ok) {
+        // Same reason as loadList: walking away from a 500 leaves the reply
+        // controls looking like the channel simply cannot take replies.
+        const message = await readSnapsError(response);
+        setLoadErrors((current) => ({ ...current, replyCapabilities: message }));
         return;
       }
       setReplyCapabilities(await response.json());
-    } catch {
-      setReplyCapabilities(null);
+      setLoadErrors((current) => {
+        if (!current.replyCapabilities) {
+          return current;
+        }
+        const next = { ...current };
+        delete next.replyCapabilities;
+        return next;
+      });
+    } catch (error) {
+      // The throw path used to set the list back to null and say nothing. null
+      // is not "no channel takes replies" here - replyIntegrationOptions reads
+      // it as "capabilities unknown" and offers every connected channel, so a
+      // dropped request widened the reply picker to channels whose provider has
+      // no comment API at all. Leave the last good answer in place and report
+      // the failure, the same as the !ok branch above and loadList below.
+      setLoadErrors((current) => ({
+        ...current,
+        replyCapabilities:
+          error instanceof Error ? error.message : String(error),
+      }));
     }
   };
 
@@ -897,14 +964,14 @@ export function SnapsWorkspace() {
       if (favoriteOnly) {
         params.set('favoriteOnly', 'true');
       }
-      const response = await snapsFetch(`/snaps/agent/tasks?${params.toString()}`);
-      if (!response.ok) {
-        return;
-      }
-      const payload = await response.json();
-      setAgentTasks(Array.isArray(payload.list) ? payload.list : []);
-    } catch {
-      setAgentTasks([]);
+      await loadList(
+        'agentTasks',
+        `/snaps/agent/tasks?${params.toString()}`,
+        (payload) => {
+          const list = (payload as { list?: unknown }).list;
+          setAgentTasks(Array.isArray(list) ? (list as SnapsAgentTaskListItem[]) : []);
+        }
+      );
     } finally {
       setAgentTasksLoading(false);
     }
@@ -952,8 +1019,15 @@ export function SnapsWorkspace() {
         : selectedPlatforms
     );
     setScheduleType(prepared.plan.scheduleType || 'draft');
-    if (prepared.plan.publishDateLocal) {
-      setPublishDate(prepared.plan.publishDateLocal);
+    // The instant, converted here, rather than the plan's own rendering of
+    // it: that rendering was made in whatever zone the plan was built in,
+    // and this input is read back in the browser's.
+    const restoredPublishDate =
+      toLocalInputValue(prepared.plan.publishDate) ||
+      prepared.plan.publishDateLocal ||
+      '';
+    if (restoredPublishDate) {
+      setPublishDate(restoredPublishDate);
     }
     setResult(prepared.transform);
     setActivePlatform(
@@ -988,12 +1062,18 @@ export function SnapsWorkspace() {
         throw new Error(await readSnapsError(response));
       }
 
-      const prepared = (await response.json()) as SnapsAgentPrepareResult;
+      const prepared = readSnapsAgentResult(
+        (await response.json()) as SnapsAgentPrepareResult
+      );
       setAgentResult(prepared);
       applyPreparedAgentResult(prepared);
       await loadAgentTasks();
       await loadActivity();
-      toast.show('에이전트 작업 준비가 완료되었습니다.');
+      announceResult(
+        prepared?.plan?.provider,
+        '에이전트 작업 준비가 완료되었습니다.',
+        'AI 가 명령을 해석하지 못해 키워드 규칙으로 계획을 세웠습니다. 채널·예약 시각·카드뉴스 포함 여부를 꼭 확인하세요.'
+      );
     } catch (error) {
       toast.show(
         error instanceof Error ? error.message : '에이전트 작업 준비에 실패했습니다.',
@@ -1011,11 +1091,14 @@ export function SnapsWorkspace() {
         throw new Error(await readSnapsError(response));
       }
       const task = (await response.json()) as SnapsAgentTaskDetail;
-      setAgentResult({
+      // A stored task is whatever was written to disk, and the panel
+      // reads lists the import normaliser never required.
+      const restored = readSnapsAgentResult({
         ...task.result,
         task,
       });
-      applyPreparedAgentResult({ ...task.result, task }, task.title);
+      setAgentResult(restored);
+      applyPreparedAgentResult(restored, task.title);
       toast.show('에이전트 작업을 불러왔습니다.');
     } catch (error) {
       toast.show(
@@ -1062,7 +1145,7 @@ export function SnapsWorkspace() {
   };
 
   const deleteAgentTask = async (task: SnapsAgentTaskListItem) => {
-    if (!confirmDestructive(`에이전트 작업 "${task.title}"을 삭제할까요?`)) {
+    if (!confirmOperatorAction(`에이전트 작업 "${task.title}"을 삭제할까요?`)) {
       return;
     }
     try {
@@ -1090,38 +1173,17 @@ export function SnapsWorkspace() {
       return;
     }
 
-    const lines = [
-      `오더: ${agentResult.plan.command}`,
-      `대상: ${agentResult.plan.targetPlatforms.map(targetPlatformLabel).join(', ')}`,
-      agentResult.plan.scheduleType === 'schedule'
-        ? `예약: ${agentResult.plan.publishDateLocal || agentResult.plan.publishDate || '시간 미정'}`
-        : '모드: 초안',
-      agentResult.plan.includeShortVideo
-        ? `쇼츠: ${agentResult.plan.shortVideoTargetPlatforms
-            .map(targetPlatformLabel)
-            .join(', ')}`
-        : '',
-      '',
-      '작업자 브리핑',
-      ...(agentResult.plan.operatorSummary || []),
-      '',
-      '다음 액션',
-      ...agentResult.operation.nextActions.map((action) => `- ${action}`),
-      '',
-      '채널별 초안',
-      ...agentResult.transform.variants.map(
-        (variant) => [
-          `## ${variant.label}`,
-          variant.title || '',
-          variant.content,
-          variant.hashtags?.length ? variant.hashtags.join(' ') : '',
-        ]
-          .filter(Boolean)
-          .join('\n')
-      ),
-    ].filter(Boolean);
+    // Built in the shared module so it can be tested, like the other three
+    // copy formats. Inline, it had lost every section break to its own
+    // `.filter(Boolean)` - see formatSnapsAgentBrief.
+    // Wrapped rather than passed straight through: targetPlatformLabel takes
+    // the narrow TargetPlatform union, and under strictFunctionTypes that is
+    // not a `(platform: string) => string`.
+    const brief = formatSnapsAgentBrief(agentResult as never, (platform) =>
+      targetPlatformLabel(platform as never)
+    );
 
-    await navigator.clipboard.writeText(lines.join('\n'));
+    await navigator.clipboard.writeText(brief);
     toast.show('에이전트 브리프를 복사했습니다.');
   };
 
@@ -1150,7 +1212,13 @@ export function SnapsWorkspace() {
         scriptPlatform: agentResult.plan.shortVideoPlatform,
         targetPlatforms: videoTargets.length ? videoTargets : ['youtube'],
         scheduleType: agentResult.plan.scheduleType,
-        publishDate: agentResult.plan.publishDateLocal || publishDate,
+        // The instant, converted here, not the plan's own rendering: the
+        // plan may have been built in another zone and this value is read
+        // back as a datetime-local input.
+        publishDate:
+          toLocalInputValue(agentResult.plan.publishDate) ||
+          agentResult.plan.publishDateLocal ||
+          publishDate,
         videoResult,
         createdAt: new Date().toISOString(),
       })
@@ -1159,41 +1227,36 @@ export function SnapsWorkspace() {
     router.push('/media');
   };
 
-  const formatVariantPlainText = (variant: SnapsVariant) => {
-    return [
-      variant.title,
-      variant.content,
-      variant.hashtags?.length ? variant.hashtags.join(' ') : '',
-    ]
-      .filter(Boolean)
-      .join('\n\n');
-  };
+  /**
+   * Hands the agent's card news deck to the card news workspace.
+   *
+   * The workspace has read `snapsCardNewsHandoffKey` since it was written and
+   * docs/snaps-card-news.md describes this button, but nothing wrote the key -
+   * so an operator who asked the agent for card news saw the deck in the plan
+   * and had no way to carry it across, unlike shorts.
+   */
+  const sendAgentCardNewsToMedia = () => {
+    if (!agentResult?.cardNews) {
+      toast.show('카드뉴스 결과가 아직 없습니다.', 'warning');
+      return;
+    }
 
-  const formatVariantMarkdown = (variant: SnapsVariant) => {
-    return [
-      variant.title ? `# ${variant.title}` : '',
-      variant.content,
-      variant.hashtags?.length ? variant.hashtags.join(' ') : '',
-    ]
-      .filter(Boolean)
-      .join('\n\n');
-  };
-
-  const escapeHtml = (value: string) =>
-    value
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#039;');
-
-  const formatVariantHtml = (variant: SnapsVariant) => {
-    const title = variant.title ? `<h1>${escapeHtml(variant.title)}</h1>` : '';
-    const content = escapeHtml(variant.content).replace(/\n{2,}/g, '</p><p>').replace(/\n/g, '<br />');
-    const tags = variant.hashtags?.length
-      ? `<p>${variant.hashtags.map(escapeHtml).join(' ')}</p>`
-      : '';
-    return [title, `<p>${content}</p>`, tags].filter(Boolean).join('\n');
+    window.localStorage.setItem(
+      snapsCardNewsHandoffKey,
+      JSON.stringify({
+        sourceText: agentResult.plan.sourceText,
+        tone: agentResult.plan.tone,
+        deck: agentResult.cardNews,
+        scheduleType: agentResult.plan.scheduleType,
+        publishDate:
+          toLocalInputValue(agentResult.plan.publishDate) ||
+          agentResult.plan.publishDateLocal ||
+          publishDate,
+        createdAt: new Date().toISOString(),
+      })
+    );
+    toast.show('카드뉴스 작업대로 보냈습니다.');
+    router.push('/media');
   };
 
   const transform = async () => {
@@ -1253,9 +1316,11 @@ export function SnapsWorkspace() {
       return;
     }
 
-    const needsNaverCafeSettings = integrationsToUse.some(
-      (item) => item.platform === 'naver-cafe'
-    );
+    const needsNaverCafeSettings = snapsNaverCafePending({
+      selectedPlatforms,
+      variants: result.variants,
+      connectedPlatforms: integrationsToUse.map((item) => item.platform),
+    });
     if (needsNaverCafeSettings && (!naverCafeClubId || !naverCafeMenuId)) {
       toast.show('네이버 카페 발행에는 카페 ID와 메뉴 ID가 필요합니다.', 'warning');
       return;
@@ -1264,8 +1329,11 @@ export function SnapsWorkspace() {
     let publishDateIso: string | undefined;
     if (scheduleType === 'schedule') {
       const parsedPublishDate = new Date(publishDate);
-      if (Number.isNaN(parsedPublishDate.getTime())) {
-        toast.show('예약 시간을 입력하세요.', 'warning');
+      // Not only what Date cannot parse: a time that has already gone by
+      // is published immediately by the post workflow.
+      const problem = snapsPublishDateProblem(publishDate);
+      if (problem) {
+        toast.show(problem, 'warning');
         return;
       }
       publishDateIso = parsedPublishDate.toISOString();
@@ -1291,10 +1359,9 @@ export function SnapsWorkspace() {
           ...variant.settings,
           clubId: naverCafeClubId,
           menuId: naverCafeMenuId,
-          subject:
-            variant.title ||
-            variant.content.replace(/\s+/g, ' ').trim().slice(0, 80) ||
-            'snaps 게시글',
+          // One function with the publishing builder: the two derived the
+          // same title differently, and this side cut with a plain slice.
+          subject: snapsCafeSubject(variant.title, variant.content),
         },
       };
     });
@@ -1316,13 +1383,44 @@ export function SnapsWorkspace() {
         throw new Error(await readSnapsError(response));
       }
 
-      await response.json();
+      // The response carries the created posts and the payload builder's
+      // warnings. It used to be discarded, so a run where every variant was
+      // dropped - an assist-only platform, settings a provider rejected - still
+      // showed an unconditional success toast.
+      // `schedulable` is what the builder was ready to publish, and it is the
+      // difference between "nothing was ever going to be created" and "the
+      // result came back empty" - the shared reader needs both.
+      const scheduleResult = (await response.json()) as {
+        scheduled?: unknown[];
+        schedulable?: unknown[];
+        warnings?: string[];
+      };
+      const warnings = Array.isArray(scheduleResult?.warnings)
+        ? scheduleResult.warnings
+        : [];
+      setScheduleWarnings(warnings);
       await loadActivity();
-      toast.show(
-        scheduleType === 'schedule'
-          ? '연결된 채널에 snaps 예약 게시물을 만들었습니다.'
-          : '연결된 채널에 snaps 초안을 만들었습니다.'
+
+      // The same reader the two attach workspaces use. An empty `scheduled`
+      // does not mean nothing was created - PostsService.createPost discards
+      // the channels that already succeeded when a later one comes back empty
+      // - and this is the primary scheduling path, the one that was left on
+      // the old claim when the other two were converted.
+      const outcome = describeSnapsAttachResult(
+        scheduleResult,
+        scheduleType,
+        'snaps',
+        (count, kind) =>
+          kind === 'schedule'
+            ? `연결된 채널 ${count}개에 snaps 예약 게시물을 만들었습니다.`
+            : `연결된 채널 ${count}개에 snaps 초안을 만들었습니다.`
       );
+      if (outcome.tone === 'warning') {
+        toast.show(outcome.message, 'warning');
+        return;
+      }
+
+      toast.show(outcome.message);
       router.push('/launches?display=list');
     } catch (error) {
       toast.show(
@@ -1353,7 +1451,7 @@ export function SnapsWorkspace() {
     if (!activeVariant) {
       return;
     }
-    await navigator.clipboard.writeText(formatVariantPlainText(activeVariant));
+    await navigator.clipboard.writeText(formatSnapsVariantPlainText(activeVariant));
     toast.show('클립보드에 복사했습니다.');
   };
 
@@ -1361,7 +1459,7 @@ export function SnapsWorkspace() {
     if (!activeVariant) {
       return;
     }
-    await navigator.clipboard.writeText(formatVariantMarkdown(activeVariant));
+    await navigator.clipboard.writeText(formatSnapsVariantMarkdown(activeVariant));
     toast.show('Markdown으로 복사했습니다.');
   };
 
@@ -1369,7 +1467,7 @@ export function SnapsWorkspace() {
     if (!activeVariant) {
       return;
     }
-    await navigator.clipboard.writeText(formatVariantHtml(activeVariant));
+    await navigator.clipboard.writeText(formatSnapsVariantHtml(activeVariant));
     toast.show('HTML로 복사했습니다.');
   };
 
@@ -1400,7 +1498,16 @@ export function SnapsWorkspace() {
       setActiveSourceId(saved.id || '');
       await loadSourceLibrary();
       await loadActivity();
-      toast.show('원문을 snaps 라이브러리에 저장했습니다.');
+      // The store is capped; at the cap this save deleted another record and
+      // the response says which. See describeSnapsSaveOutcome.
+      const savedOutcome = describeSnapsSaveOutcome(
+        saved,
+        '원문을 snaps 라이브러리에 저장했습니다.'
+      );
+      toast.show(
+        savedOutcome.message,
+        savedOutcome.tone === 'warning' ? 'warning' : undefined
+      );
     } catch (error) {
       toast.show(
         error instanceof Error ? error.message : '원문 저장에 실패했습니다.',
@@ -1419,7 +1526,7 @@ export function SnapsWorkspace() {
 
     const selectedSource = sourceLibrary.find((source) => source.id === activeSourceId);
     if (
-      !confirmDestructive(
+      !confirmOperatorAction(
         `저장 원문 "${selectedSource?.title || activeSourceId}"을 삭제할까요?`
       )
     ) {
@@ -1473,7 +1580,10 @@ export function SnapsWorkspace() {
       setStyleSearchResult([]);
       await loadStyleExamples();
       await loadActivity();
-      toast.show('저장 원문을 RAG 스타일 예시로 승격했습니다.');
+      announceStyleExampleSaved(
+        saved,
+        '저장 원문을 RAG 스타일 예시로 승격했습니다.'
+      );
     } catch (error) {
       toast.show(
         error instanceof Error ? error.message : 'RAG 승격에 실패했습니다.',
@@ -1503,10 +1613,11 @@ export function SnapsWorkspace() {
       if (!response.ok) {
         throw new Error(await readSnapsError(response));
       }
+      const saved = await response.json();
       setStyleExample('');
       await loadStyleExamples();
       await loadActivity();
-      toast.show('RAG 스타일 예시를 저장했습니다.');
+      announceStyleExampleSaved(saved, 'RAG 스타일 예시를 저장했습니다.');
     } catch (error) {
       toast.show(
         error instanceof Error ? error.message : '스타일 예시 저장에 실패했습니다.',
@@ -1530,8 +1641,16 @@ export function SnapsWorkspace() {
       if (!response.ok) {
         throw new Error(await readSnapsError(response));
       }
-      setStyleSearchResult(await response.json());
-      toast.show('유사 스타일 예시를 찾았습니다.');
+      const found = await response.json();
+      setStyleSearchResult(found);
+      // Said unconditionally, this claimed a match for a query that had
+      // none - the route used to answer with every example at score 0.
+      toast.show(
+        Array.isArray(found) && found.length
+          ? `유사 스타일 예시 ${found.length}개를 찾았습니다.`
+          : '조건에 맞는 유사 스타일 예시가 없습니다.',
+        Array.isArray(found) && found.length ? undefined : 'warning'
+      );
     } catch (error) {
       toast.show(
         error instanceof Error ? error.message : '스타일 검색에 실패했습니다.',
@@ -1545,7 +1664,7 @@ export function SnapsWorkspace() {
       (example) => example.id === exampleId
     );
     if (
-      !confirmDestructive(
+      !confirmOperatorAction(
         `RAG 스타일 예시 "${selectedExample?.platform || exampleId}"를 삭제할까요?`
       )
     ) {
@@ -1585,9 +1704,26 @@ export function SnapsWorkspace() {
       const rebuilt = await response.json();
       await loadStyleExamples();
       await loadActivity();
-      toast.show(
-        `RAG 임베딩 재생성 완료: ${rebuilt.rebuilt || 0}/${rebuilt.total || 0}`
-      );
+      // A rebuild that embedded nothing still answers 200 with rebuilt: 0. On a
+      // DeepSeek deployment that is the ordinary outcome - embeddings stay on
+      // Ollama - so a plain 완료 toast handed the operator a success signal
+      // every time while the index was entirely keyword-matched.
+      const rebuiltCount = Number(rebuilt?.rebuilt) || 0;
+      const rebuiltTotal = Number(rebuilt?.total) || 0;
+      if (rebuiltTotal && !rebuiltCount) {
+        toast.show(
+          `RAG 임베딩 재생성 실패: ${rebuiltTotal}개 중 하나도 임베딩되지 않았습니다. ` +
+            '임베딩 모델을 확인하세요.',
+          'warning'
+        );
+      } else if (rebuiltCount < rebuiltTotal) {
+        toast.show(
+          `RAG 임베딩 재생성 일부 실패: ${rebuiltCount}/${rebuiltTotal}개만 임베딩되었습니다.`,
+          'warning'
+        );
+      } else {
+        toast.show(`RAG 임베딩 재생성 완료: ${rebuiltCount}/${rebuiltTotal}`);
+      }
     } catch (error) {
       toast.show(
         error instanceof Error ? error.message : 'RAG 임베딩 재생성에 실패했습니다.',
@@ -1620,7 +1756,18 @@ export function SnapsWorkspace() {
       setActiveReportId(report.reportId || '');
       await loadReportHistory();
       await loadActivity();
-      toast.show('분석 보고서를 생성했습니다.');
+      // The same reader as the analytics report below, so the two routes
+      // cannot answer the same question differently again.
+      const outcome = summariseSnapsReportOutcome(
+        report?.provider,
+        (report as { warnings?: unknown })?.warnings,
+        {
+          success: '분석 보고서를 생성했습니다.',
+          fallback:
+            'AI 가 응답하지 않아 규칙 기반 요약으로 보고서를 만들었습니다. 수치는 정확하지만 문장은 템플릿입니다.',
+        }
+      );
+      toast.show(outcome.message, outcome.tone === 'warning' ? 'warning' : undefined);
     } catch (error) {
       toast.show(
         error instanceof Error ? error.message : '보고서 생성에 실패했습니다.',
@@ -1664,7 +1811,23 @@ export function SnapsWorkspace() {
       setActiveReportId(report.reportId || '');
       await loadReportHistory();
       await loadActivity();
-      toast.show('기존 analytics 기반 보고서를 생성했습니다.');
+      // The route turns a channel it could not read into a warning and carries
+      // on, so a report built from two of five channels looks exactly like a
+      // complete one.
+      // Both facts in one message. The skipped-channel branch used to replace
+      // the engine notice rather than join it, so a report built from two of
+      // five channels *and* written by the fallback never mentioned the
+      // fallback - see summariseSnapsReportOutcome.
+      const outcome = summariseSnapsReportOutcome(
+        report?.provider,
+        report?.warnings,
+        {
+          success: '기존 analytics 기반 보고서를 생성했습니다.',
+          fallback:
+            'AI 가 응답하지 않아 규칙 기반 요약으로 보고서를 만들었습니다. 수치는 정확하지만 문장은 템플릿입니다.',
+        }
+      );
+      toast.show(outcome.message, outcome.tone === 'warning' ? 'warning' : undefined);
     } catch (error) {
       toast.show(
         error instanceof Error ? error.message : '기존 analytics 보고서 생성에 실패했습니다.',
@@ -1733,7 +1896,7 @@ export function SnapsWorkspace() {
 
     const selectedReport = reportHistory.find((report) => report.id === activeReportId);
     if (
-      !confirmDestructive(
+      !confirmOperatorAction(
         `보고서 "${selectedReport?.title || reportResult?.title || activeReportId}"를 삭제할까요?`
       )
     ) {
@@ -1783,10 +1946,13 @@ export function SnapsWorkspace() {
       if (!response.ok) {
         throw new Error(await readSnapsError(response));
       }
-      await response.json();
+      const saved = await response.json();
       await loadStyleExamples();
       await loadActivity();
-      toast.show('보고서 인사이트를 RAG 스타일 가이드로 저장했습니다.');
+      announceStyleExampleSaved(
+        saved,
+        '보고서 인사이트를 RAG 스타일 가이드로 저장했습니다.'
+      );
     } catch (error) {
       toast.show(
         error instanceof Error ? error.message : '보고서 RAG 저장에 실패했습니다.',
@@ -1880,9 +2046,14 @@ export function SnapsWorkspace() {
       if (!response.ok) {
         throw new Error(await readSnapsError(response));
       }
-      setFeedbackSummary(await response.json());
+      const summary = await response.json();
+      setFeedbackSummary(summary);
       await loadActivity();
-      toast.show('피드백 요약을 생성했습니다.');
+      announceResult(
+        summary?.provider,
+        '피드백 요약을 생성했습니다.',
+        'AI 가 응답하지 않아 규칙 기반으로 분류했습니다. 감정 분류와 답글 제안을 확인하세요.'
+      );
     } catch (error) {
       toast.show(
         error instanceof Error ? error.message : '피드백 요약에 실패했습니다.',
@@ -1924,6 +2095,21 @@ export function SnapsWorkspace() {
     }
   };
 
+  // A plan the model could not produce is built from keyword rules instead.
+  // It looks exactly like a real one in the workspace, so the operator has to
+  // be told which they are looking at before they schedule it.
+  const announceResult = (
+    provider: unknown,
+    successMessage: string,
+    fallbackMessage: string
+  ) => {
+    if (provider === 'rule-fallback') {
+      toast.show(fallbackMessage, 'warning');
+      return;
+    }
+    toast.show(successMessage);
+  };
+
   const publishPlatformReply = async () => {
     if (!feedbackReplyIntegrationId || !feedbackReplyPlatformPostId.trim() || !feedbackReplyText.trim()) {
       toast.show('연결 채널, 플랫폼 post ID, 답글 내용을 입력하세요.', 'warning');
@@ -1950,6 +2136,10 @@ export function SnapsWorkspace() {
           platformPostId: feedbackReplyPlatformPostId.trim(),
           lastCommentId: feedbackReplyLastCommentId.trim() || undefined,
           reply: feedbackReplyText.trim(),
+          // The dialog above is asked for the API's benefit, and the API
+          // rejects the call without this - a direct request is not a boundary
+          // the workspace's own prompt can stand in for.
+          operatorConfirmed: true,
         }),
       });
       if (!response.ok) {
@@ -1969,7 +2159,7 @@ export function SnapsWorkspace() {
   };
 
   const clearFeedbackInbox = async () => {
-    if (!confirmDestructive('저장된 snaps 받은 반응함 피드백을 모두 비울까요?')) {
+    if (!confirmOperatorAction('저장된 snaps 받은 반응함 피드백을 모두 비울까요?')) {
       return;
     }
 
@@ -2017,12 +2207,12 @@ export function SnapsWorkspace() {
             <div
               className={clsx(
                 'text-[11px] px-[8px] py-[4px] rounded-[999px]',
-                result?.provider === 'ollama'
+                modelAnswered(result?.provider)
                   ? 'bg-emerald-500/15 text-emerald-300'
                   : 'bg-newBgLineColor text-textItemBlur'
               )}
             >
-              {result ? `${result.provider} · ${result.model}` : '대기'}
+              {result ? `${engineLabel(result.provider)} · ${result.model}` : '대기'}
             </div>
           </div>
 
@@ -2258,8 +2448,21 @@ export function SnapsWorkspace() {
           )}
 
           {!!result?.warnings?.length && (
-            <div className="rounded-[8px] border border-amber-500/30 bg-amber-500/10 p-[10px] text-[12px] text-amber-200">
-              {result.warnings[0]}
+            <div className="rounded-[8px] border border-amber-500/30 bg-amber-500/10 p-[10px] text-[12px] text-amber-200 flex flex-col gap-[4px]">
+              {/* normalizeVariants() pushes one warning per platform the
+                  model skipped, so a transform over ten channels where it
+                  answered for one produces nine. Rendering warnings[0] alone
+                  told the operator about one platform and never that the other
+                  eight variants are template output rather than generated
+                  copy. */}
+              {result.warnings.slice(0, 5).map((warning) => (
+                <div key={warning}>{warning}</div>
+              ))}
+              {result.warnings.length > 5 && (
+                <div className="opacity-70">
+                  외 {result.warnings.length - 5}개의 경고가 더 있습니다.
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -2275,9 +2478,39 @@ export function SnapsWorkspace() {
         <div className="grid grid-cols-6 maxMedia:grid-cols-2 gap-[10px] text-[12px]">
           <div>
             <div className="text-textItemBlur">Ollama</div>
-            <div className={health?.ollama?.ok ? 'text-emerald-300' : 'text-amber-300'}>
-              {health?.ollama?.ok ? '모델 준비됨' : '모델 확인 필요'}
+            {/* The colour used to be derived here, from chatModelAvailable
+                and ollama.ok, while the words came from the ranking in
+                snapsHealthVerdict. They disagreed: an unwritable store and a
+                damaged store file - the two conditions the ranking puts
+                first, because an empty library reads as data loss - were
+                painted the same green as '모델 준비됨'. Both come from the
+                verdict now, so they cannot drift apart again. */}
+            <div className={SNAPS_HEALTH_TONE_CLASS[healthVerdict.tone]}>
+              {healthVerdict.headline}
             </div>
+            {/* The reason was stored and never shown, so a failed check
+                looked the same as a model that simply is not ready. */}
+            {!!health?.ollama?.error && (
+              <div className="text-[11px] text-amber-300/80 break-all">
+                {health.ollama.error}
+              </div>
+            )}
+            {health?.storage?.writable === false && (
+              <div className="text-[11px] text-red-300/90 break-all">
+                {health.storage.dataDir}: {health.storage.error}
+              </div>
+            )}
+            {/* A writable directory with a damaged file inside it: the
+                headline said so, and nothing named the file or the reason,
+                so the operator knew something was wrong and not what. */}
+            {health?.storage?.unreadable?.map((store) => (
+              <div
+                key={store.path}
+                className="text-[11px] text-red-300/90 break-all"
+              >
+                {store.label} {store.path}: {store.reason}
+              </div>
+            ))}
           </div>
           <div>
             <div className="text-textItemBlur">채팅 모델</div>
@@ -2386,8 +2619,8 @@ export function SnapsWorkspace() {
               <div className="mt-[8px] flex flex-col gap-[6px]">
                 {(agentResult.plan.executionPlan || []).slice(0, 4).map((step) => (
                   <div key={`${step.label}-${step.detail}`} className="text-[12px] leading-[1.45]">
-                    <span className={step.status === 'needs-confirmation' ? 'text-amber-200' : 'text-emerald-300'}>
-                      {step.status === 'needs-confirmation' ? '확인' : '준비'}
+                    <span className={snapsStepBadge(step.status).className}>
+                      {snapsStepBadge(step.status).label}
                     </span>
                     <span className="mx-[6px] text-textItemBlur">/</span>
                     <span>{step.label}</span>
@@ -2432,6 +2665,15 @@ export function SnapsWorkspace() {
                       className="rounded-[8px] !h-[34px]"
                     >
                       쇼츠 작업
+                    </Button>
+                  )}
+                  {!!agentResult.cardNews && (
+                    <Button
+                      secondary
+                      onClick={sendAgentCardNewsToMedia}
+                      className="rounded-[8px] !h-[34px]"
+                    >
+                      카드뉴스 작업
                     </Button>
                   )}
                   <Button
@@ -2492,20 +2734,8 @@ export function SnapsWorkspace() {
                     >
                       <div className="flex items-center justify-between gap-[6px]">
                         <span className="font-[700]">{item.label}</span>
-                        <span
-                          className={clsx(
-                            item.status === 'ready'
-                              ? 'text-emerald-300'
-                              : item.status === 'manual'
-                              ? 'text-sky-200'
-                              : 'text-amber-200'
-                          )}
-                        >
-                          {item.status === 'ready'
-                            ? '준비'
-                            : item.status === 'manual'
-                            ? '수동'
-                            : '확인'}
+                        <span className={snapsStepBadge(item.status).className}>
+                          {snapsStepBadge(item.status).label}
                         </span>
                       </div>
                       <div className="mt-[5px] text-textItemBlur">{item.detail}</div>
@@ -2573,20 +2803,8 @@ export function SnapsWorkspace() {
                     >
                       <div className="flex items-center justify-between gap-[6px]">
                         <span className="font-[700]">{item.label}</span>
-                        <span
-                          className={clsx(
-                            item.status === 'ready'
-                              ? 'text-emerald-300'
-                              : item.status === 'manual'
-                              ? 'text-sky-200'
-                              : 'text-amber-200'
-                          )}
-                        >
-                          {item.status === 'ready'
-                            ? '준비'
-                            : item.status === 'manual'
-                            ? '수동'
-                            : '확인'}
+                        <span className={snapsStepBadge(item.status).className}>
+                          {snapsStepBadge(item.status).label}
                         </span>
                       </div>
                       <div className="mt-[5px] text-textItemBlur">
@@ -2739,6 +2957,7 @@ export function SnapsWorkspace() {
             </Button>
           </div>
           <div className="grid grid-cols-4 maxMedia:grid-cols-1 gap-[8px]">
+            {listLoadError('agentTasks')}
             {agentTasks.map((task) => (
               <div
                 key={task.id}
@@ -2848,12 +3067,12 @@ export function SnapsWorkspace() {
             <div
               className={clsx(
                 'text-[11px] px-[8px] py-[4px] rounded-[999px]',
-                result?.provider === 'ollama'
+                modelAnswered(result?.provider)
                   ? 'bg-emerald-500/15 text-emerald-300'
                   : 'bg-amber-500/15 text-amber-300'
               )}
             >
-              {result ? `${result.provider} · ${result.model}` : '준비됨'}
+              {result ? `${engineLabel(result.provider)} · ${result.model}` : '준비됨'}
             </div>
           </div>
 
@@ -2881,6 +3100,7 @@ export function SnapsWorkspace() {
             placeholder="주제 / 캠페인"
           />
 
+          {listLoadError('sourceLibrary')}
           {!!sourceLibrary.length && (
             <div className="grid grid-cols-[1fr_72px_96px] maxMedia:grid-cols-1 gap-[8px]">
               <select
@@ -2966,7 +3186,11 @@ export function SnapsWorkspace() {
             RAG 스타일 예시 사용
           </label>
 
-          {selectedPlatforms.includes('naver-cafe') && (
+          {snapsShowNaverCafeFields({
+            selectedPlatforms,
+            variants: result?.variants,
+            connectedPlatforms: Object.keys(connectedByPlatform),
+          }) && (
             <div className="grid grid-cols-2 gap-[8px]">
               <input
                 value={naverCafeClubId}
@@ -3020,6 +3244,24 @@ export function SnapsWorkspace() {
               {scheduleType === 'schedule' ? '예약 생성' : '초안 생성'}
             </Button>
           </div>
+
+          {!!scheduleWarnings.length && (
+            <div className="rounded-[8px] border border-amber-500/30 bg-amber-500/10 px-[12px] py-[10px] text-[12px] leading-[1.5] text-amber-200 flex flex-col gap-[4px]">
+              {/* The builder emits one warning per skipped variant plus a
+                  closing summary, so a run over every connected platform can
+                  produce more than a dozen. Capping the list at five is fine;
+                  dropping the rest without saying so is not - the operator
+                  reads five lines and assumes that was all of it. */}
+              {scheduleWarnings.slice(0, 5).map((warning) => (
+                <div key={warning}>{warning}</div>
+              ))}
+              {scheduleWarnings.length > 5 && (
+                <div className="opacity-70">
+                  외 {scheduleWarnings.length - 5}개의 경고가 더 있습니다.
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="border-t border-newBorder pt-[14px] flex flex-col gap-[10px]">
             <div className="text-[14px] font-[700]">RAG 스타일</div>
@@ -3082,7 +3324,9 @@ export function SnapsWorkspace() {
                       <span>
                         {example.platform}
                         {typeof example.score === 'number'
-                          ? ` · ${example.score.toFixed(2)}`
+                          ? ` · ${
+                              example.matchedBy === 'keyword' ? '키워드 일치' : '유사도'
+                            } ${example.score.toFixed(2)}`
                           : ''}
                       </span>
                       <button
@@ -3095,6 +3339,7 @@ export function SnapsWorkspace() {
                     <div className="line-clamp-2">{example.content}</div>
                   </div>
                 ))}
+              {listLoadError('styleExamples')}
               {!styleExamples.length && !styleSearchResult.length && (
                 <div className="text-textItemBlur">저장된 스타일 예시가 없습니다.</div>
               )}
@@ -3228,8 +3473,21 @@ export function SnapsWorkspace() {
           )}
 
           {!!result?.warnings?.length && (
-            <div className="rounded-[8px] border border-amber-500/30 bg-amber-500/10 p-[12px] text-[12px] text-amber-200">
-              {result.warnings[0]}
+            <div className="rounded-[8px] border border-amber-500/30 bg-amber-500/10 p-[12px] text-[12px] text-amber-200 flex flex-col gap-[4px]">
+              {/* normalizeVariants() pushes one warning per platform the
+                  model skipped, so a transform over ten channels where it
+                  answered for one produces nine. Rendering warnings[0] alone
+                  told the operator about one platform and never that the other
+                  eight variants are template output rather than generated
+                  copy. */}
+              {result.warnings.slice(0, 5).map((warning) => (
+                <div key={warning}>{warning}</div>
+              ))}
+              {result.warnings.length > 5 && (
+                <div className="opacity-70">
+                  외 {result.warnings.length - 5}개의 경고가 더 있습니다.
+                </div>
+              )}
             </div>
           )}
         </section>
@@ -3272,6 +3530,7 @@ export function SnapsWorkspace() {
               placeholder="게시물 ID"
             />
           </div>
+          {listLoadError('reportHistory')}
           {!!reportHistory.length && (
             <div className="grid grid-cols-[1fr_72px] gap-[8px]">
               <select
@@ -3352,6 +3611,14 @@ export function SnapsWorkspace() {
                     {reportResult.warnings.slice(0, 5).map((warning) => (
                       <div key={warning}>{warning}</div>
                     ))}
+                    {/* The other two warning panels on this page say what they
+                        dropped; this one did not, so a report built from two of
+                        ten channels could show five lines and read as complete. */}
+                    {reportResult.warnings.length > 5 && (
+                      <div className="opacity-70">
+                        외 {reportResult.warnings.length - 5}개의 경고가 더 있습니다.
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -3374,6 +3641,14 @@ export function SnapsWorkspace() {
                   </div>
                 </div>
               )}
+              {!!reportResult.periodStart && (
+                <div className="text-[11px] text-textItemBlur">
+                  집계 기간 {formatLocalDate(reportResult.periodStart)}
+                  {reportResult.periodEnd
+                    ? ` ~ ${formatLocalDate(reportResult.periodEnd)}`
+                    : ''}
+                </div>
+              )}
               {!!reportResult.trends?.length && (
                 <div className="grid grid-cols-2 gap-[8px]">
                   {reportResult.trends.slice(0, 6).map((trend) => (
@@ -3384,7 +3659,13 @@ export function SnapsWorkspace() {
                       <div className="text-[11px] text-textItemBlur">{trend.platform}</div>
                       <div className="text-[12px] font-[700]">{trend.metricKey}</div>
                       <div className="mt-[4px] text-[11px] text-textItemBlur">
-                        {trend.firstValue} {'->'} {trend.lastValue} ({trend.delta})
+                        {trend.firstValue} {'->'} {trend.lastValue} ({trend.delta}
+                        {typeof trend.deltaRate === 'number'
+                          ? `, ${trend.deltaRate > 0 ? '+' : ''}${Math.round(
+                              trend.deltaRate * 100
+                            )}%`
+                          : ''}
+                        )
                       </div>
                     </div>
                   ))}
@@ -3596,6 +3877,15 @@ export function SnapsWorkspace() {
                   </div>
                 ))}
               </div>
+              {(feedbackView.conversionSignals?.length || 0) > 4 && (
+                <div className="text-[11px] text-textItemBlur">
+                  {/* Seven signals exist and four are shown. They are sorted by
+                      priority then count, so the top four are the ones to act
+                      on - but the operator should know the list was cut. */}
+                  전환 신호 {feedbackView.conversionSignals?.length}개 중 우선순위 상위 4개만
+                  표시합니다.
+                </div>
+              )}
               {!!feedbackView.conversionSignals?.length && (
                 <div className="grid grid-cols-2 maxMedia:grid-cols-1 gap-[8px]">
                   {feedbackView.conversionSignals.slice(0, 4).map((signal) => (
@@ -3672,6 +3962,7 @@ export function SnapsWorkspace() {
           </Button>
         </div>
         <div className="grid grid-cols-3 maxMedia:grid-cols-1 gap-[8px]">
+          {listLoadError('activity')}
           {activity.slice(0, 9).map((entry) => (
             <div
               key={entry.id}
@@ -3680,7 +3971,7 @@ export function SnapsWorkspace() {
               <div className="flex items-center justify-between gap-[8px]">
                 <span className="font-[700]">{entry.type}</span>
                 <span className="text-textItemBlur">
-                  {entry.createdAt?.slice(0, 16)?.replace('T', ' ')}
+                  {formatLocalDateTime(entry.createdAt)}
                 </span>
               </div>
               <div className="mt-[6px]">{entry.title}</div>

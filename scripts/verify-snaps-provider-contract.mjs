@@ -1,7 +1,9 @@
 import { existsSync, readFileSync, statSync } from 'node:fs';
 
 function read(path) {
-  return readFileSync(path, 'utf8');
+  // Normalize line endings so multi-line assertions below (which are written
+  // with \n) also match files checked out with CRLF on Windows.
+  return readFileSync(path, 'utf8').replace(/\r\n/g, '\n');
 }
 
 function fail(message) {
@@ -69,15 +71,36 @@ expectContains(manager, 'new NaverCafeProvider()', 'Naver Cafe manager registrat
 expectContains(showAllProviders, 'NaverCafeProvider', 'Naver Cafe frontend provider import');
 expectContains(showAllProviders, "identifier: 'naver-cafe'", 'Naver Cafe frontend provider identifier');
 expectContains(frontendProvider, 'NaverCafeDto', 'Naver Cafe frontend DTO binding');
+// The labels pass through the translation layer like every other provider's,
+// so the English text here is the fallback and the Korean lives in the ko
+// locale. Both halves are checked: a key with no translation would show
+// English to a Korean operator and still pass a check on the fallback alone.
 expectContains(frontendProvider, 'Cafe ID', 'Naver Cafe club field label');
 expectContains(frontendProvider, 'Menu ID', 'Naver Cafe menu field label');
+expectContains(frontendProvider, 'useT', 'Naver Cafe settings use the translation layer');
+const koTranslations = JSON.parse(
+  readFileSync('libraries/react-shared-libraries/src/translation/locales/ko/translation.json', 'utf8')
+);
+for (const key of [
+  'naver_cafe_club_id',
+  'naver_cafe_menu_id',
+  'naver_cafe_subject',
+  'naver_cafe_category',
+]) {
+  if (!frontendProvider.includes(key)) {
+    throw new Error(`Naver Cafe settings no longer use the ${key} translation key`);
+  }
+  if (!koTranslations[key]) {
+    throw new Error(`ko translation is missing ${key}, so the label falls back to English`);
+  }
+}
 expectContains(frontendProvider, 'Category (optional)', 'Naver Cafe category field label');
 expectContains(frontendProvider, 'maximumCharacters: 10000', 'Naver Cafe frontend max length');
 expectContains(highOrderProvider, "identifier ===\n                        'naver-cafe'", 'Naver Cafe SVG icon branch');
 expectContains(highOrderProvider, '/icons/platforms/naver-cafe.svg', 'Naver Cafe SVG icon path');
 
 expectContains(scheduleBuilder, "platform !== 'naver-cafe'", 'Naver Cafe special scheduling branch');
-expectContains(scheduleBuilder, 'Naver Cafe scheduling requires clubId and menuId settings', 'Naver Cafe missing settings warning');
+expectContains(scheduleBuilder, '예약에는 clubId와 menuId 설정이 필요합니다', 'Naver Cafe missing settings warning');
 expectContains(scheduleBuilder, "__type: 'naver-cafe'", 'Naver Cafe schedule __type');
 expectContains(scheduleBuilder, "subject: subject.length >= 2 ? subject : 'snaps 게시글'", 'Naver Cafe subject fallback');
 

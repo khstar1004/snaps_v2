@@ -10,7 +10,11 @@
       "sourcePlatform": "newsletter",
       "topic": "bio industry weekly brief",
       "tone": "한국 나노 인플루언서 스타일",
-      "tags": ["bio", "newsletter", "weekly"]
+      "tags": [
+        "bio",
+        "newsletter",
+        "weekly"
+      ]
     }
   ],
   "styleExamples": [
@@ -107,6 +111,101 @@
         "generatedAt": "2026-05-05T00:00:00.000Z"
       },
       "createdAt": "2026-05-05T00:00:00.000Z"
+    }
+  ],
+  "agentTasks": [
+    {
+      "id": "demo-agent-task-1",
+      "title": "환절기 건강 카드뉴스 예약",
+      "command": "환절기 건강 주제로 카드뉴스 만들어서 인스타그램에 올려줘",
+      "status": "requires_confirmation",
+      "progress": 60,
+      "platformCount": 1,
+      "shortVideo": false,
+      "favorite": false,
+      "createdAt": "2026-09-01T00:30:00.000Z",
+      "updatedAt": "2026-09-01T00:30:00.000Z",
+      "result": {
+        "provider": "ollama",
+        "plan": {
+          "command": "환절기 건강 주제로 카드뉴스 만들어서 인스타그램에 올려줘",
+          "intent": "prepare-and-confirm",
+          "sourceText": "환절기에는 일교차가 커지면서 면역력이 떨어지기 쉽습니다. 실내 습도를 50% 이상으로 유지하고 손을 자주 씻어 주세요.",
+          "tone": "한국 나노 인플루언서 스타일",
+          "targetPlatforms": [
+            "instagram"
+          ],
+          "shortVideoTargetPlatforms": [],
+          "includeCardNews": true,
+          "includeShortVideo": false,
+          "scheduleType": "draft",
+          "operatorSummary": [
+            "인스타그램 1개 채널",
+            "카드뉴스 포함"
+          ],
+          "missingInputs": [],
+          "confirmationChecklist": [
+            "채널과 시각을 확인하세요"
+          ],
+          "executionPlan": [
+            {
+              "label": "변환",
+              "status": "ready",
+              "checks": [
+                "채널별 길이 확인"
+              ],
+              "blockers": []
+            }
+          ]
+        },
+        "transform": {
+          "provider": "ollama",
+          "variants": [
+            {
+              "platform": "instagram",
+              "label": "Instagram",
+              "content": "환절기에는 일교차가 커지면서 면역력이 떨어지기 쉬워요. 실내 습도 50% 이상과 손 씻기부터 챙겨 보세요.",
+              "hashtags": [
+                "#환절기",
+                "#건강관리"
+              ],
+              "publishMode": "schedule"
+            }
+          ]
+        },
+        "operation": {
+          "headline": "확인 후 예약할 수 있습니다",
+          "progress": 60,
+          "progressSteps": [
+            {
+              "label": "계획",
+              "status": "ready"
+            },
+            {
+              "label": "변환",
+              "status": "ready"
+            },
+            {
+              "label": "확인",
+              "status": "needs-confirmation"
+            }
+          ],
+          "nextActions": [
+            "카드뉴스 작업대에서 덱을 확인하세요"
+          ],
+          "platformReadiness": [
+            {
+              "platform": "instagram",
+              "label": "Instagram",
+              "status": "ready",
+              "checks": [
+                "본문 길이 확인"
+              ],
+              "blockers": []
+            }
+          ]
+        }
+      }
     }
   ],
   "inboxItems": [

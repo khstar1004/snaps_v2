@@ -220,11 +220,19 @@ declared(env, 'NEXT_PUBLIC_POSTIZ_OAUTH_LOGO_URL', '.env.example NEXT_PUBLIC_POS
 
 declared(env, 'NAVER_CLIENT_ID', '.env.example NAVER_CLIENT_ID');
 declared(env, 'NAVER_CLIENT_SECRET', '.env.example NAVER_CLIENT_SECRET');
+declared(env, 'PIXELLE_VIDEO_URL', '.env.example PIXELLE_VIDEO_URL');
+declared(env, 'SHORTS_MAKER_URL', '.env.example SHORTS_MAKER_URL');
+// PIXELLE_VIDEO_URL graduated from a commented placeholder to an active default
+// (it points at the snaps-pixelle-video docker service), so it is asserted as a
+// real declared var below alongside SHORTS_MAKER_URL rather than as a comment.
 for (const needle of [
-  '# PIXELLE_VIDEO_URL=',
   '# SNAPS_PIXELLE_CONFIRM=',
   '# SNAPS_PIXELLE_SMOKE_ID=',
-  '# SNAPS_INBOX_CLEAR_CONFIRM=',
+  '# SNAPS_PIXELLE_PLATFORM=',
+  '# SNAPS_PIXELLE_DURATION=',
+  '# SNAPS_PIXELLE_SOURCE_TEXT=',
+  // The one that costs money, and the one that was missing.
+  '# SNAPS_DEEPSEEK_CONFIRM=',
   '# NAVER_CAFE_ACCESS_TOKEN=',
   '# NAVER_CAFE_CLUB_ID=',
   '# NAVER_CAFE_MENU_ID=',
@@ -235,9 +243,17 @@ for (const needle of [
   expectContains(read('.env.example'), needle, `.env.example ${needle}`);
 }
 for (const needle of [
-  "PIXELLE_VIDEO_URL: ''",
   "NAVER_CLIENT_ID: ''",
   "NAVER_CLIENT_SECRET: ''",
+]) {
+  expectContains(compose, needle, `docker-compose.yaml ${needle}`);
+}
+
+// The vendored engines are wired to their in-network docker services rather
+// than left blank, so assert they point at those service names.
+for (const needle of [
+  "PIXELLE_VIDEO_URL: 'http://snaps-pixelle-video:8000'",
+  "SHORTS_MAKER_URL: 'http://snaps-shorts-maker:4100'",
 ]) {
   expectContains(compose, needle, `docker-compose.yaml ${needle}`);
 }

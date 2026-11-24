@@ -7,7 +7,24 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3-pip \
     bash \
     nginx \
+    fontconfig \
+    fonts-noto-cjk \
+    fonts-noto-color-emoji \
 && rm -rf /var/lib/apt/lists/*
+
+# Load-bearing for card news: the SVG renderer only names the font family and
+# lets fontconfig resolve it (librsvg inside sharp ignores @font-face, verified
+# by measurement - see docs/snaps-card-news.md). Without these fonts registered
+# here, every card news slide renders Korean text as tofu boxes.
+#
+# Pretendard is the house font and covers Latin, Hangul and kana, but reading
+# its cmap directly shows it carries no Han ideographs and no emoji. This image
+# installs no other font, so a Xiaohongshu deck - Chinese is one of the ten
+# channels snaps renders for - and any caption carrying an emoji came out as
+# tofu boxes. fonts-noto-cjk fills in Han and fonts-noto-color-emoji the emoji,
+# together roughly 70MB, which is the price of the text being legible at all.
+COPY libraries/nestjs-libraries/src/snaps/cardnews/assets/fonts/*.otf /usr/share/fonts/truetype/pretendard/
+RUN fc-cache -f
 
 RUN addgroup --system www \
  && adduser --system --ingroup www --home /www --shell /usr/sbin/nologin www \

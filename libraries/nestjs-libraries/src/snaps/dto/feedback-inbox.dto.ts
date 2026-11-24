@@ -30,104 +30,113 @@ export const snapsFeedbackSentimentInputs = [
 ] as const;
 
 export class SnapsFeedbackInputDto {
-  @IsIn(snapsTargetPlatforms)
+  @IsIn(snapsTargetPlatforms, { message: '$property에 지원하지 않는 값이 있습니다. 가능한 값: $constraint1' })
   platform: SnapsTargetPlatform;
 
-  @IsString()
-  @MinLength(1)
+  @IsString({ message: '$property은(는) 문자열이어야 합니다.' })
+  @MinLength(1, { message: '$property은(는) 최소 $constraint1자 이상이어야 합니다.' })
   content: string;
 
   @IsOptional()
-  @IsString()
+  @IsString({ message: '$property은(는) 문자열이어야 합니다.' })
   postId?: string;
 
   @IsOptional()
-  @IsString()
+  @IsString({ message: '$property은(는) 문자열이어야 합니다.' })
   author?: string;
 
   @IsOptional()
-  @IsString()
+  @IsString({ message: '$property은(는) 문자열이어야 합니다.' })
   sourceUrl?: string;
 
   @IsOptional()
-  @IsString()
+  @IsString({ message: '$property은(는) 문자열이어야 합니다.' })
   createdAt?: string;
 }
 
 export class SnapsFeedbackImportDto {
-  @IsArray()
+  @IsArray({ message: '$property은(는) 배열이어야 합니다.' })
   @ValidateNested({ each: true })
   @Type(() => SnapsFeedbackInputDto)
   items: SnapsFeedbackInputDto[];
 }
 
 export class SnapsFeedbackPostCommentSourceDto {
-  @IsString()
-  @MinLength(1)
+  @IsString({ message: '$property은(는) 문자열이어야 합니다.' })
+  @MinLength(1, { message: '$property은(는) 최소 $constraint1자 이상이어야 합니다.' })
   postId: string;
 
   @IsOptional()
-  @IsIn(snapsTargetPlatforms)
+  @IsIn(snapsTargetPlatforms, { message: '$property에 지원하지 않는 값이 있습니다. 가능한 값: $constraint1' })
   platform?: SnapsTargetPlatform;
 
   @IsOptional()
-  @IsString()
+  @IsString({ message: '$property은(는) 문자열이어야 합니다.' })
   sourceUrl?: string;
 }
 
 export class SnapsFeedbackImportPostCommentsDto {
-  @IsArray()
+  @IsArray({ message: '$property은(는) 배열이어야 합니다.' })
   @ValidateNested({ each: true })
   @Type(() => SnapsFeedbackPostCommentSourceDto)
   sources: SnapsFeedbackPostCommentSourceDto[];
 
   @IsOptional()
-  @IsIn(snapsTargetPlatforms)
+  @IsIn(snapsTargetPlatforms, { message: '$property에 지원하지 않는 값이 있습니다. 가능한 값: $constraint1' })
   defaultPlatform?: SnapsTargetPlatform;
 }
 
 export class SnapsFeedbackReplyDraftDto {
-  @IsString()
-  @MinLength(1)
+  @IsString({ message: '$property은(는) 문자열이어야 합니다.' })
+  @MinLength(1, { message: '$property은(는) 최소 $constraint1자 이상이어야 합니다.' })
   postId: string;
 
-  @IsString()
-  @MinLength(1)
+  @IsString({ message: '$property은(는) 문자열이어야 합니다.' })
+  @MinLength(1, { message: '$property은(는) 최소 $constraint1자 이상이어야 합니다.' })
   reply: string;
 }
 
 export class SnapsFeedbackPublishReplyDto {
-  @IsString()
-  @MinLength(1)
+  @IsString({ message: '$property은(는) 문자열이어야 합니다.' })
+  @MinLength(1, { message: '$property은(는) 최소 $constraint1자 이상이어야 합니다.' })
   integrationId: string;
 
-  @IsString()
-  @MinLength(1)
+  @IsString({ message: '$property은(는) 문자열이어야 합니다.' })
+  @MinLength(1, { message: '$property은(는) 최소 $constraint1자 이상이어야 합니다.' })
   platformPostId: string;
 
   @IsOptional()
-  @IsString()
+  @IsString({ message: '$property은(는) 문자열이어야 합니다.' })
   lastCommentId?: string;
 
-  @IsString()
-  @MinLength(1)
+  @IsString({ message: '$property은(는) 문자열이어야 합니다.' })
+  @MinLength(1, { message: '$property은(는) 최소 $constraint1자 이상이어야 합니다.' })
   reply: string;
 
   @IsOptional()
   settings?: Record<string, unknown>;
+
+  /**
+   * Publishing a reply posts to a connected channel immediately and cannot be
+   * undone, so the caller has to say the operator confirmed it. Draft and
+   * scheduled post creation already require this; the route that actually
+   * reaches the platform did not.
+   */
+  @IsOptional()
+  operatorConfirmed?: boolean;
 }
 
 export class SnapsFeedbackSummaryRequestDto {
   @IsOptional()
-  @IsIn(snapsTargetPlatforms)
+  @IsIn(snapsTargetPlatforms, { message: '$property에 지원하지 않는 값이 있습니다. 가능한 값: $constraint1' })
   platform?: SnapsTargetPlatform;
 
   @IsOptional()
-  @IsIn(snapsFeedbackSentimentInputs)
+  @IsIn(snapsFeedbackSentimentInputs, { message: '$property에 지원하지 않는 값이 있습니다. 가능한 값: $constraint1' })
   sentiment?: SnapsFeedbackSentiment | 'positive' | 'negative';
 
   @IsOptional()
-  @IsArray()
+  @IsArray({ message: '$property은(는) 배열이어야 합니다.' })
   @ValidateNested({ each: true })
   @Type(() => SnapsFeedbackInputDto)
   items?: SnapsFeedbackInputDto[];

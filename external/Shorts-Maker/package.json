@@ -1,0 +1,48 @@
+{
+  "name": "json-shorts-studio",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev -p 4100",
+    "build": "next build",
+    "start": "next start",
+    "clean": "node ./scripts/clean-local-artifacts.mjs",
+    "lint": "npx tsc --noEmit",
+    "lint:types": "npx tsc --noEmit",
+    "test": "node ./scripts/run-node-tests.mjs",
+    "docs:refresh": "node ./scripts/generate-developer-docs.mjs",
+    "docs:check": "node ./scripts/check-generated-docs.mjs",
+    "local:postgres:setup": "node ./scripts/setup-local-postgres.mjs",
+    "local:postgres:sync": "node ./scripts/sync-supabase-to-local.mjs",
+    "auth:bootstrap-admin": "node --experimental-strip-types --loader ./scripts/ts-paths-loader.mjs ./scripts/bootstrap-auth-admin.ts",
+    "render:smoke": "node --experimental-strip-types --loader ./scripts/ts-paths-loader.mjs ./scripts/render-native-smoke.ts",
+    "test:codex-local": "node --experimental-strip-types --test --loader ./scripts/ts-paths-loader.mjs ./scripts/test-codex-local-paths.ts",
+    "smoke:deepseek": "node --experimental-strip-types --loader ./scripts/ts-paths-loader.mjs ./scripts/smoke-deepseek.ts"
+  },
+  "dependencies": {
+    "@ffmpeg/ffmpeg": "^0.12.15",
+    "@ffmpeg/util": "^0.12.2",
+    "@remotion/bundler": "^4.0.434",
+    "@remotion/player": "^4.0.434",
+    "@remotion/renderer": "^4.0.434",
+    "@types/pg": "^8.20.0",
+    "@upstash/qstash": "^2.9.0",
+    "@upstash/redis": "^1.36.2",
+    "@vercel/blob": "^2.2.0",
+    "googleapis": "^144.0.0",
+    "html2canvas": "^1.4.1",
+    "next": "16.1.6",
+    "pg": "^8.21.0",
+    "react": "19.0.0",
+    "react-dom": "19.0.0",
+    "remotion": "^4.0.434",
+    "undici": "^6.27.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/react": "^19.0.2",
+    "@types/react-dom": "^19.0.2",
+    "typescript": "^5.7.2"
+  }
+}

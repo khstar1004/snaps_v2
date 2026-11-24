@@ -1,8 +1,10 @@
 # snaps integration notes
 
 - Upstream repository: https://github.com/AIDC-AI/Pixelle-Video
-- Cloned commit: `fd88c62363ccb57ba0e7d4fdb8ba465e653562b7`
+- Synced commit: `848b054e4fae40dabc62ec58e960b573e83793ac` (main, synced 2026-09-09; previously pinned at `fd88c62`, 37 commits behind)
 - Integration style: isolated external engine, called from snaps through `PIXELLE_VIDEO_URL`
+- Sync method: 3-way git merge (common ancestor `fd88c62`, ours = snaps-patched tree, theirs = upstream `main`) so future syncs can repeat the same process instead of a manual diff. `README.md`/`README_EN.md` conflicts were resolved by keeping the snaps-localized versions; `web/i18n/locales/zh_CN.json` stays deleted (snaps only ships `ko_KR.json`); trivial trailing-whitespace conflicts in `web/pipelines/asset_based.py`/`digital_human.py` were resolved as no-ops. All 4 snaps-only files below were untouched by upstream and merged with zero conflicts.
+- Notable upstream pickup: `pixelle_video/config/schema.py` now has a first-class `api_providers.deepseek` config block (see `config.example.yaml`), so Pixelle-Video's own script/storyboard LLM step can call DeepSeek directly, independent of snaps' own `AI_PROVIDER=deepseek` switch in the NestJS backend.
 
 ## Local runtime
 

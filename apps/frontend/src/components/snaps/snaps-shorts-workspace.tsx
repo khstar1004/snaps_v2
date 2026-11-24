@@ -1,12 +1,34 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import {
+  ConnectedIntegration,
+  confirmOperatorAction,
+  defaultPublishDate,
+  snapsPublishDateProblem,
+} from '@gitroom/frontend/components/snaps/snaps-workspace.shared';
+import {
+  SnapsShortsScript,
+  SnapsStoryboardScene,
+  SnapsVideoResult,
+  snapsShortsHandoffKey,
+  readSnapsShortsMakerScript,
+  readSnapsShortsPoll,
+  SnapsShortsMakerScriptAnswer,
+  snapsShortsBadges,
+  SnapsShortsBadgeTone,
+} from '@gitroom/frontend/components/snaps/snaps-shorts.shared';
+import {
+  readSnapsError,
+  withSnapsJsonHeaders,
+} from '@gitroom/frontend/components/snaps/snaps-fetch.helpers';
 import clsx from 'clsx';
 import { useRouter } from 'next/navigation';
 import { Button } from '@gitroom/react/form/button';
 import { useToaster } from '@gitroom/react/toaster/toaster';
 import { useFetch } from '@gitroom/helpers/utils/custom.fetch';
 import { useIntegrationList } from '@gitroom/frontend/components/launches/helpers/use.integration.list';
+import { describeSnapsAttachResult } from '@gitroom/frontend/components/snaps/snaps-workspace.shared';
 
 const videoTargetPlatforms = [
   { id: 'instagram', label: 'Instagram Reels' },
@@ -15,59 +37,17 @@ const videoTargetPlatforms = [
 ] as const;
 
 type VideoTargetPlatform = (typeof videoTargetPlatforms)[number]['id'];
-const videoTargetPlatformIds = videoTargetPlatforms.map((platform) => platform.id);
+const videoTargetPlatformIds = videoTargetPlatforms.map(
+  (platform) => platform.id
+);
 type SnapsVideoMode = 'html_render' | 'ai_generation';
-
-type ConnectedIntegration = {
-  id: string;
-  name?: string;
-  identifier?: string;
-  providerIdentifier?: string;
-  disabled?: boolean;
-};
-
-type SnapsStoryboardScene = {
-  scene: string | number;
-  startSecond?: number;
-  endSecond?: number;
-  visual?: string;
-  overlayText?: string;
-  narration?: string;
-  pixellePrompt?: string;
-};
-
-type SnapsShortsScript = {
-  title?: string;
-  hook?: string;
-  narration?: string;
-  caption?: string;
-  coreSummary?: string;
-  storyboard?: SnapsStoryboardScene[];
-  uploadMetadata?: {
-    title?: string;
-    description?: string;
-    hashtags?: string[];
-  };
-};
-
-type SnapsVideoResult = SnapsShortsScript & {
-  script?: SnapsShortsScript;
-  status?: string;
-  jobId?: string;
-  message?: string;
-  progress?: {
-    current?: number;
-    total?: number;
-    percentage?: number;
-    message?: string;
-  };
-};
 
 type SnapsShortsHealth = {
   ok?: boolean;
   error?: string;
   ollama?: {
     ok?: boolean;
+    provider?: 'ollama' | 'deepseek';
     chatModel?: string;
     chatModelAvailable?: boolean;
   };
@@ -82,11 +62,24 @@ type SnapsShortsHealth = {
       url?: string;
       message?: string;
     };
-    workflows?: Record<string, {
-      key?: string;
-      exists?: boolean;
-      path?: string;
-    }>;
+    workflows?: Record<
+      string,
+      {
+        key?: string;
+        exists?: boolean;
+        path?: string;
+      }
+    >;
+  };
+  shortsMaker?: {
+    configured?: boolean;
+    ok?: boolean;
+    reachable?: boolean;
+    authPassed?: boolean;
+    url?: string;
+    status?: number;
+    message?: string;
+    error?: string;
   };
 };
 
@@ -119,14 +112,15 @@ const videoStatusClassNames: Record<VideoWorkStatus, string> = {
   development: 'bg-amber-500/15 text-amber-200',
 };
 
-const defaultPublishDate = () => {
-  const date = new Date(Date.now() + 60 * 60 * 1000);
-  return new Date(date.getTime() - date.getTimezoneOffset() * 60000)
-    .toISOString()
-    .slice(0, 16);
+/**
+ * The only place a badge tone becomes a colour. Severity is decided in
+ * snapsShortsBadges, so the words and the colour cannot disagree.
+ */
+const SNAPS_SHORTS_BADGE_TONE_CLASS: Record<SnapsShortsBadgeTone, string> = {
+  ok: 'bg-emerald-500/15 text-emerald-200',
+  warn: 'bg-amber-500/15 text-amber-200',
+  bad: 'bg-red-500/15 text-red-200',
 };
-
-const snapsShortsHandoffKey = 'snaps.shorts.handoff.v1';
 
 type SnapsShortsHandoff = {
   sourceText?: unknown;
@@ -137,86 +131,6 @@ type SnapsShortsHandoff = {
   publishDate?: unknown;
   videoResult?: unknown;
 };
-
-const withSnapsJsonHeaders = (init?: RequestInit): RequestInit => {
-  const headers = new Headers(init?.headers);
-  if (init?.body && !headers.has('Content-Type')) {
-    headers.set('Content-Type', 'application/json');
-  }
-  const normalizedHeaders: Record<string, string> = {};
-  headers.forEach((value, key) => {
-    normalizedHeaders[key.toLowerCase() === 'content-type' ? 'Content-Type' : key] =
-      value;
-  });
-
-  return {
-    ...init,
-    headers: normalizedHeaders,
-  };
-};
-
-const extractSnapsErrorMessage = (value: unknown): string => {
-  if (typeof value === 'string') {
-    return value.trim();
-  }
-  if (!value || typeof value !== 'object') {
-    return '';
-  }
-
-  const record = value as Record<string, unknown>;
-  const candidates = [record.message, record.error, record.detail];
-  for (const candidate of candidates) {
-    if (typeof candidate === 'string' && candidate.trim()) {
-      return candidate.trim();
-    }
-    if (Array.isArray(candidate)) {
-      const messages = candidate
-        .filter((item): item is string => typeof item === 'string' && !!item.trim())
-        .map((item) => item.trim());
-      if (messages.length) {
-        return messages.join('\n');
-      }
-    }
-  }
-
-  return '';
-};
-
-const readSnapsError = async (
-  response: Response,
-  fallback = `snaps 요청 실패 (${response.status})`
-) => {
-  let raw = '';
-  try {
-    raw = await response.text();
-  } catch {
-    return fallback;
-  }
-
-  const trimmed = raw.trim();
-  if (!trimmed) {
-    return fallback;
-  }
-
-  try {
-    const parsed: unknown = JSON.parse(trimmed);
-    const message = extractSnapsErrorMessage(parsed);
-    if (message) {
-      return message;
-    }
-  } catch {
-    // Non-JSON error bodies are handled below.
-  }
-
-  if (trimmed.startsWith('<')) {
-    return `${fallback}: ${response.statusText || '서버가 HTML 오류 응답을 반환했습니다.'}`;
-  }
-
-  return trimmed.slice(0, 500);
-};
-
-const confirmOperatorAction = (message: string) =>
-  typeof window !== 'undefined' && window.confirm(message);
 
 const extractVideoUrl = (value: unknown): string => {
   if (!value || typeof value !== 'object') {
@@ -266,18 +180,36 @@ export function SnapsShortsWorkspace() {
     apiFetch(url, withSnapsJsonHeaders(init));
   const { data: integrations = [] } = useIntegrationList();
   const [sourceText, setSourceText] = useState('');
+  // Shorts-Maker's topic-to-script step. The render side of that service needs
+  // a payload only its own pipeline can assemble (see the adapter comment in
+  // shorts-maker-client.service.ts), so this surfaces the one call that is
+  // fully contracted and feeds its answer into the source box the rest of this
+  // page already works from.
+  const [shortsMakerTopic, setShortsMakerTopic] = useState('');
+  const [shortsMakerMode, setShortsMakerMode] = useState<'normal' | 'dialogue'>(
+    'normal'
+  );
+  const [shortsMakerLoading, setShortsMakerLoading] = useState(false);
+  const [shortsMakerUsage, setShortsMakerUsage] = useState('');
   const [durationSeconds, setDurationSeconds] = useState(45);
-  const [scriptPlatform, setScriptPlatform] = useState<VideoTargetPlatform>('youtube');
-  const [targetPlatforms, setTargetPlatforms] = useState<VideoTargetPlatform[]>([
-    'instagram',
-    'youtube',
-    'tiktok',
-  ]);
-  const [scheduleType, setScheduleType] = useState<'draft' | 'schedule'>('draft');
+  const [scriptPlatform, setScriptPlatform] =
+    useState<VideoTargetPlatform>('youtube');
+  const [targetPlatforms, setTargetPlatforms] = useState<VideoTargetPlatform[]>(
+    ['instagram', 'youtube', 'tiktok']
+  );
+  const [scheduleType, setScheduleType] = useState<'draft' | 'schedule'>(
+    'draft'
+  );
   const [publishDate, setPublishDate] = useState(defaultPublishDate);
   const [videoResult, setVideoResult] = useState<SnapsVideoResult | null>(null);
   const [videoLoading, setVideoLoading] = useState(false);
   const [videoDrafting, setVideoDrafting] = useState(false);
+  // Warnings the publishing payload builder returned, e.g. an assist platform
+  // that cannot be auto-published or settings a provider rejected.
+  // Named for the schedule step, then fed only by it - so the script step's
+  // own warnings had nowhere to go and the operator was never told the
+  // source had been cut. Each step reports into the same box now.
+  const [stepWarnings, setStepWarnings] = useState<string[]>([]);
   const [videoUrl, setVideoUrl] = useState('');
   const [videoThumbnail, setVideoThumbnail] = useState('');
   const [saveVideoToMediaLibrary, setSaveVideoToMediaLibrary] = useState(true);
@@ -286,15 +218,22 @@ export function SnapsShortsWorkspace() {
   const [currentJobId, setCurrentJobId] = useState('');
   const [statusCheckedAt, setStatusCheckedAt] = useState('');
   const [health, setHealth] = useState<SnapsShortsHealth | null>(null);
+  // Separate from `health` being null, which also means "not loaded yet". The
+  // badges below fall through to their emerald branch when health is absent,
+  // so a failed fetch painted a green "LLM 확인중" and stayed that way.
+  const [healthError, setHealthError] = useState('');
 
   const connectedByPlatform = useMemo(() => {
-    return (integrations as ConnectedIntegration[]).reduce((all, integration) => {
-      const key = integration.identifier || integration.providerIdentifier;
-      if (key && !all[key] && !integration.disabled) {
-        all[key] = integration;
-      }
-      return all;
-    }, {} as Record<string, ConnectedIntegration>);
+    return (integrations as ConnectedIntegration[]).reduce(
+      (all, integration) => {
+        const key = integration.identifier || integration.providerIdentifier;
+        if (key && !all[key] && !integration.disabled) {
+          all[key] = integration;
+        }
+        return all;
+      },
+      {} as Record<string, ConnectedIntegration>
+    );
   }, [integrations]);
 
   const shortsScript = useMemo(() => {
@@ -302,7 +241,9 @@ export function SnapsShortsWorkspace() {
   }, [videoResult]);
 
   const connectedTargetPlatforms = useMemo(() => {
-    return targetPlatforms.filter((platform) => connectedByPlatform[platform]?.id);
+    return targetPlatforms.filter(
+      (platform) => connectedByPlatform[platform]?.id
+    );
   }, [connectedByPlatform, targetPlatforms]);
 
   const sourceMetrics = useMemo(() => {
@@ -351,15 +292,72 @@ export function SnapsShortsWorkspace() {
 
   const canAttachVideo = !!videoUrl.trim() && !!connectedTargetPlatforms.length;
 
+  const generateShortsMakerScript = async () => {
+    const topic = shortsMakerTopic.trim();
+    if (!topic) {
+      toast.show('대본을 만들 주제를 입력하세요.', 'warning');
+      return;
+    }
+    // The answer lands in the source box, so anything already typed there is
+    // about to be replaced. Every other action on this page that overwrites
+    // the operator's own work asks first.
+    if (
+      sourceText.trim() &&
+      !confirmOperatorAction(
+        '원문 상자에 입력한 내용을 Shorts-Maker 대본으로 바꿀까요?'
+      )
+    ) {
+      return;
+    }
+
+    setShortsMakerLoading(true);
+    try {
+      const response = await snapsFetch('/snaps/shorts-maker/topic-to-script', {
+        method: 'POST',
+        body: JSON.stringify({ topic, mode: shortsMakerMode }),
+      });
+      if (!response.ok) {
+        throw new Error(await readSnapsError(response));
+      }
+
+      // The route answers 200 for all three outcomes, so the body decides.
+      const outcome = readSnapsShortsMakerScript(
+        (await response.json()) as SnapsShortsMakerScriptAnswer
+      );
+      if (!outcome.script) {
+        setShortsMakerUsage('');
+        toast.show(outcome.message, 'warning');
+        return;
+      }
+
+      setSourceText(outcome.script);
+      setShortsMakerUsage(outcome.usage);
+      toast.show(outcome.message);
+    } catch (error) {
+      toast.show(
+        error instanceof Error
+          ? error.message
+          : 'Shorts-Maker 대본 생성에 실패했습니다.',
+        'warning'
+      );
+    } finally {
+      setShortsMakerLoading(false);
+    }
+  };
+
   const loadHealth = async () => {
     try {
       const response = await snapsFetch('/snaps/health');
       if (!response.ok) {
-        return;
+        throw new Error(await readSnapsError(response));
       }
       setHealth(await response.json());
-    } catch {
-      setHealth(null);
+      setHealthError('');
+    } catch (error) {
+      // The last good payload stays. A failed refresh is not evidence that the
+      // runtime went away, and clearing it sent every badge back to its neutral
+      // branch - which is the green one.
+      setHealthError(error instanceof Error ? error.message : String(error));
     }
   };
 
@@ -387,7 +385,9 @@ export function SnapsShortsWorkspace() {
 
       if (
         typeof handoff.scriptPlatform === 'string' &&
-        (videoTargetPlatformIds as readonly string[]).includes(handoff.scriptPlatform)
+        (videoTargetPlatformIds as readonly string[]).includes(
+          handoff.scriptPlatform
+        )
       ) {
         setScriptPlatform(handoff.scriptPlatform as VideoTargetPlatform);
       }
@@ -403,10 +403,16 @@ export function SnapsShortsWorkspace() {
         }
       }
 
-      if (handoff.scheduleType === 'draft' || handoff.scheduleType === 'schedule') {
+      if (
+        handoff.scheduleType === 'draft' ||
+        handoff.scheduleType === 'schedule'
+      ) {
         setScheduleType(handoff.scheduleType);
       }
-      if (typeof handoff.publishDate === 'string' && handoff.publishDate.trim()) {
+      if (
+        typeof handoff.publishDate === 'string' &&
+        handoff.publishDate.trim()
+      ) {
         setPublishDate(handoff.publishDate);
       }
       if (handoff.videoResult && typeof handoff.videoResult === 'object') {
@@ -430,48 +436,59 @@ export function SnapsShortsWorkspace() {
     });
   };
 
-  const pollVideoStatus = async (jobId: string, baseResult: SnapsVideoResult) => {
+  const pollVideoStatus = async (
+    jobId: string,
+    baseResult: SnapsVideoResult
+  ) => {
     setCurrentJobId(jobId);
     setVideoStatus('running');
     for (let attempt = 0; attempt < 120; attempt += 1) {
       await new Promise((resolve) => setTimeout(resolve, 5000));
-      const response = await snapsFetch(`/snaps/video/status/${encodeURIComponent(jobId)}`);
+      const response = await snapsFetch(
+        `/snaps/video/status/${encodeURIComponent(jobId)}`
+      );
       if (!response.ok) {
         throw new Error(await readSnapsError(response));
       }
       const statusResult = (await response.json()) as SnapsVideoResult;
-      const normalizedStatus =
-        statusResult.status === 'queued' ||
-        statusResult.status === 'running' ||
-        statusResult.status === 'completed' ||
-        statusResult.status === 'failed'
-          ? statusResult.status
-          : 'running';
-      setVideoStatus(normalizedStatus);
-      setStatusCheckedAt(new Date().toLocaleTimeString('ko-KR', {
-        hour: '2-digit',
-        minute: '2-digit',
-      }));
+      const foundVideoUrl = extractVideoUrl(statusResult);
+      const poll = readSnapsShortsPoll(statusResult.status, !!foundVideoUrl);
+      setVideoStatus(poll.status);
+      setStatusCheckedAt(
+        new Date().toLocaleTimeString('ko-KR', {
+          hour: '2-digit',
+          minute: '2-digit',
+        })
+      );
       setVideoResult({
         ...baseResult,
         ...statusResult,
         script: statusResult.script || baseResult.script,
       });
-      const foundVideoUrl = extractVideoUrl(statusResult);
       if (foundVideoUrl) {
         setVideoUrl(foundVideoUrl);
       }
-      if (statusResult.status === 'completed' || foundVideoUrl) {
-        setVideoStatus('completed');
+      if (poll.phase === 'completed') {
         toast.show('쇼츠 영상 생성이 완료됐습니다.');
         return;
       }
-      if (statusResult.status === 'failed') {
-        setVideoStatus('failed');
-        throw new Error(statusResult.message || '쇼츠 영상 생성에 실패했습니다.');
+      if (poll.phase === 'failed') {
+        throw new Error(
+          statusResult.message || '쇼츠 영상 생성에 실패했습니다.'
+        );
+      }
+      if (poll.phase === 'stopped') {
+        // Nothing is coming. Ten minutes of polling used to follow this.
+        throw new Error(
+          statusResult.message ||
+            '영상 작업 상태를 확인할 수 없습니다. Pixelle 설정을 확인하세요.'
+        );
       }
     }
-    toast.show('영상 생성 작업이 계속 진행 중입니다. 잠시 후 상태를 다시 확인하세요.', 'warning');
+    toast.show(
+      '영상 생성 작업이 계속 진행 중입니다. 잠시 후 상태를 다시 확인하세요.',
+      'warning'
+    );
   };
 
   const generateShorts = async (generateVideo: boolean) => {
@@ -502,7 +519,10 @@ export function SnapsShortsWorkspace() {
       return;
     }
 
-    if (generateVideo && !confirmOperatorAction('로컬 Pixelle 엔진에 쇼츠 생성 작업을 요청할까요?')) {
+    if (
+      generateVideo &&
+      !confirmOperatorAction('로컬 Pixelle 엔진에 쇼츠 생성 작업을 요청할까요?')
+    ) {
       return;
     }
 
@@ -528,6 +548,9 @@ export function SnapsShortsWorkspace() {
       }
       const data = await response.json();
       setVideoResult(data);
+      setStepWarnings(
+        Array.isArray(data?.warnings) ? (data.warnings as string[]) : []
+      );
       if (data?.jobId) {
         setCurrentJobId(data.jobId);
       }
@@ -541,7 +564,22 @@ export function SnapsShortsWorkspace() {
       } else if (!generateVideo) {
         setVideoStatus('script-ready');
       }
-      toast.show(generateVideo ? '로컬 Pixelle 쇼츠 작업을 시작했습니다.' : '쇼츠 대본을 생성했습니다.');
+      // The service degrades to a deterministic script when the model call
+      // fails or comes back without a storyboard, and answers 200 either way.
+      // Both outcomes used to be reported as '대본을 생성했습니다'.
+      const scriptProvider = (data?.script ?? data)?.provider;
+      if (scriptProvider === 'rule-fallback') {
+        toast.show(
+          'AI 생성에 실패해 기본 템플릿으로 쇼츠 대본을 만들었습니다. 내용을 확인하고 필요하면 다시 생성하세요.',
+          'warning'
+        );
+      } else {
+        toast.show(
+          generateVideo
+            ? '로컬 Pixelle 쇼츠 작업을 시작했습니다.'
+            : '쇼츠 대본을 생성했습니다.'
+        );
+      }
     } catch (error) {
       setVideoStatus('failed');
       toast.show(
@@ -562,7 +600,9 @@ export function SnapsShortsWorkspace() {
 
     setVideoLoading(true);
     try {
-      const response = await snapsFetch(`/snaps/video/status/${encodeURIComponent(jobId)}`);
+      const response = await snapsFetch(
+        `/snaps/video/status/${encodeURIComponent(jobId)}`
+      );
       if (!response.ok) {
         throw new Error(await readSnapsError(response));
       }
@@ -584,13 +624,17 @@ export function SnapsShortsWorkspace() {
       ) {
         setVideoStatus(statusResult.status);
       }
-      setStatusCheckedAt(new Date().toLocaleTimeString('ko-KR', {
-        hour: '2-digit',
-        minute: '2-digit',
-      }));
+      setStatusCheckedAt(
+        new Date().toLocaleTimeString('ko-KR', {
+          hour: '2-digit',
+          minute: '2-digit',
+        })
+      );
     } catch (error) {
       toast.show(
-        error instanceof Error ? error.message : '작업 상태 확인에 실패했습니다.',
+        error instanceof Error
+          ? error.message
+          : '작업 상태 확인에 실패했습니다.',
         'warning'
       );
     } finally {
@@ -605,7 +649,10 @@ export function SnapsShortsWorkspace() {
     }
 
     if (!connectedTargetPlatforms.length) {
-      toast.show('Instagram, YouTube, TikTok 중 연결된 채널이 필요합니다.', 'warning');
+      toast.show(
+        'Instagram, YouTube, TikTok 중 연결된 채널이 필요합니다.',
+        'warning'
+      );
       return;
     }
 
@@ -614,8 +661,11 @@ export function SnapsShortsWorkspace() {
       let publishDateIso: string | undefined;
       if (scheduleType === 'schedule') {
         const parsedPublishDate = new Date(publishDate);
-        if (Number.isNaN(parsedPublishDate.getTime())) {
-          toast.show('쇼츠 예약 시간을 입력하세요.', 'warning');
+        // Not only what Date cannot parse: a time that has already gone
+        // by is published immediately by the post workflow.
+        const problem = snapsPublishDateProblem(publishDate);
+        if (problem) {
+          toast.show(problem, 'warning');
           setVideoDrafting(false);
           return;
         }
@@ -637,7 +687,10 @@ export function SnapsShortsWorkspace() {
         body: JSON.stringify({
           videoUrl,
           thumbnail: videoThumbnail || undefined,
-          title: shortsScript?.uploadMetadata?.title || shortsScript?.title || 'snaps 쇼츠',
+          title:
+            shortsScript?.uploadMetadata?.title ||
+            shortsScript?.title ||
+            'snaps 쇼츠',
           caption:
             shortsScript?.caption ||
             shortsScript?.uploadMetadata?.description ||
@@ -659,16 +712,36 @@ export function SnapsShortsWorkspace() {
         throw new Error(await readSnapsError(response));
       }
 
-      await response.json();
-      toast.show(
-        scheduleType === 'schedule'
-          ? '쇼츠 영상을 연결된 채널 예약 게시물에 첨부했습니다.'
-          : '쇼츠 영상을 연결된 채널 초안에 첨부했습니다.'
+      // The response carries the created posts and the builder's warnings. It
+      // used to be discarded, so a run where every variant was dropped still
+      // showed an unconditional success toast.
+      const result = (await response.json()) as {
+        scheduled?: unknown[];
+        schedulable?: unknown[];
+        warnings?: string[];
+      };
+      const warnings = Array.isArray(result?.warnings) ? result.warnings : [];
+      setStepWarnings(warnings);
+      // An empty `scheduled` does not mean nothing was created - see
+      // describeSnapsAttachResult.
+      const outcome = describeSnapsAttachResult(
+        result,
+        scheduleType,
+        '쇼츠 영상을'
       );
+
+      if (outcome.tone === 'warning') {
+        toast.show(outcome.message, 'warning');
+        return;
+      }
+
+      toast.show(outcome.message);
       router.push('/launches?display=list');
     } catch (error) {
       toast.show(
-        error instanceof Error ? error.message : '쇼츠 초안 생성에 실패했습니다.',
+        error instanceof Error
+          ? error.message
+          : '쇼츠 초안 생성에 실패했습니다.',
         'warning'
       );
     } finally {
@@ -681,7 +754,9 @@ export function SnapsShortsWorkspace() {
       <div className="border-b border-newBorder bg-newBgLineColor/45 px-[18px] py-[14px] flex items-center justify-between gap-[14px] maxMedia:flex-col maxMedia:items-start">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-[8px]">
-            <h2 className="text-[20px] font-[700] leading-tight">쇼츠 스튜디오</h2>
+            <h2 className="text-[20px] font-[700] leading-tight">
+              쇼츠 스튜디오
+            </h2>
             <span
               className={clsx(
                 'rounded-[999px] px-[9px] py-[4px] text-[11px] font-[700]',
@@ -694,35 +769,49 @@ export function SnapsShortsWorkspace() {
           <div className="mt-[6px] flex flex-wrap gap-[8px] text-[11px] text-textItemBlur">
             <span>원문 {sourceMetrics.characters.toLocaleString()}자</span>
             <span>장면 {shortsScript?.storyboard?.length || '-'}</span>
-            <span>채널 {connectedTargetPlatforms.length}/{targetPlatforms.length}</span>
+            <span>
+              채널 {connectedTargetPlatforms.length}/{targetPlatforms.length}
+            </span>
             {currentJobId && <span>작업 {currentJobId.slice(0, 8)}</span>}
             {statusCheckedAt && <span>확인 {statusCheckedAt}</span>}
           </div>
+          {!!stepWarnings.length && (
+            <div className="mt-[8px] rounded-[8px] border border-amber-500/30 bg-amber-500/10 px-[12px] py-[10px] text-[12px] leading-[1.5] text-amber-200 flex flex-col gap-[4px]">
+              {/* The builder emits one warning per skipped variant plus a
+                  closing summary, so a run over every connected platform can
+                  produce more than a dozen. Capping the list at five is fine;
+                  dropping the rest without saying so is not - the operator
+                  reads five lines and assumes that was all of it. */}
+              {stepWarnings.slice(0, 5).map((warning) => (
+                <div key={warning}>{warning}</div>
+              ))}
+              {stepWarnings.length > 5 && (
+                <div className="opacity-70">
+                  외 {stepWarnings.length - 5}개의 경고가 더 있습니다.
+                </div>
+              )}
+            </div>
+          )}
         </div>
         <div className="flex flex-wrap gap-[8px] text-[11px]">
-          <span
-            className={clsx(
-              'rounded-[999px] px-[9px] py-[4px]',
-              health?.ollama?.ok === false
-                ? 'bg-red-500/15 text-red-200'
-                : 'bg-emerald-500/15 text-emerald-200'
-            )}
-          >
-            LLM {health?.ollama?.chatModel || '확인중'}
-          </span>
-          <span
-            className={clsx(
-              'rounded-[999px] px-[9px] py-[4px]',
-              health?.pixelle?.ok
-                ? 'bg-emerald-500/15 text-emerald-200'
-                : health?.pixelle?.configured
-                ? 'bg-red-500/15 text-red-200'
-                : 'bg-amber-500/15 text-amber-200'
-            )}
-            title={health?.pixelle?.message || ''}
-          >
-            Pixelle {health?.pixelle?.ok ? '준비됨' : health?.pixelle?.configured ? '점검 필요' : '미설정'}
-          </span>
+          {/* The badges were three blocks of inline ternaries, and each
+              decided its own severity. Measured: an unloaded LLM badge was
+              green while its own text said 확인중, Pixelle and Shorts-Maker
+              claimed 미설정 before anything had been asked, and a store that
+              could not be written left all three green even though shorts
+              work is saved there. They come from one function now. */}
+          {snapsShortsBadges(health, healthError).map((badge) => (
+            <span
+              key={badge.id}
+              className={clsx(
+                'rounded-[999px] px-[9px] py-[4px]',
+                SNAPS_SHORTS_BADGE_TONE_CLASS[badge.tone]
+              )}
+              title={badge.title}
+            >
+              {badge.label}
+            </span>
+          ))}
           <span
             className={clsx(
               'rounded-[999px] px-[9px] py-[4px]',
@@ -732,7 +821,11 @@ export function SnapsShortsWorkspace() {
                 ? 'bg-red-500/15 text-red-200'
                 : 'bg-newBgLineColor text-textItemBlur'
             )}
-            title={health?.pixelle?.comfyui?.message || health?.pixelle?.comfyui?.url || ''}
+            title={
+              health?.pixelle?.comfyui?.message ||
+              health?.pixelle?.comfyui?.url ||
+              ''
+            }
           >
             ComfyUI {health?.pixelle?.comfyui?.ok ? '온라인' : '오프라인'}
           </span>
@@ -745,7 +838,8 @@ export function SnapsShortsWorkspace() {
             )}
             title={health?.pixelle?.workflows?.video?.key || ''}
           >
-            워크플로우 {health?.pixelle?.workflows?.video?.exists ? '확인' : '누락'}
+            워크플로우{' '}
+            {health?.pixelle?.workflows?.video?.exists ? '확인' : '누락'}
           </span>
         </div>
       </div>
@@ -761,8 +855,16 @@ export function SnapsShortsWorkspace() {
         <div className="border-r border-newBorder maxMedia:border-r-0 maxMedia:border-b p-[18px] flex flex-col gap-[14px]">
           <div className="grid grid-cols-2 gap-[8px]">
             {[
-              { id: 'ai_generation' as const, title: 'AI 직접 생성', state: '사용 가능' },
-              { id: 'html_render' as const, title: 'HTML 영상화', state: '개발중' },
+              {
+                id: 'ai_generation' as const,
+                title: 'AI 직접 생성',
+                state: '사용 가능',
+              },
+              {
+                id: 'html_render' as const,
+                title: 'HTML 영상화',
+                state: '개발중',
+              },
             ].map((mode) => (
               <button
                 key={mode.id}
@@ -794,6 +896,57 @@ export function SnapsShortsWorkspace() {
               className="min-h-[260px] resize-none bg-newBgLineColor border border-newBorder rounded-[8px] p-[14px] text-[14px] leading-[1.7] outline-none focus:border-btnPrimary"
               placeholder="쇼츠로 만들 원문, 기사 요약, 제품 설명, 캠페인 메시지를 입력하세요."
             />
+          </div>
+
+          {/* Shorts-Maker had no operator surface at all: routes, a client and a
+              contract check on the backend, and nothing on this page. Only the
+              topic-to-script call is fully contracted - the render side needs a
+              payload that Shorts-Maker's own pipeline assembles - so that is
+              what this offers, writing its answer into the box above. */}
+          <div className="rounded-[8px] border border-newBorder bg-newBgLineColor p-[12px] flex flex-col gap-[8px]">
+            <div className="flex items-center justify-between gap-[10px]">
+              <div className="text-[13px] font-[700]">Shorts-Maker 대본</div>
+              <span className="text-[11px] text-textItemBlur">
+                {health?.shortsMaker?.ok
+                  ? '주제에서 대본을 만들어 원문에 넣습니다'
+                  : !health?.shortsMaker?.configured
+                  ? 'SHORTS_MAKER_URL 미설정'
+                  : '연결 확인 필요'}
+              </span>
+            </div>
+            <div className="grid grid-cols-[1fr_118px] maxMedia:grid-cols-1 gap-[8px]">
+              <input
+                value={shortsMakerTopic}
+                onChange={(event) => setShortsMakerTopic(event.target.value)}
+                maxLength={160}
+                className="h-[38px] bg-newBgLineColor border border-newBorder rounded-[8px] px-[10px] text-[12px] outline-none focus:border-btnPrimary"
+                placeholder="주제 (예: 환절기 건강관리 팁)"
+              />
+              <select
+                value={shortsMakerMode}
+                onChange={(event) =>
+                  setShortsMakerMode(event.target.value as 'normal' | 'dialogue')
+                }
+                className="h-[38px] bg-newBgLineColor border border-newBorder rounded-[8px] px-[10px] text-[12px] outline-none focus:border-btnPrimary"
+              >
+                <option value="normal">일반</option>
+                <option value="dialogue">대화</option>
+              </select>
+            </div>
+            <Button
+              secondary
+              loading={shortsMakerLoading}
+              disabled={!health?.shortsMaker?.configured}
+              onClick={generateShortsMakerScript}
+              className="rounded-[8px] !h-[38px]"
+            >
+              대본 생성
+            </Button>
+            {!!shortsMakerUsage && (
+              <div className="text-[11px] text-textItemBlur">
+                {shortsMakerUsage}
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-[1fr_118px] maxMedia:grid-cols-1 gap-[8px]">
@@ -956,7 +1109,9 @@ export function SnapsShortsWorkspace() {
                 <input
                   type="checkbox"
                   checked={saveVideoToMediaLibrary}
-                  onChange={(event) => setSaveVideoToMediaLibrary(event.target.checked)}
+                  onChange={(event) =>
+                    setSaveVideoToMediaLibrary(event.target.checked)
+                  }
                 />
                 미디어 라이브러리에 저장
               </label>
@@ -968,7 +1123,9 @@ export function SnapsShortsWorkspace() {
                 disabled={!canAttachVideo}
                 className="rounded-[8px] !h-[42px]"
               >
-                {scheduleType === 'schedule' ? '예약 게시물에 첨부' : '초안에 첨부'}
+                {scheduleType === 'schedule'
+                  ? '예약 게시물에 첨부'
+                  : '초안에 첨부'}
               </Button>
             </div>
           </div>
@@ -985,18 +1142,26 @@ export function SnapsShortsWorkspace() {
                   </div>
                 )}
                 <div className="mt-[10px] max-h-[160px] overflow-auto text-[12px] leading-[1.6] text-textItemBlur">
-                  {shortsScript.narration || shortsScript.coreSummary || videoResult?.message}
+                  {shortsScript.narration ||
+                    shortsScript.coreSummary ||
+                    videoResult?.message}
                 </div>
                 {!!shortsScript.coreSummary && (
                   <div className="mt-[10px] rounded-[8px] bg-newBgColorInner border border-newBorder p-[10px] text-[12px] leading-[1.5]">
-                    <div className="text-[11px] font-[700] mb-[5px]">핵심 요약</div>
+                    <div className="text-[11px] font-[700] mb-[5px]">
+                      핵심 요약
+                    </div>
                     {shortsScript.coreSummary}
                   </div>
                 )}
                 {!!shortsScript.uploadMetadata && (
                   <div className="mt-[10px] rounded-[8px] bg-newBgColorInner border border-newBorder p-[10px] text-[12px] leading-[1.5]">
-                    <div className="text-[11px] font-[700] mb-[5px]">업로드 메타데이터</div>
-                    <div>{shortsScript.uploadMetadata.title || shortsScript.title}</div>
+                    <div className="text-[11px] font-[700] mb-[5px]">
+                      업로드 메타데이터
+                    </div>
+                    <div>
+                      {shortsScript.uploadMetadata.title || shortsScript.title}
+                    </div>
                     {!!shortsScript.uploadMetadata.description && (
                       <div className="mt-[4px] text-textItemBlur">
                         {shortsScript.uploadMetadata.description}
@@ -1006,9 +1171,11 @@ export function SnapsShortsWorkspace() {
                 )}
                 {!!shortsScript.uploadMetadata?.hashtags?.length && (
                   <div className="mt-[10px] flex flex-wrap gap-[6px] text-[11px] text-textItemBlur">
-                    {shortsScript.uploadMetadata.hashtags.slice(0, 8).map((tag) => (
-                      <span key={tag}>{tag}</span>
-                    ))}
+                    {shortsScript.uploadMetadata.hashtags
+                      .slice(0, 8)
+                      .map((tag) => (
+                        <span key={tag}>{tag}</span>
+                      ))}
                   </div>
                 )}
               </div>
@@ -1024,7 +1191,8 @@ export function SnapsShortsWorkspace() {
                       >
                         <div className="font-[700]">
                           장면 {scene.scene || index + 1}
-                          {scene.startSecond !== undefined && scene.endSecond !== undefined
+                          {scene.startSecond !== undefined &&
+                          scene.endSecond !== undefined
                             ? ` · ${scene.startSecond}-${scene.endSecond}s`
                             : ''}
                         </div>

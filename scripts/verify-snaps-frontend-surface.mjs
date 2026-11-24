@@ -7,33 +7,45 @@ const content = [
   readFileSync(shortsWorkspacePath, 'utf8'),
 ].join('\n');
 
+// The needles are call sites and UI strings, and the formatter is free to wrap
+// an argument onto its own line - which it did, moving the route string off the
+// snapsFetch( line and making a live surface look absent. Whether the route is
+// called is the invariant; where the line breaks is not. So match the
+// raw text first and fall back to a whitespace-free comparison.
+const squeeze = (text) => [...text].filter((char) => char > ' ').join('');
+const compactContent = squeeze(content);
+
 function expectContains(needle, label = needle) {
-  if (!content.includes(needle)) {
+  if (!content.includes(needle) && !compactContent.includes(squeeze(needle))) {
     throw new Error(`Missing snaps frontend surface: ${label}`);
   }
 }
 
+// Some entries are the route literal rather than a snapsFetch( call: five of
+// the loaders moved behind a shared helper, and pinning the call shape made
+// this fail on a refactor that changed nothing about which routes the
+// workspace uses.
 const routeCalls = [
   ["snapsFetch('/snaps/health'", 'health'],
-  ["snapsFetch('/snaps/activity'", 'activity log'],
+  ["'/snaps/activity'", 'activity log'],
   ["snapsFetch('/snaps/export'", 'workspace export'],
   ["snapsFetch('/snaps/import'", 'workspace import'],
   ["snapsFetch('/snaps/transform'", 'AI transform'],
   ["snapsFetch('/snaps/schedule-variants'", 'draft/schedule handoff'],
-  ["snapsFetch('/snaps/source-library'", 'source library list/save'],
+  ["'/snaps/source-library'", 'source library list/save'],
   ['/snaps/source-library/${activeSourceId}', 'source delete'],
   ['/snaps/source-library/${activeSourceId}/promote-to-rag', 'source promote to RAG'],
-  ["snapsFetch('/snaps/rag/examples'", 'RAG examples list/save'],
+  ["'/snaps/rag/examples'", 'RAG examples list/save'],
   ['/snaps/rag/examples/${exampleId}', 'RAG example delete'],
   ['/snaps/rag/search?query=', 'RAG search'],
   ["snapsFetch('/snaps/rag/rebuild'", 'RAG rebuild'],
   ["snapsFetch('/snaps/report/generate'", 'report generate'],
   ["snapsFetch('/snaps/report/from-platform-analytics'", 'provider analytics report'],
-  ["snapsFetch('/snaps/report/history'", 'report history'],
+  ["'/snaps/report/history'", 'report history'],
   ['/snaps/report/${activeReportId}/export?format=${format}', 'report export'],
   ['/snaps/report/${activeReportId}', 'report delete'],
   ['/snaps/report/${activeReportId}/promote-to-rag', 'report promote to RAG'],
-  ["snapsFetch('/snaps/inbox/reply-capabilities'", 'reply capabilities'],
+  ["'/snaps/inbox/reply-capabilities'", 'reply capabilities'],
   ["snapsFetch('/snaps/inbox/import'", 'feedback import'],
   ["snapsFetch('/snaps/inbox/import-post-comments'", 'connected comment import'],
   ["snapsFetch('/snaps/inbox/summary'", 'feedback summary'],
@@ -86,12 +98,12 @@ const helperSurfaces = [
   'withSnapsJsonHeaders',
   'readSnapsError',
   'confirmOperatorAction',
-  'confirmDestructive',
+  'confirmOperatorAction',
   'snapsDemoWorkspace',
   'replyCapabilities',
   'replyIntegrationOptions',
-  'formatVariantMarkdown',
-  'formatVariantHtml',
+  'formatSnapsVariantMarkdown',
+  'formatSnapsVariantHtml',
   'assistChecklist',
 ];
 
